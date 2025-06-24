@@ -237,8 +237,14 @@ func CommitScriptToSelf(chanType channeldb.ChannelType, initiator bool,
 	//
 	// Our "redeem" script here is just the taproot witness program.
 	case chanType.IsTaproot():
+		// Determine script options based on channel type.
+		var scriptOpts []input.TaprootScriptOpt
+		if chanType.IsTaprootFinal() {
+			scriptOpts = append(scriptOpts, input.WithProdScripts())
+		}
+
 		return input.NewLocalCommitScriptTree(
-			csvDelay, selfKey, revokeKey, auxLeaf,
+			csvDelay, selfKey, revokeKey, auxLeaf, scriptOpts...,
 		)
 
 	// If we are the initiator of a leased channel, then we have an
@@ -321,8 +327,14 @@ func CommitScriptToRemote(chanType channeldb.ChannelType, initiator bool,
 	// we use a NUMS key to force the remote party to take a script path,
 	// with the sole tap leaf enforcing the 1 CSV delay.
 	case chanType.IsTaproot():
+		// Determine script options based on channel type.
+		var scriptOpts []input.TaprootScriptOpt
+		if chanType.IsTaprootFinal() {
+			scriptOpts = append(scriptOpts, input.WithProdScripts())
+		}
+
 		toRemoteScriptTree, err := input.NewRemoteCommitScriptTree(
-			remoteKey, auxLeaf,
+			remoteKey, auxLeaf, scriptOpts...,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -427,8 +439,14 @@ func SecondLevelHtlcScript(chanType channeldb.ChannelType, initiator bool,
 	switch {
 	// For taproot channels, the pkScript is a segwit v1 p2tr output.
 	case chanType.IsTaproot():
+		// Determine script options based on channel type.
+		var scriptOpts []input.TaprootScriptOpt
+		if chanType.IsTaprootFinal() {
+			scriptOpts = append(scriptOpts, input.WithProdScripts())
+		}
+
 		return input.TaprootSecondLevelScriptTree(
-			revocationKey, delayKey, csvDelay, auxLeaf,
+			revocationKey, delayKey, csvDelay, auxLeaf, scriptOpts...,
 		)
 
 	// If we are the initiator of a leased channel, then we have an
@@ -1168,7 +1186,7 @@ func genSegwitV0HtlcScript(chanType channeldb.ChannelType,
 // channel.
 func GenTaprootHtlcScript(isIncoming bool, whoseCommit lntypes.ChannelParty,
 	timeout uint32, rHash [32]byte, keyRing *CommitmentKeyRing,
-	auxLeaf input.AuxTapLeaf) (*input.HtlcScriptTree, error) {
+	auxLeaf input.AuxTapLeaf, opts ...input.TaprootScriptOpt) (*input.HtlcScriptTree, error) {
 
 	var (
 		htlcScriptTree *input.HtlcScriptTree
@@ -1185,7 +1203,7 @@ func GenTaprootHtlcScript(isIncoming bool, whoseCommit lntypes.ChannelParty,
 	case isIncoming && whoseCommit.IsLocal():
 		htlcScriptTree, err = input.ReceiverHTLCScriptTaproot(
 			timeout, keyRing.RemoteHtlcKey, keyRing.LocalHtlcKey,
-			keyRing.RevocationKey, rHash[:], whoseCommit, auxLeaf,
+			keyRing.RevocationKey, rHash[:], whoseCommit, auxLeaf, opts...,
 		)
 
 	// We're being paid via an HTLC by the remote party, and the HTLC is
@@ -1194,7 +1212,7 @@ func GenTaprootHtlcScript(isIncoming bool, whoseCommit lntypes.ChannelParty,
 	case isIncoming && whoseCommit.IsRemote():
 		htlcScriptTree, err = input.SenderHTLCScriptTaproot(
 			keyRing.RemoteHtlcKey, keyRing.LocalHtlcKey,
-			keyRing.RevocationKey, rHash[:], whoseCommit, auxLeaf,
+			keyRing.RevocationKey, rHash[:], whoseCommit, auxLeaf, opts...,
 		)
 
 	// We're sending an HTLC which is being added to our commitment
@@ -1203,7 +1221,7 @@ func GenTaprootHtlcScript(isIncoming bool, whoseCommit lntypes.ChannelParty,
 	case !isIncoming && whoseCommit.IsLocal():
 		htlcScriptTree, err = input.SenderHTLCScriptTaproot(
 			keyRing.LocalHtlcKey, keyRing.RemoteHtlcKey,
-			keyRing.RevocationKey, rHash[:], whoseCommit, auxLeaf,
+			keyRing.RevocationKey, rHash[:], whoseCommit, auxLeaf, opts...,
 		)
 
 	// Finally, we're paying the remote party via an HTLC, which is being
@@ -1212,7 +1230,7 @@ func GenTaprootHtlcScript(isIncoming bool, whoseCommit lntypes.ChannelParty,
 	case !isIncoming && whoseCommit.IsRemote():
 		htlcScriptTree, err = input.ReceiverHTLCScriptTaproot(
 			timeout, keyRing.LocalHtlcKey, keyRing.RemoteHtlcKey,
-			keyRing.RevocationKey, rHash[:], whoseCommit, auxLeaf,
+			keyRing.RevocationKey, rHash[:], whoseCommit, auxLeaf, opts...,
 		)
 	}
 
@@ -1237,8 +1255,14 @@ func genHtlcScript(chanType channeldb.ChannelType, isIncoming bool,
 		)
 	}
 
+	// Determine script options based on channel type.
+	var scriptOpts []input.TaprootScriptOpt
+	if chanType.IsTaprootFinal() {
+		scriptOpts = append(scriptOpts, input.WithProdScripts())
+	}
+
 	return GenTaprootHtlcScript(
-		isIncoming, whoseCommit, timeout, rHash, keyRing, auxLeaf,
+		isIncoming, whoseCommit, timeout, rHash, keyRing, auxLeaf, scriptOpts...,
 	)
 }
 
