@@ -15,6 +15,8 @@ import (
 
 	"github.com/flokiorg/go-flokicoin/crypto"
 
+	"github.com/lightningnetwork/lnd/actor"
+
 	"github.com/flokiorg/flnd/aliasmgr"
 	"github.com/flokiorg/flnd/brontide"
 	"github.com/flokiorg/flnd/buffer"
@@ -308,6 +310,13 @@ type Config struct {
 	// onion blobs.
 	Sphinx *hop.OnionProcessor
 
+	// SpawnOnionActor is a factory function that spawns a per-peer onion
+	// message actor. If nil, onion messaging is disabled.
+	SpawnOnionActor onionmessage.OnionActorFactory
+
+	// ActorSystem is the actor system tasked with managing actors.
+	ActorSystem *actor.ActorSystem
+
 	// WitnessBeacon is used when setting up ChannelLinks so they can add any
 	// preimages that they learn.
 	WitnessBeacon contractcourt.WitnessBeacon
@@ -474,10 +483,6 @@ type Config struct {
 	// related wire messages.
 	AuxChannelNegotiator fn.Option[lnwallet.AuxChannelNegotiator]
 
-	// OnionMessageServer is an instance of a message server that dispatches
-	// onion messages to subscribers.
-	OnionMessageServer *subscribe.Server
-
 	// ShouldFwdExpAccountability is a closure that indicates whether
 	// experimental accountability signals should be set.
 	ShouldFwdExpAccountability func() bool
@@ -541,6 +546,11 @@ type Brontide struct {
 	// for any other purpose you should seriously consider whether or not
 	// this heuristic is good enough for your use case.
 	isTorConnection bool
+
+	// onionActorRef holds the reference to the onion peer actor spawned
+	// for this peer connection. The actor handles all incoming onion
+	// message processing for this peer.
+	onionActorRef fn.Option[onionmessage.OnionPeerActorRef]
 
 	pingManager *PingManager
 
@@ -913,19 +923,25 @@ func (p *Brontide) Start() error {
 		return fmt.Errorf("unable to load channels: %w", err)
 	}
 
-	onionMessageEndpoint := onionmessage.NewOnionEndpoint(
-		p.cfg.OnionMessageServer,
-	)
+	// If the remote peer supports onion messages and we have a factory
+	// configured, spawn the onion peer actor for this connection. The
+	// actor handles the full processing pipeline for incoming onion
+	// messages from this peer.
+	if p.remoteFeatures.HasFeature(lnwire.OnionMessagesOptional) &&
+		p.cfg.SpawnOnionActor != nil {
 
-	// We register the onion message endpoint with the message router.
-	err = fn.MapOptionZ(p.msgRouter, func(r msgmux.Router) error {
-		_ = r.UnregisterEndpoint(onionMessageEndpoint.Name())
+		p.log.Infof("Remote peer supports onion messages, " +
+			"spawning onion message actor")
 
-		return r.RegisterEndpoint(onionMessageEndpoint)
-	})
-	if err != nil {
-		return fmt.Errorf("unable to register endpoint for onion "+
-			"messaging: %w", err)
+		ref, spawnErr := p.cfg.SpawnOnionActor(
+			p.cfg.ActorSystem, p.PubKey(),
+		)
+		if spawnErr != nil {
+			return fmt.Errorf("unable to spawn onion peer "+
+				"actor: %w", spawnErr)
+		}
+
+		p.onionActorRef = fn.Some(ref)
 	}
 
 	p.startTime = time.Now()
@@ -1681,6 +1697,9 @@ func (p *Brontide) Disconnect(reason error) {
 	// Stop PingManager before closing TCP connection.
 	p.pingManager.Stop()
 
+	// Stop the onion peer actor if one was spawned.
+	p.StopOnionActorIfExists()
+
 	// Ensure that the TCP connection is properly closed before continuing.
 	p.cfg.Conn.Close()
 
@@ -1698,6 +1717,18 @@ func (p *Brontide) Disconnect(reason error) {
 // String returns the string representation of this peer.
 func (p *Brontide) String() string {
 	return fmt.Sprintf("%x@%s", p.cfg.PubKeyBytes, p.cfg.Conn.RemoteAddr())
+}
+
+// StopOnionActorIfExists stops the onion peer actor if one was spawned for
+// this peer. This is idempotent and safe to call multiple times.
+func (p *Brontide) StopOnionActorIfExists() {
+	p.onionActorRef.WhenSome(
+		func(ref onionmessage.OnionPeerActorRef) {
+			onionmessage.StopOnionActor(
+				p.cfg.ActorSystem, p.PubKey(), ref,
+			)
+		},
+	)
 }
 
 // readNextMessage reads, and returns the next message on the wire along with
@@ -2264,6 +2295,19 @@ out:
 			*lnwire.ReplyShortChanIDsEnd:
 
 			discStream.AddMsg(msg)
+
+		case *lnwire.OnionMessage:
+			p.onionActorRef.WhenSome(
+				func(ref onionmessage.OnionPeerActorRef) {
+					// TODO(elle): thread contexts through
+					// the peer system properly so that a
+					// parent context can be passed in here.
+					ctx := context.TODO()
+
+					req := onionmessage.NewRequest(*msg)
+					ref.Tell(ctx, req)
+				},
+			)
 
 		case *lnwire.Custom:
 			err := p.handleCustomMessage(msg)

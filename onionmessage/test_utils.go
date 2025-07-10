@@ -2,15 +2,16 @@ package onionmessage
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"testing"
 
-	"github.com/flokiorg/go-flokicoin/crypto"
-	sphinx "github.com/flokiorg/lightning-onion"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/record"
 	"github.com/flokiorg/flnd/routing/route"
 	"github.com/flokiorg/flnd/tlv"
+	"github.com/flokiorg/go-flokicoin/crypto"
+	sphinx "github.com/flokiorg/lightning-onion"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,7 +35,7 @@ func newMockNodeIDResolver() *mockNodeIDResolver {
 }
 
 // RemotePubFromSCID resolves a node public key from a short channel ID.
-func (m *mockNodeIDResolver) RemotePubFromSCID(
+func (m *mockNodeIDResolver) RemotePubFromSCID(_ context.Context,
 	scid lnwire.ShortChannelID) (*crypto.PublicKey, error) {
 
 	if pk, ok := m.peers[scid]; ok {
