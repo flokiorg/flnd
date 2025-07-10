@@ -4,16 +4,16 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/stretchr/testify/require"
 )
 
 // validPubkeyIntro returns an on-curve PubkeyIntro plus the matching
-// *btcec.PublicKey for assertions.
-func validPubkeyIntro(t *testing.T) (PubkeyIntro, *btcec.PublicKey) {
+// *crypto.PublicKey for assertions.
+func validPubkeyIntro(t *testing.T) (PubkeyIntro, *crypto.PublicKey) {
 	t.Helper()
 
-	priv, err := btcec.NewPrivateKey()
+	priv, err := crypto.NewPrivateKey()
 	require.NoError(t, err)
 	pub := priv.PubKey()
 
@@ -22,10 +22,10 @@ func validPubkeyIntro(t *testing.T) (PubkeyIntro, *btcec.PublicKey) {
 
 // validBlindingPoint returns an on-curve pubkey suitable for use as a
 // BlindingPoint or BlindedNodeID in tests.
-func validBlindingPoint(t *testing.T) *btcec.PublicKey {
+func validBlindingPoint(t *testing.T) *crypto.PublicKey {
 	t.Helper()
 
-	priv, err := btcec.NewPrivateKey()
+	priv, err := crypto.NewPrivateKey()
 	require.NoError(t, err)
 
 	return priv.PubKey()

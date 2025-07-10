@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/flokiorg/go-flokicoin/crypto"
 )
 
 // IntroductionNode is the sealed sum-type for a blinded path's introduction
@@ -31,13 +31,13 @@ type IntroductionNode interface {
 // (0x02 or 0x03) doubles as the wire discriminator. Use the constructor to
 // ensure the non-nil, on-curve invariant is upheld.
 type PubkeyIntro struct {
-	Pubkey *btcec.PublicKey
+	Pubkey *crypto.PublicKey
 }
 
 // NewPubkeyIntro constructs the pubkey introduction-node variant, establishing
 // the non-nil, on-curve invariant at construction time so callers receive an
 // error up front rather than relying on every method to re-guard a nil key.
-func NewPubkeyIntro(pubkey *btcec.PublicKey) (PubkeyIntro, error) {
+func NewPubkeyIntro(pubkey *crypto.PublicKey) (PubkeyIntro, error) {
 	p := PubkeyIntro{Pubkey: pubkey}
 	if err := p.validate(); err != nil {
 		return PubkeyIntro{}, err
@@ -95,7 +95,7 @@ func decodeIntroductionNode(r io.Reader,
 		if _, err := io.ReadFull(r, b[1:]); err != nil {
 			return nil, fmt.Errorf("read intro pubkey: %w", err)
 		}
-		pub, err := btcec.ParsePubKey(b[:])
+		pub, err := crypto.ParsePubKey(b[:])
 		if err != nil {
 			return nil, fmt.Errorf("%w: %w",
 				ErrInvalidIntroNode, err)

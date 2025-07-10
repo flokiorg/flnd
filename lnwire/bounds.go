@@ -3,7 +3,7 @@ package lnwire
 import (
 	"math"
 
-	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/flokiorg/go-flokicoin/crypto"
 )
 
 // BOLT 4 blinded-path field bounds. Each constant matches the format ceiling
@@ -11,7 +11,7 @@ import (
 const (
 	// pubKeyLen aliases the upstream compressed-pubkey length for shorter
 	// usage in this package.
-	pubKeyLen = btcec.PubKeyBytesLenCompressed
+	pubKeyLen = crypto.PubKeyBytesLenCompressed
 
 	// sciddirLen is the on-wire length of a sciddir introduction node
 	// (1-byte direction + 8-byte SCID).

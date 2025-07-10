@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/lightningnetwork/lnd/tlv"
+	"github.com/flokiorg/go-flokicoin/crypto"
+	"github.com/flokiorg/flnd/tlv"
 )
 
 var (
@@ -29,7 +29,7 @@ type BlindedPath struct {
 
 	// BlindingPoint is the blinding point for this path, used to derive the
 	// blinded node IDs and encrypt the hop payloads.
-	BlindingPoint *btcec.PublicKey
+	BlindingPoint *crypto.PublicKey
 
 	// Hops is the ordered list of blinded hops in this path.
 	Hops []BlindedHop
@@ -43,7 +43,7 @@ type BlindedPaths struct {
 // BlindedHop represents a single hop in a blinded path.
 type BlindedHop struct {
 	// BlindedNodeID is the blinded public key for this hop.
-	BlindedNodeID *btcec.PublicKey
+	BlindedNodeID *crypto.PublicKey
 
 	// EncryptedData is the encrypted payload for this hop.
 	EncryptedData []byte
@@ -178,7 +178,7 @@ func readBlindedPath(lr *io.LimitedReader, p *BlindedPath,
 	if _, err := io.ReadFull(lr, blindingBytes[:]); err != nil {
 		return fmt.Errorf("read blinding point: %w", err)
 	}
-	blinding, err := btcec.ParsePubKey(blindingBytes[:])
+	blinding, err := crypto.ParsePubKey(blindingBytes[:])
 	if err != nil {
 		return fmt.Errorf("blinding point: %w", err)
 	}
@@ -309,7 +309,7 @@ func readBlindedHop(lr *io.LimitedReader, h *BlindedHop, buf *[8]byte) error {
 	if _, err := io.ReadFull(lr, nodeBytes[:]); err != nil {
 		return fmt.Errorf("read blinded node: %w", err)
 	}
-	node, err := btcec.ParsePubKey(nodeBytes[:])
+	node, err := crypto.ParsePubKey(nodeBytes[:])
 	if err != nil {
 		return fmt.Errorf("blinded node id: %w", err)
 	}
