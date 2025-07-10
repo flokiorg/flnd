@@ -7,6 +7,7 @@ import (
 
 	"github.com/flokiorg/go-flokicoin/crypto"
 
+	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/tlv"
 )
@@ -80,6 +81,47 @@ func NewNonFinalBlindedRouteData(chanID lnwire.ShortChannelID,
 	if constraints != nil {
 		info.Constraints = tlv.SomeRecordT(
 			tlv.NewRecordT[tlv.TlvType12](*constraints))
+	}
+
+	if features != nil {
+		info.Features = tlv.SomeRecordT(
+			tlv.NewRecordT[tlv.TlvType14](*features),
+		)
+	}
+
+	return info
+}
+
+// NewNonFinalBlindedRouteData creates the data that's provided for hops within
+// a blinded route.
+func NewNonFinalBlindedRouteDataOnionMessage(
+	nextNode fn.Either[*crypto.PublicKey, lnwire.ShortChannelID],
+	blindingOverride *crypto.PublicKey,
+	features *lnwire.FeatureVector) *BlindedRouteData {
+
+	info := fn.ElimEither(
+		nextNode,
+		func(nextNodeID *crypto.PublicKey) *BlindedRouteData {
+			return &BlindedRouteData{
+				NextNodeID: tlv.SomeRecordT(
+					tlv.NewPrimitiveRecord[tlv.TlvType4](
+						nextNodeID,
+					),
+				),
+			}
+		},
+		func(chanID lnwire.ShortChannelID) *BlindedRouteData {
+			return &BlindedRouteData{
+				ShortChannelID: tlv.SomeRecordT(
+					tlv.NewRecordT[tlv.TlvType2](chanID),
+				),
+			}
+		},
+	)
+
+	if blindingOverride != nil {
+		info.NextBlindingOverride = tlv.SomeRecordT(
+			tlv.NewPrimitiveRecord[tlv.TlvType8](blindingOverride))
 	}
 
 	if features != nil {
