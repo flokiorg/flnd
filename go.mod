@@ -333,7 +333,7 @@ require (
 )
 
 require (
-	github.com/flokiorg/flokicoin-neutrino v0.16.2-beta
+	github.com/flokiorg/flokicoin-neutrino v0.16.3-beta
 	github.com/flokiorg/go-flokicoin v0.25.7-beta
 	github.com/flokiorg/walletd v0.1.3-beta
 	github.com/golangci/golangci-lint v1.64.8
