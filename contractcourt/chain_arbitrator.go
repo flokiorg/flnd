@@ -1149,6 +1149,7 @@ func (c *ChainArbitrator) WatchNewChannel(newChan *channeldb.OpenChannel) error 
 			auxLeafStore:        c.cfg.AuxLeafStore,
 			auxResolver:         c.cfg.AuxResolver,
 			auxCloser:           c.cfg.AuxCloser,
+			chanCloseConfs:      c.cfg.ChannelCloseConfs,
 		},
 	)
 	if err != nil {
@@ -1327,6 +1328,7 @@ func (c *ChainArbitrator) loadOpenChannels() error {
 				auxLeafStore:        c.cfg.AuxLeafStore,
 				auxResolver:         c.cfg.AuxResolver,
 				auxCloser:           c.cfg.AuxCloser,
+				chanCloseConfs:      c.cfg.ChannelCloseConfs,
 			},
 		)
 		if err != nil {
