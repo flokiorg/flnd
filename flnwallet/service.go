@@ -10,6 +10,7 @@ import (
 	"github.com/flokiorg/flnd/lnrpc"
 	"github.com/flokiorg/go-flokicoin/chaincfg"
 	"github.com/flokiorg/go-flokicoin/chainutil"
+	"github.com/flokiorg/go-flokicoin/chainutil/psbt"
 )
 
 type Status string
@@ -38,13 +39,14 @@ type Update struct {
 }
 
 type ServiceConfig struct {
-	Walletdir         string        `short:"w" long:"walletdir"  description:"Directory for Flokicoin Lightning Network"`
-	RegressionTest    bool          `long:"regtest" description:"Use the regression test network"`
-	Testnet           bool          `long:"testnet" description:"Use the test network"`
-	ConnectionTimeout time.Duration `short:"t" long:"connectiontimeout" default:"50s" description:"The timeout value for network connections. Valid time units are {ms, s, m, h}."`
-	DebugLevel        string        `short:"d" long:"debuglevel" default:"info" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical}"`
-	ConnectPeers      []string      `long:"connect" description:"Connect only to the specified peers at startup"`
-	Feeurl            string        `long:"feeurl" description:"Custom fee estimation API endpoint (Required on mainnet)"`
+	Walletdir            string        `short:"w" long:"walletdir"  description:"Directory for Flokicoin Lightning Network"`
+	RegressionTest       bool          `long:"regtest" description:"Use the regression test network"`
+	Testnet              bool          `long:"testnet" description:"Use the test network"`
+	ConnectionTimeout    time.Duration `short:"t" long:"connectiontimeout" default:"50s" description:"The timeout value for network connections. Valid time units are {ms, s, m, h}."`
+	DebugLevel           string        `short:"d" long:"debuglevel" default:"info" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical}"`
+	ConnectPeers         []string      `long:"connect" description:"Connect only to the specified peers at startup"`
+	Feeurl               string        `long:"feeurl" description:"Custom fee estimation API endpoint (Required on mainnet)"`
+	MaxTransactionsLimit int           `long:"maxtransactionslimit" description:"Maximum number of transactions to fetch per request"`
 
 	TLSExtraIPs     []string `long:"tlsextraip" description:"Adds an extra ip to the generated certificate"`
 	TLSExtraDomains []string `long:"tlsextradomain" description:"Adds an extra domain to the generated certificate"`
@@ -66,13 +68,14 @@ type Service struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	flndConfig *flnd.Config
-	client     *Client
-	daemon     *daemon
-	cmux       sync.Mutex
-	wg         sync.WaitGroup
-	running    bool
-	lastEvent  *Update
+	flndConfig   *flnd.Config
+	client       *Client
+	daemon       *daemon
+	cmux         sync.Mutex
+	wg           sync.WaitGroup
+	running      bool
+	lastEvent    *Update
+	txFetchLimit uint32
 }
 
 func New(pctx context.Context, cfg *ServiceConfig) *Service {
@@ -96,7 +99,6 @@ func New(pctx context.Context, cfg *ServiceConfig) *Service {
 	conf.RawListeners = append(conf.RawListeners, cfg.RawListeners...)
 	conf.RestCORS = append(conf.RestCORS, cfg.RestCORS...)
 	conf.TLSAutoRefresh = cfg.TLSAutoRefresh
-
 	switch cfg.Network {
 	case &chaincfg.MainNetParams:
 		conf.Bitcoin.MainNet = true
@@ -113,10 +115,11 @@ func New(pctx context.Context, cfg *ServiceConfig) *Service {
 	}
 
 	s := &Service{
-		lastEvent:  &Update{State: StatusInit},
-		flndConfig: &conf,
-		ctx:        ctx,
-		cancel:     cancel,
+		lastEvent:    &Update{State: StatusInit},
+		flndConfig:   &conf,
+		ctx:          ctx,
+		cancel:       cancel,
+		txFetchLimit: uint32(cfg.MaxTransactionsLimit),
 	}
 
 	go s.run()
@@ -191,14 +194,15 @@ func (s *Service) registerConnection(d *daemon, c *Client) {
 	defer s.cmux.Unlock()
 	s.client = c
 	s.daemon = d
+	c.SetMaxTransactionsLimit(s.txFetchLimit)
 }
 
 func (s *Service) Subscribe() <-chan *Update {
 	ch := make(chan *Update, 5)
 	s.subMu.Lock()
 	s.subs = append(s.subs, ch)
-	s.subMu.Unlock()
 	ch <- s.lastEvent
+	s.subMu.Unlock()
 	return ch
 }
 
@@ -320,6 +324,24 @@ func (s *Service) Fee(address chainutil.Address, amount chainutil.Amount) (*lnrp
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
 	return s.client.SimpleTransferFee(address, amount)
+}
+
+func (s *Service) FundPsbt(addrToAmount map[string]int64, lokiPerVbyte uint64) (*psbt.Packet, error) {
+	s.cmux.Lock()
+	defer s.cmux.Unlock()
+	return s.client.FundPsbt(addrToAmount, lokiPerVbyte)
+}
+
+func (s *Service) FinalizePsbt(packet *psbt.Packet) (*chainutil.Tx, error) {
+	s.cmux.Lock()
+	defer s.cmux.Unlock()
+	return s.client.FinalizePsbt(packet)
+}
+
+func (s *Service) PublishTransaction(tx *chainutil.Tx) error {
+	s.cmux.Lock()
+	defer s.cmux.Unlock()
+	return s.client.PublishTransaction(tx)
 }
 
 func (s *Service) GetLastEvent() *Update {

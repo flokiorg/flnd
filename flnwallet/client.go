@@ -24,8 +24,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const MaxTransactionsLimit = 1000
-
 var (
 	ErrWalletNotFound      = errors.New("wallet not found")
 	ErrWalletAlreadyExists = errors.New("wallet already exists")
@@ -44,6 +42,7 @@ type Client struct {
 	walletKit      walletrpc.WalletKitClient
 	stateClient    lnrpc.StateClient
 	ntfClient      chainrpc.ChainNotifierClient
+	chainKit       chainrpc.ChainKitClient
 
 	health      chan *Update
 	config      *flnd.Config
@@ -58,7 +57,15 @@ type Client struct {
 	isSynced          bool
 	syncedHeight      uint32
 	mu                sync.Mutex
+
+	txFetchLimit uint32
 }
+
+const (
+	defaultRPCTimeout       = 5 * time.Second
+	transactionFetchTimeout = 30 * time.Second
+	transactionPageSize     = 1000
+)
 
 func NewClient(ctx context.Context, conn *grpc.ClientConn, config *flnd.Config) *Client {
 	c := &Client{
@@ -67,6 +74,7 @@ func NewClient(ctx context.Context, conn *grpc.ClientConn, config *flnd.Config) 
 		walletKit:      walletrpc.NewWalletKitClient(conn),
 		stateClient:    lnrpc.NewStateClient(conn),
 		ntfClient:      chainrpc.NewChainNotifierClient(conn),
+		chainKit:       chainrpc.NewChainKitClient(conn),
 		// Buffer health updates to avoid dropping important state transitions
 		health: make(chan *Update, 16),
 		ctx:    ctx,
@@ -176,13 +184,17 @@ func (c *Client) subscribeState() {
 			}
 
 		case lnrpc.WalletState_SERVER_ACTIVE:
-			_, blockHeight, err := c.IsSynced()
+			synced, blockHeight, err := c.IsSynced()
 			if err != nil {
 				c.kill(err)
 				return
 			}
 
-			c.submitHealth(Update{State: StatusReady, BlockHeight: blockHeight})
+			if !synced {
+				c.submitHealth(Update{State: StatusSyncing, BlockHeight: blockHeight})
+				go c.pollSyncStatus()
+			}
+
 			c.subTxsOnce.Do(func() {
 				go c.subscribeTransactions()
 				go c.subscribeBlocks()
@@ -270,7 +282,9 @@ func (c *Client) WalletExists() (bool, error) {
 		return false, ErrDaemonNotRunning
 	}
 
-	_, err := c.lnClient.GetInfo(c.withMacaroon(), &lnrpc.GetInfoRequest{})
+	ctx, cancel := c.rpcContext(0)
+	defer cancel()
+	_, err := c.lnClient.GetInfo(ctx, &lnrpc.GetInfoRequest{})
 	if err == nil {
 		return true, nil // wallet exists and is accessible
 	}
@@ -290,7 +304,9 @@ func (c *Client) IsSynced() (bool, uint32, error) {
 		return false, 0, ErrDaemonNotRunning
 	}
 
-	resp, err := c.lnClient.GetInfo(c.withMacaroon(), &lnrpc.GetInfoRequest{})
+	ctx, cancel := c.rpcContext(0)
+	defer cancel()
+	resp, err := c.lnClient.GetInfo(ctx, &lnrpc.GetInfoRequest{})
 
 	// If the RPC server is still starting up, treat it as not synced yet,
 	// but don't surface an error so callers can keep polling smoothly.
@@ -445,14 +461,16 @@ func (c *Client) Balance() (*lnrpc.WalletBalanceResponse, error) {
 	if c.closing {
 		return nil, ErrDaemonNotRunning
 	}
-	resp, err := c.lnClient.WalletBalance(c.withMacaroon(), &lnrpc.WalletBalanceRequest{
+	ctx, cancel := c.rpcContext(0)
+	defer cancel()
+	resp, err := c.lnClient.WalletBalance(ctx, &lnrpc.WalletBalanceRequest{
 		MinConfs: 0,
 	})
 	if err != nil {
-		if matchRPCErrorMessage(err, rpcperms.ErrRPCStarting) {
-			// Treat as not-ready, return zero balance without error.
-			return &lnrpc.WalletBalanceResponse{}, nil
-		}
+		// if matchRPCErrorMessage(err, rpcperms.ErrRPCStarting) {
+		// 	// Treat as not-ready, return zero balance without error.
+		// 	return &lnrpc.WalletBalanceResponse{}, nil
+		// }
 		return nil, err
 	}
 
@@ -665,11 +683,14 @@ func (c *Client) FetchTransactions() ([]*lnrpc.Transaction, error) {
 	offset := uint32(0)
 	allTxs := []*lnrpc.Transaction{}
 
+	maxResults := c.txFetchLimit
 	for {
-		resp, err := c.lnClient.GetTransactions(c.withMacaroon(), &lnrpc.GetTransactionsRequest{
-			MaxTransactions: MaxTransactionsLimit,
+		ctx, cancel := c.rpcContext(transactionFetchTimeout)
+		resp, err := c.lnClient.GetTransactions(ctx, &lnrpc.GetTransactionsRequest{
+			MaxTransactions: transactionPageSize,
 			IndexOffset:     offset,
 		})
+		cancel()
 		if err != nil {
 			if matchRPCErrorMessage(err, rpcperms.ErrRPCStarting) {
 				// Not ready yet; return whatever we have (cache or empty)
@@ -678,13 +699,22 @@ func (c *Client) FetchTransactions() ([]*lnrpc.Transaction, error) {
 				}
 				return []*lnrpc.Transaction{}, nil
 			}
+			if matchRPCErrorMessage(err, context.DeadlineExceeded) {
+				return nil, fmt.Errorf("rpc connection timeout")
+			}
 			return nil, err
 		}
 
 		allTxs = append(allTxs, resp.Transactions...)
 		offset += uint32(len(resp.Transactions))
+		if maxResults > 0 && len(allTxs) >= int(maxResults) {
+			if len(allTxs) > int(maxResults) {
+				allTxs = allTxs[:maxResults]
+			}
+			break
+		}
 
-		if len(resp.Transactions) < MaxTransactionsLimit {
+		if uint32(len(resp.Transactions)) < transactionPageSize {
 			break
 		}
 	}
@@ -703,6 +733,26 @@ func (c *Client) FetchTransactions() ([]*lnrpc.Transaction, error) {
 func (c *Client) withMacaroon() context.Context {
 	md := metadata.Pairs("macaroon", c.adminMacHex)
 	return metadata.NewOutgoingContext(c.ctx, md)
+}
+
+func (c *Client) rpcContext(timeout time.Duration) (context.Context, context.CancelFunc) {
+	if timeout <= 0 {
+		timeout = defaultRPCTimeout
+	}
+	if c.config.ConnectionTimeout > 0 && timeout > c.config.ConnectionTimeout {
+		timeout = c.config.ConnectionTimeout
+	}
+	ctx, cancel := context.WithTimeout(c.ctx, timeout)
+	md := metadata.Pairs("macaroon", c.adminMacHex)
+	return metadata.NewOutgoingContext(ctx, md), cancel
+}
+
+func (c *Client) SetMaxTransactionsLimit(limit uint32) {
+	if limit == 0 {
+		c.txFetchLimit = 0
+	} else {
+		c.txFetchLimit = limit
+	}
 }
 
 func readMacaroon(path string) (string, error) {

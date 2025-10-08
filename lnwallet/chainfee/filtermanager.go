@@ -224,7 +224,7 @@ func isWithinBounds(filter SatPerKVByte) bool {
 	case 0:
 		return false
 
-	case chainutil.MaxLoki:
+	case SatPerKVByte(chainutil.MaxLoki):
 		return false
 	}
 
