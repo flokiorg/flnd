@@ -537,7 +537,7 @@ func (c *Client) SimpleTransferFee(address chainutil.Address, amount chainutil.A
 	return resp, nil
 }
 
-func (c *Client) FundPsbt(addrToAmount map[string]int64, lokiPerVbyte uint64) (*psbt.Packet, error) {
+func (c *Client) FundPsbt(addrToAmount map[string]int64, lokiPerVbyte uint64) (*FundedPsbt, error) {
 	if c.closing {
 		return nil, ErrDaemonNotRunning
 	}
@@ -570,7 +570,21 @@ func (c *Client) FundPsbt(addrToAmount map[string]int64, lokiPerVbyte uint64) (*
 		return nil, err
 	}
 
-	return packet, nil
+	locks := make([]*OutputLock, 0, len(resp.LockedUtxos))
+	for _, utxo := range resp.LockedUtxos {
+		if utxo == nil || utxo.Outpoint == nil {
+			continue
+		}
+		locks = append(locks, &OutputLock{
+			ID:       utxo.Id,
+			Outpoint: utxo.Outpoint,
+		})
+	}
+
+	return &FundedPsbt{
+		Packet: packet,
+		Locks:  locks,
+	}, nil
 }
 
 func (c *Client) FinalizePsbt(packet *psbt.Packet) (*chainutil.Tx, error) {
@@ -617,6 +631,31 @@ func (c *Client) PublishTransaction(tx *chainutil.Tx) error {
 
 	if resp.PublishError != "" {
 		return fmt.Errorf(resp.PublishError)
+	}
+
+	return nil
+}
+
+func (c *Client) ReleaseOutputs(locks []*OutputLock) error {
+	if len(locks) == 0 {
+		return nil
+	}
+	if c.closing {
+		return ErrDaemonNotRunning
+	}
+
+	for _, lock := range locks {
+		if lock == nil || len(lock.ID) == 0 || lock.Outpoint == nil {
+			continue
+		}
+
+		_, err := c.walletKit.ReleaseOutput(c.withMacaroon(), &walletrpc.ReleaseOutputRequest{
+			Id:       lock.ID,
+			Outpoint: lock.Outpoint,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

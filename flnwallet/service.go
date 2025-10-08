@@ -38,6 +38,16 @@ type Update struct {
 	BlockHash                 string
 }
 
+type OutputLock struct {
+	ID       []byte
+	Outpoint *lnrpc.OutPoint
+}
+
+type FundedPsbt struct {
+	Packet *psbt.Packet
+	Locks  []*OutputLock
+}
+
 type ServiceConfig struct {
 	Walletdir            string        `short:"w" long:"walletdir"  description:"Directory for Flokicoin Lightning Network"`
 	RegressionTest       bool          `long:"regtest" description:"Use the regression test network"`
@@ -326,7 +336,7 @@ func (s *Service) Fee(address chainutil.Address, amount chainutil.Amount) (*lnrp
 	return s.client.SimpleTransferFee(address, amount)
 }
 
-func (s *Service) FundPsbt(addrToAmount map[string]int64, lokiPerVbyte uint64) (*psbt.Packet, error) {
+func (s *Service) FundPsbt(addrToAmount map[string]int64, lokiPerVbyte uint64) (*FundedPsbt, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
 	return s.client.FundPsbt(addrToAmount, lokiPerVbyte)
@@ -342,6 +352,15 @@ func (s *Service) PublishTransaction(tx *chainutil.Tx) error {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
 	return s.client.PublishTransaction(tx)
+}
+
+func (s *Service) ReleaseOutputs(locks []*OutputLock) error {
+	if len(locks) == 0 {
+		return nil
+	}
+	s.cmux.Lock()
+	defer s.cmux.Unlock()
+	return s.client.ReleaseOutputs(locks)
 }
 
 func (s *Service) GetLastEvent() *Update {
