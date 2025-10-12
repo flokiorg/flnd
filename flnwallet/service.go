@@ -336,10 +336,10 @@ func (s *Service) Fee(address chainutil.Address, amount chainutil.Amount) (*lnrp
 	return s.client.SimpleTransferFee(address, amount)
 }
 
-func (s *Service) FundPsbt(addrToAmount map[string]int64, lokiPerVbyte uint64) (*FundedPsbt, error) {
+func (s *Service) FundPsbt(addrToAmount map[string]int64, lokiPerVbyte uint64, lockExpirationSeconds uint64) (*FundedPsbt, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
-	return s.client.FundPsbt(addrToAmount, lokiPerVbyte)
+	return s.client.FundPsbt(addrToAmount, lokiPerVbyte, lockExpirationSeconds)
 }
 
 func (s *Service) FinalizePsbt(packet *psbt.Packet) (*chainutil.Tx, error) {
