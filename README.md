@@ -6,7 +6,7 @@ complete [Lightning Network](https://lightning.network) node for Flokicoin with
 pluggable back-end chain services, including the Flokicoin full node and a
 light client:
 
-- Full node: [`go-flokicoin`](https://github.com/flokiorg/go-flokicoin) (fork of btcd)
+- Full node: [`go-flokicoin`](https://github.com/flokiorg/go-flokicoin)
 - Light client: [`flokicoin-neutrino`](https://github.com/flokiorg/flokicoin-neutrino)
 
 FLND exports the familiar gRPC and REST APIs from lnd and reuses many of the
