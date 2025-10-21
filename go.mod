@@ -334,8 +334,8 @@ require (
 
 require (
 	github.com/flokiorg/flokicoin-neutrino v0.16.3-beta
-	github.com/flokiorg/go-flokicoin v0.25.7-beta
-	github.com/flokiorg/walletd v0.1.3-beta
+	github.com/flokiorg/go-flokicoin v0.25.8-beta
+	github.com/flokiorg/walletd v0.1.4-beta
 	github.com/golangci/golangci-lint v1.64.8
 	github.com/golangci/plugin-module-register v0.1.1
 	github.com/rinchsan/gosimports v0.3.8
