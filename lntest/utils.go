@@ -7,9 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/flokiorg/flnd"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/lnrpc"
 	"github.com/flokiorg/flnd/lntest/wait"
@@ -290,27 +288,11 @@ func CalcStaticFeeBuffer(c lnrpc.CommitmentType, numHTLCs int) chainutil.Amount 
 // tests.
 func CustomRecordsWithUnaccountable(
 	originalRecords lnwire.CustomRecords) map[uint64][]byte {
-
-	if !ExperimentalAccountabilityActive() {
-		// Return nil if there are no records, to match wire encoding.
-		if len(originalRecords) == 0 {
-			return nil
-		}
-
-		return originalRecords.Copy()
-	}
-
 	return originalRecords.MergedCopy(map[uint64][]byte{
 		uint64(lnwire.ExperimentalAccountableType): {
 			lnwire.ExperimentalUnaccountable,
 		}},
 	)
-}
-
-// ExperimentalAccountabilityActive returns true if the experimental accountability
-// window is still open.
-func ExperimentalAccountabilityActive() bool {
-	return time.Now().Before(flnd.AccountabilityExperimentEnd)
 }
 
 // LnrpcOutpointToStr returns a string representation of an lnrpc.OutPoint.
