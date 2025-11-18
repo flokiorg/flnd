@@ -22,22 +22,22 @@
 # Bug Fixes
 
 * [Fixed `OpenChannel` with
-  `fund_max`](https://github.com/lightningnetwork/lnd/pull/10488) to use the
+  `fund_max`](https://github.com/flokiorg/flnd/pull/10488) to use the
   protocol-level maximum channel size instead of the user-configured
   `maxchansize`. The `maxchansize` config option is intended only for limiting
   incoming channel requests from peers, not outgoing ones.
 
 - Chain notifier RPCs now [return the gRPC `Unavailable`
-  status](https://github.com/lightningnetwork/lnd/pull/10352) while the
+  status](https://github.com/flokiorg/flnd/pull/10352) while the
   sub-server is still starting. This allows clients to reliably detect the
   transient condition and retry without brittle string matching.
 
-- [Fixed an issue](https://github.com/lightningnetwork/lnd/pull/10399) where the
+- [Fixed an issue](https://github.com/flokiorg/flnd/pull/10399) where the
   TLS manager would fail to start if only one of the TLS pair files (certificate
   or key) existed. The manager now correctly regenerates both files when either
   is missing, preventing "file not found" errors on startup.
 
-- [Fixed race conditions](https://github.com/lightningnetwork/lnd/pull/10420) in
+- [Fixed race conditions](https://github.com/flokiorg/flnd/pull/10420) in
   the channel graph database. The `Node.PubKey()` and
   `ChannelEdgeInfo.NodeKey1/NodeKey2()` methods had check-then-act races when
   caching parsed public keys. Additionally, `DisconnectBlockAtHeight` was
@@ -45,7 +45,7 @@
   has been removed from the public key parsing methods, and proper mutex
   protection has been added to the cache access in `DisconnectBlockAtHeight`.
 
-- [Fixed TLV decoders to reject malformed records with incorrect lengths](https://github.com/lightningnetwork/lnd/pull/10249). 
+- [Fixed TLV decoders to reject malformed records with incorrect lengths](https://github.com/flokiorg/flnd/pull/10249). 
   TLV decoders now strictly enforce fixed-length requirements for Fee (8 bytes),
   Musig2Nonce (66 bytes), ShortChannelID (8 bytes), Vertex (33 bytes), and
   DBytes33 (33 bytes) records, preventing malformed TLV data from being
@@ -53,7 +53,7 @@
 
 # New Features
 
-- Basic Support for [onion messaging forwarding](https://github.com/lightningnetwork/lnd/pull/9868) 
+- Basic Support for [onion messaging forwarding](https://github.com/flokiorg/flnd/pull/9868) 
   consisting of a new message type, `OnionMessage`. This includes the message's
   definition, comprising a path key and an onion blob, along with the necessary
   serialization and deserialization logic for peer-to-peer communication.
@@ -63,7 +63,7 @@
 ## RPC Additions
 
 * [Added support for coordinator-based MuSig2 signing
-  patterns](https://github.com/lightningnetwork/lnd/pull/10436) with two new
+  patterns](https://github.com/flokiorg/flnd/pull/10436) with two new
   RPCs: `MuSig2RegisterCombinedNonce` allows registering a pre-aggregated
   combined nonce for a session (useful when a coordinator aggregates all nonces
   externally), and `MuSig2GetCombinedNonce` retrieves the combined nonce after
@@ -71,7 +71,7 @@
   `MuSig2RegisterNonces` workflow and are only supported in MuSig2 v1.0.0rc2.
 
 * The `EstimateFee` RPC now supports [explicit input
-  selection](https://github.com/lightningnetwork/lnd/pull/10296). Users can
+  selection](https://github.com/flokiorg/flnd/pull/10296). Users can
   specify a list of inputs to use as transaction inputs via the new
   `inputs` field in `EstimateFeeRequest`.
 
@@ -83,8 +83,8 @@
 # Improvements
 ## Functional Updates
 
-* [Added support](https://github.com/lightningnetwork/lnd/pull/9432) for the
-  `upfront-shutdown-address` configuration in `lnd.conf`, allowing users to
+* [Added support](https://github.com/flokiorg/flnd/pull/9432) for the
+  `upfront-shutdown-address` configuration in `flnd.conf`, allowing users to
   specify an address for cooperative channel closures where funds will be sent.
   This applies to both funders and fundees, with the ability to override the
   value during channel opening or acceptance.
@@ -92,7 +92,7 @@
 ## RPC Updates
 
 * routerrpc HTLC event subscribers now receive specific failure details for
-  invoice-level validation failures, avoiding ambiguous `UNKNOWN` results. [#10520](https://github.com/lightningnetwork/lnd/pull/10520)
+  invoice-level validation failures, avoiding ambiguous `UNKNOWN` results. [#10520](https://github.com/flokiorg/flnd/pull/10520)
 
 ## lncli Updates
 
@@ -106,7 +106,7 @@
 
   The deprecated `--sat_per_byte` option will be fully removed. This flag was
   originally deprecated and hidden from the lncli commands in v0.13.0
-  ([PR#4704](https://github.com/lightningnetwork/lnd/pull/4704)). Users should
+  ([PR#4704](https://github.com/flokiorg/flnd/pull/4704)). Users should
   migrate to the `--sat_per_vbyte` option, which correctly represents fee rates
   in terms of virtual bytes (vbytes).
   
@@ -131,7 +131,7 @@
 
 ## Testing
 
-* [Added unit tests for TLV length validation across multiple packages](https://github.com/lightningnetwork/lnd/pull/10249). 
+* [Added unit tests for TLV length validation across multiple packages](https://github.com/flokiorg/flnd/pull/10249). 
   New tests  ensure that fixed-size TLV decoders reject malformed records with
   invalid lengths, including roundtrip tests for Fee, Musig2Nonce,
   ShortChannelID and Vertex records.
@@ -139,7 +139,7 @@
 ## Database
 
 * Freeze the [graph SQL migration 
-  code](https://github.com/lightningnetwork/lnd/pull/10338) to prevent the 
+  code](https://github.com/flokiorg/flnd/pull/10338) to prevent the 
   need for maintenance as the sqlc code evolves. 
 
 ## Code Health
