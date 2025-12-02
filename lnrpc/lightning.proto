@@ -1041,7 +1041,7 @@ message ChannelAcceptResponse {
     The reserve amount in satoshis that we require the remote peer to adhere to.
     We require that the remote peer always have some reserve amount allocated to
     them so that there is always a disincentive to broadcast old state (if they
-    hold 0 sats on their side of the channel, there is nothing to lose).
+    hold 0 loki on their side of the channel, there is nothing to lose).
     */
     uint64 reserve_sat = 6;
 

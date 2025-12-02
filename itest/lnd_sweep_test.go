@@ -46,7 +46,7 @@ import (
 func testSweepCPFPAnchorOutgoingTimeout(ht *lntest.HarnessTest) {
 	// Setup testing params.
 	//
-	// Invoice is 100k sats.
+	// Invoice is 100k loki.
 	invoiceAmt := chainutil.Amount(100_000)
 
 	// Use the smallest CLTV so we can mine fewer blocks.
@@ -374,7 +374,7 @@ func testSweepCPFPAnchorOutgoingTimeout(ht *lntest.HarnessTest) {
 func testSweepCPFPAnchorIncomingTimeout(ht *lntest.HarnessTest) {
 	// Setup testing params.
 	//
-	// Invoice is 100k sats.
+	// Invoice is 100k loki.
 	invoiceAmt := chainutil.Amount(100_000)
 
 	// Use the smallest CLTV so we can mine fewer blocks.
@@ -703,7 +703,7 @@ func testSweepCPFPAnchorIncomingTimeout(ht *lntest.HarnessTest) {
 func testSweepHTLCs(ht *lntest.HarnessTest) {
 	// Setup testing params.
 	//
-	// Invoice is 100k sats.
+	// Invoice is 100k loki.
 	invoiceAmt := chainutil.Amount(100_000)
 
 	// Use the smallest CLTV so we can mine fewer blocks.
@@ -1265,7 +1265,7 @@ func testSweepCommitOutputAndAnchor(ht *lntest.HarnessTest) {
 	// sweeping starts.
 	toLocalCSV := 2
 
-	// htlcAmt is the amount of the HTLC in sats, this should be Alice's
+	// htlcAmt is the amount of the HTLC in loki, this should be Alice's
 	// to_remote amount that goes to Bob.
 	htlcAmt := int64(100_000)
 
@@ -1587,7 +1587,7 @@ func runBumpFee(ht *lntest.HarnessTest, alice *node.HarnessNode) {
 		ht.Skipf("skipping BumpFee test for neutrino backend")
 	}
 
-	// startFeeRate is the min fee rate in sats/vbyte. This value should be
+	// startFeeRate is the min fee rate in loki/vbyte. This value should be
 	// used as the starting fee rate when the default no deadline is used.
 	startFeeRate := uint64(1)
 
@@ -1809,7 +1809,7 @@ func runBumpFee(ht *lntest.HarnessTest, alice *node.HarnessNode) {
 	// rate.
 	assertFeeRateEqual(testFeeRate)
 
-	// testBudget specifies a budget in sats.
+	// testBudget specifies a budget in loki.
 	testBudget := uint64(float64(value) * 0.1)
 
 	// Fourth bump request - we will specify the budget and expect a fee
@@ -1908,7 +1908,7 @@ func runBumpFee(ht *lntest.HarnessTest, alice *node.HarnessNode) {
 	// that has,
 	// - starting fee rate: 1 sat/vbyte.
 	// - deadline: 1.
-	// - budget: 1000 sats.
+	// - budget: 1000 loki.
 	bumpFeeReq = &walletrpc.BumpFeeRequest{
 		Outpoint: op,
 		// We use a force param to create the sweeping tx immediately.
@@ -1948,7 +1948,7 @@ func runBumpFee(ht *lntest.HarnessTest, alice *node.HarnessNode) {
 	// - broadcast attempts: 7.
 	// - starting fee rate: 8 sat/vbyte.
 	// - deadline: 1.
-	// - budget: 1000 sats.
+	// - budget: 1000 loki.
 	sweepTx7 := assertPendingSweepResp(
 		7, smallBudget, uint32(currentHeight+1), expectedStartFeeRate,
 	)
@@ -2057,7 +2057,7 @@ func testBumpForceCloseFee(ht *lntest.HarnessTest) {
 	// input) and 1 p2tr output. This transaction has a weight of approx.
 	// 725 wu. This info helps us to calculate the delta of the fee
 	// function.
-	// EndFeeRate: 100_000 sats/725 wu * 1000 = 137931 sat/kw
+	// EndFeeRate: 100_000 loki/725 wu * 1000 = 137931 sat/kw
 	// StartingFeeRate: 5000 sat/kw
 	// delta = (137931-5000)/1008 = 132 sat/kw (which is lower than
 	// 250 sat/kw) => hence we are violating BIP 125 Rule 4, which is
@@ -2167,7 +2167,7 @@ func testFeeReplacement(ht *lntest.HarnessTest) {
 
 	// Setup testing params.
 	//
-	// Invoice is 100k sats.
+	// Invoice is 100k loki.
 	invoiceAmt := chainutil.Amount(100_000)
 
 	// Alice will send two payments.
@@ -2395,14 +2395,14 @@ func testBumpFeeLowBudget(ht *lntest.HarnessTest) {
 		"--sweeper.maxfeerate=10000",
 	})
 
-	// Fund Alice 2 UTXOs, each has 100k sats. One of the UTXOs will be used
+	// Fund Alice 2 UTXOs, each has 100k loki. One of the UTXOs will be used
 	// to create a tx which she sends some coins to herself. The other will
 	// be used as the budget when CPFPing the above tx.
 	coin := chainutil.Amount(100_000)
 	ht.FundCoins(coin, alice)
 	ht.FundCoins(coin, alice)
 
-	// Alice sends 50k sats to herself.
+	// Alice sends 50k loki to herself.
 	tx := ht.SendCoins(alice, alice, coin/2)
 	txid := tx.TxHash()
 
@@ -2411,8 +2411,8 @@ func testBumpFeeLowBudget(ht *lntest.HarnessTest) {
 	resp := alice.RPC.WalletBalance()
 
 	// balance is the expected final balance. Alice's initial balance is
-	// 200k sats, with 100k sats as the budget for the sweeping tx, which
-	// means her final balance should be 100k sats minus the mining fees
+	// 200k loki, with 100k loki as the budget for the sweeping tx, which
+	// means her final balance should be 100k loki minus the mining fees
 	// used in the above `SendCoins`.
 	balance := chainutil.Amount(
 		resp.UnconfirmedBalance + resp.ConfirmedBalance,
@@ -2523,7 +2523,7 @@ func testBumpFeeLowBudget(ht *lntest.HarnessTest) {
 	// Assert the above sweeping tx is still in the mempool.
 	ht.AssertTxInMempool(sweepTx2.TxHash())
 
-	// Fund Alice 200k sats, which will be used to cover the budget.
+	// Fund Alice 200k loki, which will be used to cover the budget.
 	//
 	// TODO(yy): We are funding Alice more than enough - at this stage Alice
 	// has a confirmed UTXO of `coin` amount in her wallet, so ideally we

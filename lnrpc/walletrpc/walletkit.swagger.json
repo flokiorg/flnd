@@ -1447,7 +1447,7 @@
         "budget": {
           "type": "string",
           "format": "uint64",
-          "description": "Optional. The max amount in sats that can be used as the fees. Setting this\nvalue greater than the input's value may result in CPFP - one or more wallet\nutxos will be used to pay the fees specified by the budget. If not set, for\nnew inputs, by default 50% of the input's value will be treated as the\nbudget for fee bumping; for existing inputs, their current budgets will be\nretained."
+          "description": "Optional. The max amount in loki that can be used as the fees. Setting this\nvalue greater than the input's value may result in CPFP - one or more wallet\nutxos will be used to pay the fees specified by the budget. If not set, for\nnew inputs, by default 50% of the input's value will be treated as the\nbudget for fee bumping; for existing inputs, their current budgets will be\nretained."
         },
         "deadline_delta": {
           "type": "integer",
@@ -1489,7 +1489,7 @@
         "budget": {
           "type": "string",
           "format": "uint64",
-          "description": "Optional. The max amount in sats that can be used as the fees. For already\nregistered anchor outputs if not set explicitly the old value will be used.\nFor channel force closes which have no HTLCs in their commitment transaction\nthis value has to be set to an appropriate amount to pay for the cpfp\ntransaction of the force closed channel otherwise the fee bumping will fail."
+          "description": "Optional. The max amount in loki that can be used as the fees. For already\nregistered anchor outputs if not set explicitly the old value will be used.\nFor channel force closes which have no HTLCs in their commitment transaction\nthis value has to be set to an appropriate amount to pay for the cpfp\ntransaction of the force closed channel otherwise the fee bumping will fail."
         },
         "target_conf": {
           "type": "integer",

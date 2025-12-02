@@ -791,7 +791,7 @@ func (a *aliasCache) get(ctxc context.Context, pubkey string) string {
 	return alias
 }
 
-// formatMsat formats msat amounts as fractional sats.
+// formatMsat formats msat amounts as fractional loki.
 func formatMsat(amt int64) string {
 	return strconv.FormatFloat(float64(amt)/1000.0, 'f', -1, 64)
 }

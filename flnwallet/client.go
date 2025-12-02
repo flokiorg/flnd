@@ -32,8 +32,10 @@ var (
 
 type txCache struct {
 	Txs         []*lnrpc.Transaction
-	NextOffset  uint32 // Offset to fetch the next page
+	LastIndex   uint64 // Index of the newest cached transaction in lnd
+	NextOffset  uint32 // Offset to fetch the next page (total cached count)
 	LastUpdated time.Time
+	Dirty       bool
 }
 
 type Client struct {
@@ -61,10 +63,16 @@ type Client struct {
 	txFetchLimit uint32
 }
 
+type FetchTransactionsOptions struct {
+	ForceRescan bool
+	IgnoreLimit bool
+}
+
 const (
 	defaultRPCTimeout       = 5 * time.Second
 	transactionFetchTimeout = 30 * time.Second
 	transactionPageSize     = 1000
+	transactionsCacheTTL    = 5 * time.Minute
 )
 
 func NewClient(ctx context.Context, conn *grpc.ClientConn, config *flnd.Config) *Client {
@@ -80,9 +88,9 @@ func NewClient(ctx context.Context, conn *grpc.ClientConn, config *flnd.Config) 
 		ctx:    ctx,
 		config: config,
 		cache: &txCache{
-			Txs:         []*lnrpc.Transaction{},
-			NextOffset:  0,
+			Txs:         make([]*lnrpc.Transaction, 0),
 			LastUpdated: time.Time{},
+			Dirty:       true,
 		},
 	}
 
@@ -106,7 +114,17 @@ func (c *Client) subscribeTransactions() {
 			return
 		}
 
+		c.invalidateTxCache()
 		c.submitHealth(Update{State: StatusTransaction, Transaction: r})
+	}
+}
+
+func (c *Client) invalidateTxCache() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.cache != nil {
+		c.cache.Dirty = true
 	}
 }
 
@@ -135,7 +153,13 @@ func (c *Client) subscribeBlocks() {
 		}
 		c.mu.Unlock()
 
-		c.submitHealth(Update{State: state, SyncedHeight: syncedHeight, BlockHeight: r.Height, BlockHash: hex.EncodeToString(r.Hash)})
+		c.invalidateTxCache()
+		c.submitHealth(Update{
+			State:        state,
+			SyncedHeight: syncedHeight,
+			BlockHeight:  r.Height,
+			BlockHash:    hex.EncodeToString(r.Hash),
+		})
 	}
 }
 
@@ -240,6 +264,14 @@ func (c *Client) pollSyncStatus() {
 			synced, blockHeight, err := c.IsSynced()
 			if err != nil {
 				continue
+			}
+
+			recoveryInfo, recoveryErr := c.GetRecoveryInfo()
+			if recoveryErr == nil && recoveryInfo != nil && recoveryInfo.RecoveryMode {
+				if recoveryInfo.RecoveryMode && recoveryInfo.RecoveryFinished {
+					c.submitHealth(Update{State: StatusReady, BlockHeight: blockHeight})
+					return
+				}
 			}
 			if synced {
 				c.submitHealth(Update{State: StatusReady, BlockHeight: blockHeight})
@@ -475,6 +507,44 @@ func (c *Client) Balance() (*lnrpc.WalletBalanceResponse, error) {
 	}
 
 	return resp, nil
+}
+
+func (c *Client) GetRecoveryInfo() (*lnrpc.GetRecoveryInfoResponse, error) {
+	if c.closing {
+		return nil, ErrDaemonNotRunning
+	}
+	ctx, cancel := c.rpcContext(0)
+	defer cancel()
+
+	return c.lnClient.GetRecoveryInfo(ctx, &lnrpc.GetRecoveryInfoRequest{})
+}
+
+func (c *Client) ListUnspent(minConfs, maxConfs int32) ([]*lnrpc.Utxo, error) {
+	if c.closing {
+		return nil, ErrDaemonNotRunning
+	}
+	ctx, cancel := c.rpcContext(0)
+	defer cancel()
+
+	resp, err := c.walletKit.ListUnspent(ctx, &walletrpc.ListUnspentRequest{MinConfs: 0, MaxConfs: 0})
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetUtxos(), nil
+}
+
+func (c *Client) VerifyMessageWithAddress(address string, message string, signature string) (*walletrpc.VerifyMessageWithAddrResponse, error) {
+	if c.closing {
+		return nil, ErrDaemonNotRunning
+	}
+	ctx, cancel := c.rpcContext(0)
+	defer cancel()
+
+	return c.walletKit.VerifyMessageWithAddr(ctx, &walletrpc.VerifyMessageWithAddrRequest{
+		Addr:      address,
+		Msg:       []byte(message),
+		Signature: signature,
+	})
 }
 
 func (c *Client) ChangePassphrase(old, new string) error {
@@ -715,29 +785,139 @@ func (c *Client) ListAddresses() ([]*walletrpc.AccountWithAddresses, error) {
 	return resp.AccountWithAddresses, nil
 }
 
+func (c *Client) SignMessageWithAddress(address string, message string) (string, error) {
+	if c.closing {
+		return "", ErrDaemonNotRunning
+	}
+	ctx, cancel := c.rpcContext(0)
+	defer cancel()
+
+	resp, err := c.walletKit.SignMessageWithAddr(ctx, &walletrpc.SignMessageWithAddrRequest{
+		Addr: address,
+		Msg:  []byte(message),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return resp.GetSignature(), nil
+}
+
+func (c *Client) VerifyMessage(message string, signature string) (*lnrpc.VerifyMessageResponse, error) {
+	if c.closing {
+		return nil, ErrDaemonNotRunning
+	}
+	ctx, cancel := c.rpcContext(0)
+	defer cancel()
+
+	return c.lnClient.VerifyMessage(ctx, &lnrpc.VerifyMessageRequest{
+		Msg:       []byte(message),
+		Signature: signature,
+	})
+}
+
 func (c *Client) FetchTransactions() ([]*lnrpc.Transaction, error) {
+	return c.FetchTransactionsWithOptions(FetchTransactionsOptions{})
+}
+func (c *Client) FetchTransactionsWithOptions(opts FetchTransactionsOptions) ([]*lnrpc.Transaction, error) {
 	if c.closing {
 		return nil, ErrDaemonNotRunning
 	}
 
-	offset := uint32(0)
-	allTxs := []*lnrpc.Transaction{}
+	c.mu.Lock()
+	limit := int(c.txFetchLimit)
+	if opts.IgnoreLimit {
+		limit = 0
+	}
 
-	maxResults := c.txFetchLimit
+	cache := c.cache
+	// Fast-path: valid cache, not dirty, TTL ok, and no new tx since LastIndex.
+	if cache != nil && !cache.Dirty && !opts.ForceRescan && time.Since(cache.LastUpdated) <= transactionsCacheTTL {
+		lastIndex := cache.LastIndex
+		c.mu.Unlock()
+
+		// Probe for new transactions after the last known index.
+		ctx, cancel := c.rpcContext(5 * time.Second)
+		probe, err := c.lnClient.GetTransactions(ctx, &lnrpc.GetTransactionsRequest{
+			MaxTransactions: 1,
+			IndexOffset:     uint32(lastIndex + 1),
+		})
+		cancel()
+
+		// If probe failed in a transient way, still serve cached but surface the error.
+		if err != nil && matchRPCErrorMessage(err, rpcperms.ErrRPCStarting) {
+			c.mu.Lock()
+			if c.cache != nil && len(c.cache.Txs) > 0 {
+				cached := append([]*lnrpc.Transaction(nil), c.cache.Txs...)
+				if limit > 0 && len(cached) > limit {
+					cached = cached[:limit]
+				}
+				c.mu.Unlock()
+				return cached, fmt.Errorf("backend starting: %w", err)
+			}
+			c.mu.Unlock()
+		}
+
+		// No new tx: return cached.
+		if err == nil && len(probe.Transactions) == 0 {
+			c.mu.Lock()
+			if c.cache != nil {
+				c.cache.LastUpdated = time.Now()
+				cached := append([]*lnrpc.Transaction(nil), c.cache.Txs...)
+				if limit > 0 && len(cached) > limit {
+					cached = cached[:limit]
+				}
+				c.mu.Unlock()
+				return cached, nil
+			}
+			c.mu.Unlock()
+		}
+	} else {
+		c.mu.Unlock()
+	}
+
+	// Build starting cursor and snapshot existing txs safely under lock.
+	var (
+		cursor   uint64
+		existing []*lnrpc.Transaction
+	)
+
+	c.mu.Lock()
+	if c.cache != nil && !opts.ForceRescan {
+		// Resume from the last index we saw (+1). This avoids gaps/dups if new txs arrive during paging.
+		cursor = c.cache.LastIndex + 1
+
+		// Deep copy slice header under lock (elements are pointers; snapshot is fine for read-only).
+		if len(c.cache.Txs) > 0 {
+			existing = append(existing, c.cache.Txs...)
+		}
+	}
+	c.mu.Unlock()
+
+	collected := make([]*lnrpc.Transaction, 0, 256)
+	lastIndex := uint64(0)
+
 	for {
 		ctx, cancel := c.rpcContext(transactionFetchTimeout)
 		resp, err := c.lnClient.GetTransactions(ctx, &lnrpc.GetTransactionsRequest{
 			MaxTransactions: transactionPageSize,
-			IndexOffset:     offset,
+			IndexOffset:     uint32(cursor),
 		})
 		cancel()
 		if err != nil {
+			// Serve cached data but surface the condition to the caller.
 			if matchRPCErrorMessage(err, rpcperms.ErrRPCStarting) {
-				// Not ready yet; return whatever we have (cache or empty)
-				if len(c.cache.Txs) > 0 {
-					return c.cache.Txs, nil
+				c.mu.Lock()
+				if c.cache != nil && len(c.cache.Txs) > 0 {
+					cached := append([]*lnrpc.Transaction(nil), c.cache.Txs...)
+					if limit > 0 && len(cached) > limit {
+						cached = cached[:limit]
+					}
+					c.mu.Unlock()
+					return cached, fmt.Errorf("backend starting: %w", err)
 				}
-				return []*lnrpc.Transaction{}, nil
+				c.mu.Unlock()
+				return []*lnrpc.Transaction{}, fmt.Errorf("backend starting: %w", err)
 			}
 			if matchRPCErrorMessage(err, context.DeadlineExceeded) {
 				return nil, fmt.Errorf("rpc connection timeout")
@@ -745,29 +925,94 @@ func (c *Client) FetchTransactions() ([]*lnrpc.Transaction, error) {
 			return nil, err
 		}
 
-		allTxs = append(allTxs, resp.Transactions...)
-		offset += uint32(len(resp.Transactions))
-		if maxResults > 0 && len(allTxs) >= int(maxResults) {
-			if len(allTxs) > int(maxResults) {
-				allTxs = allTxs[:maxResults]
-			}
+		// Always update lastIndex from the response, even on empty pages.
+		lastIndex = resp.LastIndex
+
+		if len(resp.Transactions) == 0 {
 			break
 		}
 
+		collected = append(collected, resp.Transactions...)
+
+		// Advance cursor using server-driven index to avoid gaps/dups.
+		cursor = uint64(resp.LastIndex) + 1
+		if cursor > uint64(^uint32(0)) { // clamp to API type
+			cursor = uint64(^uint32(0))
+			break
+		}
+
+		// If we received fewer than a full page, likely no more data.
 		if uint32(len(resp.Transactions)) < transactionPageSize {
 			break
 		}
 	}
 
-	c.cache.Txs = allTxs
-	c.cache.NextOffset = offset
-	c.cache.LastUpdated = time.Now()
+	// Merge existing cache + newly collected.
+	allTxs := make([]*lnrpc.Transaction, 0, len(existing)+len(collected))
+	if len(existing) > 0 {
+		allTxs = append(allTxs, existing...)
+	}
+	if len(collected) > 0 {
+		allTxs = append(allTxs, collected...)
+	}
 
-	sort.Slice(c.cache.Txs, func(i, j int) bool {
-		return c.cache.Txs[i].NumConfirmations < c.cache.Txs[j].NumConfirmations
+	// Sort newest-first by (TimeStamp, BlockHeight). Stable sort preserves input order for ties.
+	sort.SliceStable(allTxs, func(i, j int) bool {
+		if allTxs[i].TimeStamp != allTxs[j].TimeStamp {
+			return allTxs[i].TimeStamp > allTxs[j].TimeStamp
+		}
+		if allTxs[i].BlockHeight != allTxs[j].BlockHeight {
+			return allTxs[i].BlockHeight > allTxs[j].BlockHeight
+		}
+		return false // preserve original order for ties
 	})
 
-	return c.cache.Txs, nil
+	// Deduplicate by TxHash while preserving order (post-sort).
+	if len(allTxs) > 1 {
+		seen := make(map[string]struct{}, len(allTxs))
+		dedup := allTxs[:0]
+		for _, tx := range allTxs {
+			h := tx.TxHash
+			if _, ok := seen[h]; ok {
+				continue
+			}
+			seen[h] = struct{}{}
+			dedup = append(dedup, tx)
+		}
+		allTxs = dedup
+	}
+
+	// Persist cache atomically.
+	c.mu.Lock()
+	if c.cache != nil {
+		snapshot := append([]*lnrpc.Transaction(nil), allTxs...)
+		c.cache.Txs = snapshot
+		c.cache.LastIndex = lastIndex
+		// NextOffset is defined as the index to resume from (= lastIndex+1), clamped to uint32.
+		next := lastIndex + 1
+		if next > uint64(^uint32(0)) {
+			c.cache.NextOffset = ^uint32(0)
+		} else {
+			c.cache.NextOffset = uint32(next)
+		}
+		c.cache.LastUpdated = time.Now()
+		c.cache.Dirty = false
+
+		result := snapshot
+		c.mu.Unlock()
+
+		if limit > 0 && len(result) > limit {
+			result = result[:limit]
+		}
+		return append([]*lnrpc.Transaction(nil), result...), nil
+	}
+	c.mu.Unlock()
+
+	result := append([]*lnrpc.Transaction(nil), allTxs...)
+	if limit > 0 && len(result) > limit {
+		result = result[:limit]
+	}
+	return result, nil
 }
 
 func (c *Client) withMacaroon() context.Context {
@@ -788,10 +1033,13 @@ func (c *Client) rpcContext(timeout time.Duration) (context.Context, context.Can
 }
 
 func (c *Client) SetMaxTransactionsLimit(limit uint32) {
-	if limit == 0 {
-		c.txFetchLimit = 0
-	} else {
-		c.txFetchLimit = limit
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.txFetchLimit = limit
+
+	if c.cache != nil {
+		c.cache.Dirty = true
 	}
 }
 

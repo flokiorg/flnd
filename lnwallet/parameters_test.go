@@ -40,7 +40,7 @@ func TestDefaultRoutingFeeLimitForAmount(t *testing.T) {
 	for _, test := range tests {
 		test := test
 
-		t.Run(fmt.Sprintf("%d sats", test.amount), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d loki", test.amount), func(t *testing.T) {
 			feeLimit := DefaultRoutingFeeLimitForAmount(test.amount)
 			require.Equal(t, int64(test.expectedLimit), int64(feeLimit))
 		})

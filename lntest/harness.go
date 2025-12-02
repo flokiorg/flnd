@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	// defaultMinerFeeRate specifies the fee rate in sats when sending
+	// defaultMinerFeeRate specifies the fee rate in loki when sending
 	// outputs from the miner.
 	defaultMinerFeeRate = 7500
 

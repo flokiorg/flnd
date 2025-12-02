@@ -8,6 +8,8 @@ import (
 	"github.com/flokiorg/flnd"
 	"github.com/flokiorg/flnd/lncfg"
 	"github.com/flokiorg/flnd/lnrpc"
+	"github.com/flokiorg/flnd/lnrpc/walletrpc"
+	"github.com/flokiorg/flnd/signal"
 	"github.com/flokiorg/go-flokicoin/chaincfg"
 	"github.com/flokiorg/go-flokicoin/chainutil"
 	"github.com/flokiorg/go-flokicoin/chainutil/psbt"
@@ -49,14 +51,15 @@ type FundedPsbt struct {
 }
 
 type ServiceConfig struct {
-	Walletdir            string        `short:"w" long:"walletdir"  description:"Directory for Flokicoin Lightning Network"`
-	RegressionTest       bool          `long:"regtest" description:"Use the regression test network"`
-	Testnet              bool          `long:"testnet" description:"Use the test network"`
-	ConnectionTimeout    time.Duration `short:"t" long:"connectiontimeout" default:"50s" description:"The timeout value for network connections. Valid time units are {ms, s, m, h}."`
-	DebugLevel           string        `short:"d" long:"debuglevel" default:"info" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical}"`
-	ConnectPeers         []string      `long:"connect" description:"Connect only to the specified peers at startup"`
-	Feeurl               string        `long:"feeurl" description:"Custom fee estimation API endpoint (Required on mainnet)"`
-	MaxTransactionsLimit int           `long:"maxtransactionslimit" description:"Maximum number of transactions to fetch per request"`
+	Walletdir               string        `short:"w" long:"walletdir"  description:"Directory for Flokicoin Lightning Network"`
+	RegressionTest          bool          `long:"regtest" description:"Use the regression test network"`
+	Testnet                 bool          `long:"testnet" description:"Use the test network"`
+	ConnectionTimeout       time.Duration `short:"t" long:"connectiontimeout" default:"50s" description:"The timeout value for network connections. Valid time units are {ms, s, m, h}."`
+	DebugLevel              string        `short:"d" long:"debuglevel" default:"info" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical}"`
+	ConnectPeers            []string      `long:"connect" description:"Connect only to the specified peers at startup"`
+	Feeurl                  string        `long:"feeurl" description:"Custom fee estimation API endpoint (Required on mainnet)"`
+	TransactionDisplayLimit int           `long:"transactiondisplaylimit" description:"Maximum number of transactions to fetch per request"`
+	ResetWalletTransactions bool          `long:"resetwallettransactions" description:"Reset wallet transactions on startup to trigger a full rescan"`
 
 	TLSExtraIPs     []string `long:"tlsextraip" description:"Adds an extra ip to the generated certificate"`
 	TLSExtraDomains []string `long:"tlsextradomain" description:"Adds an extra domain to the generated certificate"`
@@ -78,14 +81,16 @@ type Service struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	flndConfig   *flnd.Config
-	client       *Client
-	daemon       *daemon
-	cmux         sync.Mutex
-	wg           sync.WaitGroup
-	running      bool
-	lastEvent    *Update
-	txFetchLimit uint32
+	flndConfig           *flnd.Config
+	configMu             sync.Mutex
+	client               *Client
+	daemon               *daemon
+	cmux                 sync.Mutex
+	wg                   sync.WaitGroup
+	running              bool
+	lastEvent            *Update
+	maxTransactionsLimit uint32
+	stopOnce             sync.Once
 }
 
 func New(pctx context.Context, cfg *ServiceConfig) *Service {
@@ -109,6 +114,7 @@ func New(pctx context.Context, cfg *ServiceConfig) *Service {
 	conf.RawListeners = append(conf.RawListeners, cfg.RawListeners...)
 	conf.RestCORS = append(conf.RestCORS, cfg.RestCORS...)
 	conf.TLSAutoRefresh = cfg.TLSAutoRefresh
+	conf.ResetWalletTransactions = cfg.ResetWalletTransactions
 	switch cfg.Network {
 	case &chaincfg.MainNetParams:
 		conf.Bitcoin.MainNet = true
@@ -125,11 +131,11 @@ func New(pctx context.Context, cfg *ServiceConfig) *Service {
 	}
 
 	s := &Service{
-		lastEvent:    &Update{State: StatusInit},
-		flndConfig:   &conf,
-		ctx:          ctx,
-		cancel:       cancel,
-		txFetchLimit: uint32(cfg.MaxTransactionsLimit),
+		lastEvent:            &Update{State: StatusInit},
+		flndConfig:           &conf,
+		ctx:                  ctx,
+		cancel:               cancel,
+		maxTransactionsLimit: uint32(cfg.TransactionDisplayLimit),
 	}
 
 	go s.run()
@@ -141,20 +147,62 @@ func (s *Service) run() {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
+	retryDelay := time.Second
+	const maxRetryDelay = 30 * time.Second
+
 	for {
 		select {
 		case <-s.ctx.Done():
+			s.stopDaemon()
 			return
 
 		default:
 
 			s.notifySubscribers(&Update{State: StatusNone})
-			d := newDaemon(s.ctx, s.flndConfig)
+			interceptor, err := signal.Intercept()
+			if err != nil {
+				s.notifySubscribers(&Update{State: StatusDown, Err: err})
+				if !s.waitForRetry(retryDelay) {
+					return
+				}
+				if retryDelay < maxRetryDelay {
+					retryDelay = retryDelay * 2
+					if retryDelay > maxRetryDelay {
+						retryDelay = maxRetryDelay
+					}
+				}
+				continue
+			}
+
+			d, err := newDaemon(s.ctx, s.cloneConfig(), interceptor)
+			if err != nil {
+				s.notifySubscribers(&Update{State: StatusDown, Err: err})
+				if !s.waitForRetry(retryDelay) {
+					return
+				}
+				if retryDelay < maxRetryDelay {
+					retryDelay = retryDelay * 2
+					if retryDelay > maxRetryDelay {
+						retryDelay = maxRetryDelay
+					}
+				}
+				continue
+			}
 			c, err := d.start()
 			if err != nil {
 				s.notifySubscribers(&Update{State: StatusDown, Err: err})
+				if !s.waitForRetry(retryDelay) {
+					return
+				}
+				if retryDelay < maxRetryDelay {
+					retryDelay = retryDelay * 2
+					if retryDelay > maxRetryDelay {
+						retryDelay = maxRetryDelay
+					}
+				}
 				continue
 			}
+			retryDelay = time.Second
 			s.running = true
 			ctx, cancel := context.WithCancel(s.ctx)
 			go func() {
@@ -183,14 +231,53 @@ func (s *Service) run() {
 	}
 }
 
-func (s *Service) Stop() {
-	if !s.running {
-		return
+func (s *Service) waitForRetry(delay time.Duration) bool {
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+
+	select {
+	case <-s.ctx.Done():
+		return false
+	case <-timer.C:
+		return true
 	}
-	s.cancel()
-	s.unsubscribeAll()
-	s.wg.Wait()
-	s.running = false
+}
+
+func (s *Service) cloneConfig() *flnd.Config {
+	s.configMu.Lock()
+	defer s.configMu.Unlock()
+
+	cfg := *s.flndConfig
+	cfg.TLSExtraDomains = append([]string(nil), s.flndConfig.TLSExtraDomains...)
+	cfg.TLSExtraIPs = append([]string(nil), s.flndConfig.TLSExtraIPs...)
+	cfg.RawRPCListeners = append([]string(nil), s.flndConfig.RawRPCListeners...)
+	cfg.RawRESTListeners = append([]string(nil), s.flndConfig.RawRESTListeners...)
+	cfg.RawListeners = append([]string(nil), s.flndConfig.RawListeners...)
+	cfg.RestCORS = append([]string(nil), s.flndConfig.RestCORS...)
+	cfg.NeutrinoMode.ConnectPeers = append([]string(nil), s.flndConfig.NeutrinoMode.ConnectPeers...)
+	return &cfg
+}
+
+func (s *Service) Stop() {
+	s.stopOnce.Do(func() {
+		s.stopDaemon()
+		s.cancel()
+		s.unsubscribeAll()
+		s.wg.Wait()
+		s.running = false
+	})
+}
+
+func (s *Service) stopDaemon() {
+	s.cmux.Lock()
+	defer s.cmux.Unlock()
+
+	if s.daemon != nil {
+		s.daemon.stop()
+		s.daemon.waitForShutdown()
+		s.daemon = nil
+		s.client = nil
+	}
 }
 
 func (s *Service) Restart(pctx context.Context) {
@@ -204,7 +291,46 @@ func (s *Service) registerConnection(d *daemon, c *Client) {
 	defer s.cmux.Unlock()
 	s.client = c
 	s.daemon = d
-	c.SetMaxTransactionsLimit(s.txFetchLimit)
+	c.SetMaxTransactionsLimit(s.maxTransactionsLimit)
+	s.configMu.Lock()
+	s.flndConfig.ResetWalletTransactions = false
+	s.configMu.Unlock()
+}
+
+func (s *Service) TriggerRescan() error {
+	s.configMu.Lock()
+	s.flndConfig.ResetWalletTransactions = true
+	s.configMu.Unlock()
+
+	s.Restart(context.Background())
+	return nil
+}
+
+func (s *Service) GetRecoveryInfo() (*lnrpc.GetRecoveryInfoResponse, error) {
+	s.cmux.Lock()
+	defer s.cmux.Unlock()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
+	return s.client.GetRecoveryInfo()
+}
+
+func (s *Service) ListUnspent(minConfs, maxConfs int32) ([]*lnrpc.Utxo, error) {
+	s.cmux.Lock()
+	defer s.cmux.Unlock()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
+	return s.client.ListUnspent(minConfs, maxConfs)
+}
+
+func (s *Service) VerifyMessage(address, message, signature string) (*walletrpc.VerifyMessageWithAddrResponse, error) {
+	s.cmux.Lock()
+	defer s.cmux.Unlock()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
+	return s.client.VerifyMessageWithAddress(address, message, signature)
 }
 
 func (s *Service) Subscribe() <-chan *Update {
@@ -267,90 +393,157 @@ func (s *Service) unsubscribeAll() {
 func (s *Service) CreateWallet(passphrase string) (string, []string, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return "", nil, ErrDaemonNotRunning
+	}
 	return s.client.Create(passphrase)
 }
 
 func (s *Service) Balance() (*lnrpc.WalletBalanceResponse, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
 	return s.client.Balance()
 }
 
 func (s *Service) IsLocked() (bool, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return false, ErrDaemonNotRunning
+	}
 	return s.client.IsLocked()
 }
 
 func (s *Service) Unlock(passphrase string) error {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return ErrDaemonNotRunning
+	}
 	return s.client.Unlock(passphrase)
 }
 
 func (s *Service) WalletExists() (bool, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return false, ErrDaemonNotRunning
+	}
 	return s.client.WalletExists()
 }
 
 func (s *Service) FetchTransactions() ([]*lnrpc.Transaction, error) {
+	return s.FetchTransactionsWithOptions(FetchTransactionsOptions{})
+}
+
+func (s *Service) FetchTransactionsWithOptions(opts FetchTransactionsOptions) ([]*lnrpc.Transaction, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
-	return s.client.FetchTransactions()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
+	return s.client.FetchTransactionsWithOptions(opts)
 }
 
 func (s *Service) GetNextAddress(t lnrpc.AddressType) (chainutil.Address, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
 	return s.client.GetNextAddress(t)
+}
+
+func (s *Service) SignMessage(address string, message string) (string, error) {
+	s.cmux.Lock()
+	defer s.cmux.Unlock()
+	if s.client == nil {
+		return "", ErrDaemonNotRunning
+	}
+	return s.client.SignMessageWithAddress(address, message)
+}
+
+func (s *Service) ListAddresses() ([]*walletrpc.AccountWithAddresses, error) {
+	s.cmux.Lock()
+	defer s.cmux.Unlock()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
+	return s.client.ListAddresses()
 }
 
 func (s *Service) RestoreByMnemonic(mnemonic []string, passphrase string) (string, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return "", ErrDaemonNotRunning
+	}
 	return s.client.RestoreByMnemonic(mnemonic, passphrase)
 }
 
 func (s *Service) RestoreByEncipheredSeed(strEncipheredSeed, passphrase string) ([]string, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
 	return s.client.RestoreByEncipheredSeed(strEncipheredSeed, passphrase)
 }
 
 func (s *Service) ChangePassphrase(old, new string) error {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return ErrDaemonNotRunning
+	}
 	return s.client.ChangePassphrase(old, new)
 }
 
 func (s *Service) Transfer(address chainutil.Address, amount chainutil.Amount, lokiPerVbyte uint64) (string, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return "", ErrDaemonNotRunning
+	}
 	return s.client.SimpleTransfer(address, amount, lokiPerVbyte)
 }
 
 func (s *Service) Fee(address chainutil.Address, amount chainutil.Amount) (*lnrpc.EstimateFeeResponse, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
 	return s.client.SimpleTransferFee(address, amount)
 }
 
 func (s *Service) FundPsbt(addrToAmount map[string]int64, lokiPerVbyte uint64, lockExpirationSeconds uint64) (*FundedPsbt, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
 	return s.client.FundPsbt(addrToAmount, lokiPerVbyte, lockExpirationSeconds)
 }
 
 func (s *Service) FinalizePsbt(packet *psbt.Packet) (*chainutil.Tx, error) {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
 	return s.client.FinalizePsbt(packet)
 }
 
 func (s *Service) PublishTransaction(tx *chainutil.Tx) error {
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return ErrDaemonNotRunning
+	}
 	return s.client.PublishTransaction(tx)
 }
 
@@ -360,6 +553,9 @@ func (s *Service) ReleaseOutputs(locks []*OutputLock) error {
 	}
 	s.cmux.Lock()
 	defer s.cmux.Unlock()
+	if s.client == nil {
+		return ErrDaemonNotRunning
+	}
 	return s.client.ReleaseOutputs(locks)
 }
 

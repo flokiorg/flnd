@@ -147,7 +147,7 @@ func testMultiHopPayments(ht *lntest.HarnessTest) {
 
 	// To forward a payment of 1062 sat, Dave is charging a fee of 5 sat +
 	// 15% = 164.3 sat. For 5 payments this is 821.5 sat. This test works
-	// with sats, so we need to round down to 821.
+	// with loki, so we need to round down to 821.
 	const expectedFeeDave = 821
 
 	// Carol needs to pay what Dave pays plus Dave's fee.

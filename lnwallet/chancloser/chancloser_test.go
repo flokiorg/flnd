@@ -420,7 +420,7 @@ func TestMaxFeeBailOut(t *testing.T) {
 			// NOTE: We use the absoluteFee here since our mock
 			// always returns this fee for the CalcFee method which
 			// is used to translate a fee rate
-			// into an absolute fee amount in sats.
+			// into an absolute fee amount in loki.
 			closeMsg := &lnwire.ClosingSigned{
 				FeeSatoshis: absoluteFee * 2,
 			}

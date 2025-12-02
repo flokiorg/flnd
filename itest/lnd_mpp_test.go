@@ -332,21 +332,21 @@ type mppOpenChannelRequest struct {
 }
 
 // setupSendPaymentCase opens channels between the nodes for testing the
-// `SendPaymentV2` case, where a payment amount of 300,000 sats is used and it
-// tests sending three attempts: the first has 150,000 sats, the rest two have
-// 75,000 sats. It returns the payment amt.
+// `SendPaymentV2` case, where a payment amount of 300,000 loki is used and it
+// tests sending three attempts: the first has 150,000 loki, the rest two have
+// 75,000 loki. It returns the payment amt.
 func (c *mppTestScenario) setupSendPaymentCase() chainutil.Amount {
 	// To ensure the payment goes through separate paths, we'll set a
 	// channel size that can only carry one HTLC attempt at a time. We'll
 	// divide the payment into 3 attempts.
 	//
-	// Set the payment amount to be 300,000 sats. When a route cannot be
+	// Set the payment amount to be 300,000 loki. When a route cannot be
 	// found for a given payment amount, we will halven the amount and try
 	// the pathfinding again, which means we need to see the following
 	// three attempts to succeed:
-	// 1. 1st attempt: 150,000 sats.
-	// 2. 2nd attempt: 75,000 sats.
-	// 3. 3rd attempt: 75,000 sats.
+	// 1. 1st attempt: 150,000 loki.
+	// 2. 2nd attempt: 75,000 loki.
+	// 3. 3rd attempt: 75,000 loki.
 	paymentAmt := chainutil.Amount(300_000)
 
 	// Prepare to open channels between the nodes. Given our expected
@@ -375,22 +375,22 @@ func (c *mppTestScenario) setupSendPaymentCase() chainutil.Amount {
 
 	// Given the above setup, the only possible routes to send each of the
 	// attempts are:
-	// - 1st attempt(150,000 sats): Alice->Carol->Bob: 200,000 sats.
-	// - 2nd attempt(75,000 sats): Alice->Dave->Bob: 155,000 sats.
-	// - 3rd attempt(75,000 sats): Alice->Carol->Eve->Bob: 155,000 sats.
+	// - 1st attempt(150,000 loki): Alice->Carol->Bob: 200,000 loki.
+	// - 2nd attempt(75,000 loki): Alice->Dave->Bob: 155,000 loki.
+	// - 3rd attempt(75,000 loki): Alice->Carol->Eve->Bob: 155,000 loki.
 	//
 	// There is a case where the payment will fail due to the channel
 	// bandwidth not being updated in the graph, which has been seen many
 	// times:
-	// 1. the 1st attempt (150,000 sats) is sent via
+	// 1. the 1st attempt (150,000 loki) is sent via
 	//    Alice->Carol->Eve->Bob, after which the capacity in Carol->Eve
 	//    should decrease.
-	// 2. the 2nd attempt (75,000 sats) is sent via Alice->Carol->Eve->Bob,
+	// 2. the 2nd attempt (75,000 loki) is sent via Alice->Carol->Eve->Bob,
 	//    which shouldn't happen because the capacity in Carol->Eve is
 	//    depleted. However, since the HTLCs are sent in parallel, the 2nd
 	//    attempt can be sent before the capacity is updated in the graph.
 	// 3. if the 2nd attempt succeeds, the 1st attempt will fail and be
-	//    split into two attempts, each holding 75,000 sats. At this point,
+	//    split into two attempts, each holding 75,000 loki. At this point,
 	//    we have three attempts to send, but only two routes are
 	//    available, causing the payment to be failed.
 	// 4. In addition, with recent fee buffer addition, the attempts will
@@ -413,15 +413,15 @@ func (c *mppTestScenario) setupSendPaymentCase() chainutil.Amount {
 }
 
 // setupSendToRouteCase opens channels between the nodes for testing the
-// `SendToRouteV2` case, where a payment amount of 300,000 sats is used and it
-// tests sending three attempts each holding 100,000 sats. It returns the
+// `SendToRouteV2` case, where a payment amount of 300,000 loki is used and it
+// tests sending three attempts each holding 100,000 loki. It returns the
 // payment amount and attempt amount.
 func (c *mppTestScenario) setupSendToRouteCase() (chainutil.Amount,
 	chainutil.Amount) {
 
 	// To ensure the payment goes through separate paths, we'll set a
 	// channel size that can only carry one HTLC attempt at a time. We'll
-	// divide the payment into 3 attempts, each holding 100,000 sats.
+	// divide the payment into 3 attempts, each holding 100,000 loki.
 	paymentAmt := chainutil.Amount(300_000)
 	attemptAmt := chainutil.Amount(100_000)
 
@@ -451,9 +451,9 @@ func (c *mppTestScenario) setupSendToRouteCase() (chainutil.Amount,
 
 	// Given the above setup, the only possible routes to send each of the
 	// attempts are:
-	// - 1st attempt(100,000 sats): Alice->Carol->Bob: 150,000 sats.
-	// - 2nd attempt(100,000 sats): Alice->Dave->Bob: 150,000 sats.
-	// - 3rd attempt(100,000 sats): Alice->Carol->Eve->Bob: 150,000 sats.
+	// - 1st attempt(100,000 loki): Alice->Carol->Bob: 150,000 loki.
+	// - 2nd attempt(100,000 loki): Alice->Dave->Bob: 150,000 loki.
+	// - 3rd attempt(100,000 loki): Alice->Carol->Eve->Bob: 150,000 loki.
 	//
 	// Open the channels as described above.
 	c.openChannels(req)

@@ -45,7 +45,7 @@ type TxRecord struct {
 	// the following values.
 	Txid chainhash.Hash
 
-	// FeeRate is the fee rate of the sweeping tx, unit is sats/kw.
+	// FeeRate is the fee rate of the sweeping tx, unit is loki/kw.
 	FeeRate uint64
 
 	// Fee is the fee of the sweeping tx, unit is sat.

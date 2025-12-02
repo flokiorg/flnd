@@ -1077,7 +1077,7 @@ func (l *RemoteCloseStart) ProcessEvent(event ProtocolEvent, env *Environment,
 		}
 
 		chancloserLog.Infof("ChannelPoint(%v): received sig (fee=%v "+
-			"sats) from remote party, signing new tx=%v",
+			"loki) from remote party, signing new tx=%v",
 			env.ChanPoint, msg.SigMsg.FeeSatoshis,
 			lnutils.SpewLogClosure(closeTx),
 		)

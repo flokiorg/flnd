@@ -132,9 +132,9 @@ func fetchBitcoindFilters(client *rpcclient.Client) ([]SatPerKWeight, error) {
 		// is in fractions of a bitcoin that represents the satoshis
 		// per KvB. We need to convert this fraction to whole satoshis
 		// by multiplying with COIN. Then we need to convert the
-		// sats/KvB to sats/KW.
+		// loki/KvB to loki/KW.
 		//
-		// Convert the sats/KvB from fractions of a bitcoin to whole
+		// Convert the loki/KvB from fractions of a bitcoin to whole
 		// satoshis.
 		filterKVByte := SatPerKVByte(
 			peerResp.MinFeeFilter * chainutil.LokiPerFlokicoin,

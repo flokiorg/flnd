@@ -172,8 +172,8 @@ that validate `ChannelAnnouncement` messages.
         "min_relay_feerate": 1000
     }
   ```
-  All units are `sats/kvB`. If the new field `min_relay_feerate` is not set,
-  the default floor feerate (1012 sats/kvB) will be used.
+  All units are `loki/kvB`. If the new field `min_relay_feerate` is not set,
+  the default floor feerate (1012 loki/kvB) will be used.
 
 * Commitment fees are now taken into account when [calculating the fee
   exposure threshold](https://github.com/lightningnetwork/lnd/pull/8824).

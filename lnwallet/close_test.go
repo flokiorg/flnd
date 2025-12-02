@@ -23,7 +23,7 @@ func genValidAmount(t *rapid.T, label string) chainutil.Amount {
 
 // genCoopCloseFee generates a reasonable non-zero cooperative close fee.
 func genCoopCloseFee(t *rapid.T) chainutil.Amount {
-	// Generate a fee between 250-10000 sats which is a reasonable range for
+	// Generate a fee between 250-10000 loki which is a reasonable range for
 	// closing transactions
 	return chainutil.Amount(
 		rapid.Int64Range(250, 10_000).Draw(t, "coop_close_fee"),
@@ -112,7 +112,7 @@ func genFeePayer(t *rapid.T) fn.Option[lntypes.ChannelParty] {
 
 // genCommitFee generates a reasonable non-zero commitment fee.
 func genCommitFee(t *rapid.T) chainutil.Amount {
-	// Generate a reasonable commit fee between 100-5000 sats
+	// Generate a reasonable commit fee between 100-5000 loki
 	return chainutil.Amount(
 		rapid.Int64Range(100, 5_000).Draw(t, "commit_fee"),
 	)

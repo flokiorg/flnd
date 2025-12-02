@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/flokiorg/flnd/signal"
 )
 
 var (
@@ -13,7 +15,15 @@ var (
 func openConnection(t *testing.T) *daemon {
 
 	conf := createConfig(t)
-	d := newDaemon(context.Background(), &conf)
+	interceptor, err := signal.Intercept()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	d, err := newDaemon(context.Background(), &conf, interceptor)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	return d
 }

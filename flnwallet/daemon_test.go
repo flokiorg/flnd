@@ -8,6 +8,7 @@ import (
 
 	"github.com/flokiorg/flnd"
 	"github.com/flokiorg/flnd/lncfg"
+	"github.com/flokiorg/flnd/signal"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -37,7 +38,15 @@ func TestDaemonConnection(t *testing.T) {
 
 			conf := createConfig(t)
 
-			d := newDaemon(context.Background(), &conf)
+			interceptor, err := signal.Intercept()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			d, err := newDaemon(context.Background(), &conf, interceptor)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if _, err := d.start(); err != nil {
 				t.Fatal(err)
 			}

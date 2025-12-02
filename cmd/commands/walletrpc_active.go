@@ -301,7 +301,7 @@ var bumpFeeCommand = cli.Command{
 		cli.Uint64Flag{
 			Name: "budget",
 			Usage: `
-	The max amount in sats that can be used as the fees. Setting this value
+	The max amount in loki that can be used as the fees. Setting this value
 	greater than the input's value may result in CPFP - one or more wallet
 	utxos will be used to pay the fees specified by the budget. If not set,
 	for new inputs, by default 50% of the input's value will be treated as
@@ -420,7 +420,7 @@ var bumpCloseFeeCommand = cli.Command{
 		cli.Uint64Flag{
 			Name: "budget",
 			Usage: `
-	The max amount in sats that can be used as the fees. Setting this value
+	The max amount in loki that can be used as the fees. Setting this value
 	greater than the input's value may result in CPFP - one or more wallet
 	utxos will be used to pay the fees specified by the budget. If not set,
 	for new inputs, by default 50% of the input's value will be treated as
@@ -487,7 +487,7 @@ var bumpForceCloseFeeCommand = cli.Command{
 		cli.Uint64Flag{
 			Name: "budget",
 			Usage: `
-	The max amount in sats that can be used as the fees. For already
+	The max amount in loki that can be used as the fees. For already
 	registered anchor outputs if not set explicitly the old value will be
 	used. For channel force closes which have no HTLCs in their commitment
 	transaction this value has to be set to an appropriate amount to pay for
@@ -514,7 +514,7 @@ func bumpForceCloseFee(ctx *cli.Context) error {
 		return err
 	}
 
-	// `sat_per_byte` was deprecated we only use sats/vbyte now.
+	// `sat_per_byte` was deprecated we only use loki/vbyte now.
 	if ctx.IsSet("sat_per_byte") {
 		return fmt.Errorf("deprecated, use sat_per_vbyte instead")
 	}
@@ -848,7 +848,7 @@ var fundTemplatePsbtCommand = cli.Command{
 	The 'outputs' flag decodes addresses and the amount to send respectively
 	in the following JSON format:
 
-	    --outputs='["ExampleAddr:NumCoinsInSatoshis", "SecondAddr:Sats"]'
+	    --outputs='["ExampleAddr:NumCoinsInSatoshis", "SecondAddr:Loki"]'
 
 	The 'outputs' format is different from the 'fund' command as the order
 	is important for being able to specify the change output index, so an
@@ -1201,7 +1201,7 @@ var fundPsbtCommand = cli.Command{
 	The 'outputs' flag decodes addresses and the amount to send respectively
 	in the following JSON format:
 
-	    --outputs='{"ExampleAddr": NumCoinsInSatoshis, "SecondAddr": Sats}'
+	    --outputs='{"ExampleAddr": NumCoinsInSatoshis, "SecondAddr": Loki}'
 
 	The optional 'inputs' flag decodes a JSON list of UTXO outpoints as
 	returned by the listunspent command for example:

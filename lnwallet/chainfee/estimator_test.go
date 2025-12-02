@@ -35,12 +35,12 @@ func TestFeeRateTypes(t *testing.T) {
 		expectedFee := chainutil.Amount(feePerKw * weight / 1000)
 		fee1 := feePerKw.FeeForWeight(weight)
 		if fee1 != expectedFee {
-			t.Fatalf("expected fee of %d sats, got %d sats",
+			t.Fatalf("expected fee of %d loki, got %d loki",
 				expectedFee, fee1)
 		}
 		fee2 := feePerKB.FeeForVSize(vsize)
 		if fee2 != expectedFee {
-			t.Fatalf("expected fee of %d sats, got %d sats",
+			t.Fatalf("expected fee of %d loki, got %d loki",
 				expectedFee, fee2)
 		}
 	}
@@ -59,12 +59,12 @@ func TestFeeRateTypes(t *testing.T) {
 		expectedFee := chainutil.Amount(feePerKB * vsize / 1000)
 		fee1 := feePerKB.FeeForVSize(vsize)
 		if fee1 != expectedFee {
-			t.Fatalf("expected fee of %d sats, got %d sats",
+			t.Fatalf("expected fee of %d loki, got %d loki",
 				expectedFee, fee1)
 		}
 		fee2 := feePerKw.FeeForWeight(weight)
 		if fee2 != expectedFee {
-			t.Fatalf("expected fee of %d sats, got %d sats",
+			t.Fatalf("expected fee of %d loki, got %d loki",
 				expectedFee, fee2)
 		}
 	}

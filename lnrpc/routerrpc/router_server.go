@@ -586,9 +586,9 @@ func (s *Server) probePaymentRequest(ctx context.Context, paymentRequest string,
 	// have to add it to the original payment amount. Only then will the
 	// payment probe be able to determine the correct fee to the last hop
 	// prior to the private destination. For example, if the user wants to
-	// send 1000 sats to a private destination and the last hop's fee is 10
-	// sats, then 1010 sats will have to arrive at the last hop. This means
-	// that the probe has to be dispatched with 1010 sats to correctly
+	// send 1000 loki to a private destination and the last hop's fee is 10
+	// loki, then 1010 loki will have to arrive at the last hop. This means
+	// that the probe has to be dispatched with 1010 loki to correctly
 	// calculate the routing fee.
 	//
 	// Calculate the hop fee for the last hop manually.
@@ -1301,7 +1301,7 @@ func getPair(amtMsat lnwire.MilliLoki, amtSat chainutil.Amount,
 func getMsatPairValue(msatValue lnwire.MilliLoki,
 	satValue chainutil.Amount) (lnwire.MilliLoki, error) {
 
-	// If our msat value converted to sats equals our sat value, we just
+	// If our msat value converted to loki equals our sat value, we just
 	// return the msat value, since the values are the same.
 	if msatValue.ToLokis() == satValue {
 		return msatValue, nil

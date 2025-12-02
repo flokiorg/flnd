@@ -137,7 +137,7 @@ sweeping transaction, and capped at the `--sweeper.maxfeerate`. The ending fee
 rate can be overridden by setting the `--budget` via `bumpfee` cli.
 
 For instance, suppose `lnd` is using `bitcoind` as its fee estimator, and an
-input with a deadline of 1000 blocks and a budget of 200,000 sats is being
+input with a deadline of 1000 blocks and a budget of 200,000 loki is being
 swept in a transaction that has a size of 500 vbytes, the fee function will be
 initialized with:
 
@@ -164,7 +164,7 @@ non-time-sensitive outputs.  To overwrite the default, users can specify a
 value using the config `--sweeper.nodeadlineconftarget`.
 
 To specify the budget, users can use `--sweeper.budget.tolocal` to set the max
-allowed fees in sats, or use `--sweeper.budget.tolocalratio` to set a
+allowed fees in loki, or use `--sweeper.budget.tolocalratio` to set a
 proportion of the `to_local` value to be used as the budget.
 
 #### Sweeping HTLC Outputs
@@ -203,11 +203,11 @@ transaction and accelerate the force close process.
 For CPFP-purpose anchor sweeping, the deadline is the closest deadline value of
 all the HTLCs on the force close transaction. The budget, however, cannot be a
 ratio of the anchor output because the value is too small to contribute
-meaningful fees (330 sats). Since its purpose is to accelerate the force close
+meaningful fees (330 loki). Since its purpose is to accelerate the force close
 transaction so the time-sensitive outputs can be swept, the budget is actually
 drawn from what we call “value under protection”, which is the sum of all HTLC
 outputs minus the sum of their budgets. By default, 50% of this value is used
 as the budget, to customize it, either use
-`--sweeper.budget.anchorcpfp` to specify sats, or use
+`--sweeper.budget.anchorcpfp` to specify loki, or use
 `--sweeper.budget.anchorcpfpratio` to specify a ratio.
 

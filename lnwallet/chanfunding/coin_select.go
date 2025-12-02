@@ -222,7 +222,7 @@ func CoinSelect(feeRate chainfee.SatPerKWeight, amt, dustLimit chainutil.Amount,
 }
 
 // CalculateChangeAmount calculates the change amount being left over when the
-// given total amount of sats is provided as inputs for the required output
+// given total amount of loki is provided as inputs for the required output
 // amount. The calculation takes into account that we might not want to add a
 // change output if the change amount is below the dust limit. The first amount
 // returned is the change amount. If that is non-zero, change is left over and

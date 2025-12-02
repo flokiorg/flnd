@@ -392,7 +392,7 @@
     },
     "/v2/router/send": {
       "post": {
-        "summary": "SendPaymentV2 attempts to route a payment described by the passed\nPaymentRequest to the final destination. The call returns a stream of\npayment updates. When using this RPC, make sure to set a fee limit, as the\ndefault routing fee limit is 0 sats. Without a non-zero fee limit only\nroutes without fees will be attempted which often fails with\nFAILURE_REASON_NO_ROUTE.",
+        "summary": "SendPaymentV2 attempts to route a payment described by the passed\nPaymentRequest to the final destination. The call returns a stream of\npayment updates. When using this RPC, make sure to set a fee limit, as the\ndefault routing fee limit is 0 loki. Without a non-zero fee limit only\nroutes without fees will be attempted which often fails with\nFAILURE_REASON_NO_ROUTE.",
         "operationId": "Router_SendPaymentV2",
         "responses": {
           "200": {
@@ -1703,7 +1703,7 @@
         "fail_amt_sat": {
           "type": "string",
           "format": "int64",
-          "description": "Lowest amount that failed to forward rounded to whole sats. This may be\nset to zero if the failure is independent of amount."
+          "description": "Lowest amount that failed to forward rounded to whole loki. This may be\nset to zero if the failure is independent of amount."
         },
         "fail_amt_msat": {
           "type": "string",
@@ -1718,7 +1718,7 @@
         "success_amt_sat": {
           "type": "string",
           "format": "int64",
-          "description": "Highest amount that we could successfully forward rounded to whole sats."
+          "description": "Highest amount that we could successfully forward rounded to whole loki."
         },
         "success_amt_msat": {
           "type": "string",

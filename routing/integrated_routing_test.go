@@ -214,7 +214,7 @@ var mppTestCases = []mppSendTestCase{
 	// Test that if maxShardSize is set, then all attempts are below the
 	// max shard size, yet still sum up to the total payment amount. A
 	// payment of 30k satoshis with a max shard size of 10k satoshis should
-	// produce 3 payments of 10k sats each.
+	// produce 3 payments of 10k loki each.
 	{
 		name:             "max shard size clamping",
 		graph:            onePathGraph,
@@ -373,8 +373,8 @@ func TestPaymentAddrOnlyNoSplit(t *testing.T) {
 	// path graph where the sender has two paths to the destination.
 	ctx := newIntegratedRoutingContext(t)
 
-	// We'll have a basic graph with 2 mil sats of capacity, with 1 mil
-	// sats available on either end.
+	// We'll have a basic graph with 2 mil loki of capacity, with 1 mil
+	// loki available on either end.
 	const chanSize = 2_000_000
 	twoPathGraph(ctx.graph, chanSize, chanSize)
 

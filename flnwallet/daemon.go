@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/flokiorg/flnd"
 	"github.com/flokiorg/flnd/signal"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/encoding/gzip"
 )
 
 var (
@@ -36,18 +39,21 @@ type daemon struct {
 	client *Client
 }
 
-func newDaemon(pctx context.Context, config *flnd.Config) *daemon {
+func newDaemon(pctx context.Context, config *flnd.Config, interceptor signal.Interceptor) (*daemon, error) {
 
 	ctx, cancel := context.WithCancel(pctx)
 
-	interceptor, _ := signal.Intercept()
+	if interceptor.ShutdownChannel() == nil {
+		cancel()
+		return nil, fmt.Errorf("signal interceptor is required")
+	}
 
 	return &daemon{
 		config:      config,
 		ctx:         ctx,
 		cancel:      cancel,
 		interceptor: interceptor,
-	}
+	}, nil
 }
 
 func (d *daemon) start() (c *Client, err error) {
@@ -79,7 +85,20 @@ func (d *daemon) start() (c *Client, err error) {
 		return nil, fmt.Errorf("unable to open rpc connection, rpc listener is empty")
 	}
 
-	d.conn, err = grpc.NewClient(d.config.RPCListeners[0].String(), grpc.WithTransportCredentials(creds))
+	d.conn, err = grpc.NewClient(d.config.RPCListeners[0].String(),
+		grpc.WithTransportCredentials(creds),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(20*1024*1024),
+			grpc.MaxCallSendMsgSize(20*1024*1024),
+			grpc.UseCompressor(gzip.Name),
+		), grpc.WithConnectParams(grpc.ConnectParams{
+			MinConnectTimeout: 5 * time.Second,
+			Backoff: backoff.Config{
+				BaseDelay:  500 * time.Millisecond,
+				Multiplier: 1.5,
+				MaxDelay:   5 * time.Second,
+			},
+		}))
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +137,7 @@ func (d *daemon) exec(impl *flnd.ImplementationCfg) error {
 
 func (d *daemon) waitForShutdown() {
 	d.wg.Wait()
+	<-d.interceptor.ShutdownChannel()
 	d.closed = true
 }
 

@@ -31,7 +31,7 @@ service Router {
     SendPaymentV2 attempts to route a payment described by the passed
     PaymentRequest to the final destination. The call returns a stream of
     payment updates. When using this RPC, make sure to set a fee limit, as the
-    default routing fee limit is 0 sats. Without a non-zero fee limit only
+    default routing fee limit is 0 loki. Without a non-zero fee limit only
     routes without fees will be attempted which often fails with
     FAILURE_REASON_NO_ROUTE.
     */
@@ -528,7 +528,7 @@ message PairData {
     int64 fail_time = 1;
 
     /*
-    Lowest amount that failed to forward rounded to whole sats. This may be
+    Lowest amount that failed to forward rounded to whole loki. This may be
     set to zero if the failure is independent of amount.
     */
     int64 fail_amt_sat = 2;
@@ -544,7 +544,7 @@ message PairData {
     // Time of last success.
     int64 success_time = 5;
 
-    // Highest amount that we could successfully forward rounded to whole sats.
+    // Highest amount that we could successfully forward rounded to whole loki.
     int64 success_amt_sat = 6;
 
     // Highest amount that we could successfully forward in millisats.

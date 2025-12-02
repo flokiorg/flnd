@@ -36,8 +36,8 @@ type WtClient struct {
 // DefaultWtClientCfg returns the WtClient config struct with some default
 // values populated.
 func DefaultWtClientCfg() *WtClient {
-	// The sweep fee rate used internally by the tower client is in sats/kw
-	// but the config exposed to the user is in sats/byte, so we convert the
+	// The sweep fee rate used internally by the tower client is in loki/kw
+	// but the config exposed to the user is in loki/byte, so we convert the
 	// default here before exposing it to the user.
 	sweepSatsPerVB := wtpolicy.DefaultSweepFeeRate.FeePerVByte()
 	sweepFeeRate := uint64(sweepSatsPerVB)

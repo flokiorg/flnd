@@ -1854,7 +1854,7 @@ func TestRbfCloseClosingNegotiationRemote(t *testing.T) {
 
 		// Next, we'll receive an offer from the remote party, and drive
 		// another RBF iteration. This time, we'll increase the absolute
-		// fee by 1k sats.
+		// fee by 1k loki.
 		feeOffer.SigMsg.FeeSatoshis += 1000
 		absoluteFee = feeOffer.SigMsg.FeeSatoshis
 		closeHarness.assertSingleRemoteRbfIteration(

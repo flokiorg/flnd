@@ -4087,7 +4087,7 @@
         "reserve_sat": {
           "type": "string",
           "format": "uint64",
-          "description": "The reserve amount in satoshis that we require the remote peer to adhere to.\nWe require that the remote peer always have some reserve amount allocated to\nthem so that there is always a disincentive to broadcast old state (if they\nhold 0 sats on their side of the channel, there is nothing to lose)."
+          "description": "The reserve amount in satoshis that we require the remote peer to adhere to.\nWe require that the remote peer always have some reserve amount allocated to\nthem so that there is always a disincentive to broadcast old state (if they\nhold 0 loki on their side of the channel, there is nothing to lose)."
         },
         "in_flight_max_msat": {
           "type": "string",

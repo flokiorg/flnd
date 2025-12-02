@@ -1669,8 +1669,8 @@ func TestBuildRoute(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check that we get the expected route back. The total amount should be
-	// the amount to deliver to hop c (100 sats) plus the max fee for the
-	// connection b->c (6 sats).
+	// the amount to deliver to hop c (100 loki) plus the max fee for the
+	// connection b->c (6 loki).
 	checkHops(rt, []uint64{1, 7}, payAddr)
 	require.Equal(t, lnwire.MilliLoki(106000), rt.TotalAmount)
 
@@ -1681,7 +1681,7 @@ func TestBuildRoute(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check that we get the expected route back. The minimum that we can
-	// send from b to c is 20 sats. Hop b charges 1200 msat for the
+	// send from b to c is 20 loki. Hop b charges 1200 msat for the
 	// forwarding. The channel between hop a and b can carry amounts in the
 	// range [5, 100], so 21200 msats is the minimum amount for this route.
 	checkHops(rt, []uint64{1, 7}, payAddr)

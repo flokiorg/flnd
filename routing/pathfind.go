@@ -747,7 +747,7 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 	// be used.
 	absoluteAttemptCost := defaultAttemptCost * (1/(0.5-timePref/2) - 1)
 
-	log.Debugf("Pathfinding absolute attempt cost: %v sats",
+	log.Debugf("Pathfinding absolute attempt cost: %v loki",
 		absoluteAttemptCost/1000)
 
 	// processEdge is a helper closure that will be used to make sure edges

@@ -3201,7 +3201,7 @@ func (c *ChannelArbitrator) createSweepRequest(
 
 	// Calculate the budget based on the value under protection, which is
 	// the sum of all HTLCs on this commitment subtracted by their budgets.
-	// The anchor output in itself has a small output value of 330 sats so
+	// The anchor output in itself has a small output value of 330 loki so
 	// we also include it in the budget to pay for the cpfp transaction.
 	budget := calculateBudget(
 		value, c.cfg.Budget.AnchorCPFPRatio, c.cfg.Budget.AnchorCPFP,

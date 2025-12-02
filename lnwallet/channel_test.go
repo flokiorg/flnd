@@ -10552,7 +10552,7 @@ func TestAsynchronousSendingContraint(t *testing.T) {
 
 	// Create test channels to test out this state transition. The channel
 	// capactiy is 10 BTC with every side having 5 BTC at start. The fee
-	// rate is static and 6000 sats/kw.
+	// rate is static and 6000 loki/kw.
 	aliceChannel, bobChannel, err := CreateTestChannels(
 		t, channeldb.SingleFunderTweaklessBit,
 	)
@@ -10562,7 +10562,7 @@ func TestAsynchronousSendingContraint(t *testing.T) {
 
 	capacity := aliceChannel.channelState.Capacity
 
-	// Static fee rate of 6000 sats/kw.
+	// Static fee rate of 6000 loki/kw.
 	feePerKw := chainfee.SatPerKWeight(
 		aliceChannel.channelState.LocalCommitment.FeePerKw,
 	)
@@ -10685,7 +10685,7 @@ func TestAsynchronousSendingWithFeeBuffer(t *testing.T) {
 
 	// Create test channels to test out this state transition. The channel
 	// capactiy is 10 BTC with every side having 5 BTC at start. The fee
-	// rate is static and 6000 sats/kw.
+	// rate is static and 6000 loki/kw.
 	aliceChannel, bobChannel, err := CreateTestChannels(
 		t, channeldb.SingleFunderTweaklessBit,
 	)
@@ -10695,7 +10695,7 @@ func TestAsynchronousSendingWithFeeBuffer(t *testing.T) {
 
 	capacity := aliceChannel.channelState.Capacity
 
-	// Static fee rate of 6000 sats/kw.
+	// Static fee rate of 6000 loki/kw.
 	feePerKw := chainfee.SatPerKWeight(
 		aliceChannel.channelState.LocalCommitment.FeePerKw,
 	)
@@ -10876,7 +10876,7 @@ func TestEnforceFeeBuffer(t *testing.T) {
 
 	// Create test channels to test out this state transition. The channel
 	// capactiy is 10 BTC with every side having 5 BTC at start. The fee
-	// rate is static and 6000 sats/kw.
+	// rate is static and 6000 loki/kw.
 	aliceChannel, bobChannel, err := CreateTestChannels(
 		t, channeldb.SingleFunderTweaklessBit,
 	)
@@ -10886,7 +10886,7 @@ func TestEnforceFeeBuffer(t *testing.T) {
 
 	capacity := aliceChannel.channelState.Capacity
 
-	// Static fee rate of 6000 sats/kw.
+	// Static fee rate of 6000 loki/kw.
 	feePerKw := chainfee.SatPerKWeight(
 		aliceChannel.channelState.LocalCommitment.FeePerKw,
 	)

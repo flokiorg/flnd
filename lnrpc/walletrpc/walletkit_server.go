@@ -2714,7 +2714,7 @@ func parseAddrType(addrType AddressType,
 // msgSignaturePrefix is a prefix used to prevent inadvertently signing a
 // transaction or a signature. It is prepended in front of the message and
 // follows the same standard as bitcoin core and btcd.
-const msgSignaturePrefix = "Bitcoin Signed Message:\n"
+const msgSignaturePrefix = "Flokicoin Signed Message:\n"
 
 // SignMessageWithAddr signs a message with the private key of the provided
 // address. The address needs to belong to the lnd wallet.

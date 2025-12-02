@@ -1227,7 +1227,7 @@ message BumpFeeRequest {
     bool immediate = 6;
 
     /*
-    Optional. The max amount in sats that can be used as the fees. Setting this
+    Optional. The max amount in loki that can be used as the fees. Setting this
     value greater than the input's value may result in CPFP - one or more wallet
     utxos will be used to pay the fees specified by the budget. If not set, for
     new inputs, by default 50% of the input's value will be treated as the
@@ -1275,7 +1275,7 @@ message BumpForceCloseFeeRequest {
     bool immediate = 4;
 
     /*
-    Optional. The max amount in sats that can be used as the fees. For already
+    Optional. The max amount in loki that can be used as the fees. For already
     registered anchor outputs if not set explicitly the old value will be used.
     For channel force closes which have no HTLCs in their commitment transaction
     this value has to be set to an appropriate amount to pay for the cpfp

@@ -94,7 +94,7 @@ func runPsbtChanFunding(ht *lntest.HarnessTest, private bool,
 	dave := ht.NewNode("dave", args)
 
 	// We just send enough funds to satisfy the anchor channel reserve for
-	// 5 channels (50k sats).
+	// 5 channels (50k loki).
 	ht.FundCoins(50_000, carol)
 	ht.FundCoins(50_000, dave)
 
@@ -311,7 +311,7 @@ func runPsbtChanFundingExternal(ht *lntest.HarnessTest, private bool,
 	dave := ht.NewNode("dave", args)
 
 	// We just send enough funds to satisfy the anchor channel reserve for
-	// 5 channels (50k sats).
+	// 5 channels (50k loki).
 	ht.FundCoins(50_000, carol)
 	ht.FundCoins(50_000, dave)
 
@@ -1034,7 +1034,7 @@ func runFundAndSignPsbt(ht *lntest.HarnessTest, alice *node.HarnessNode) {
 			sendAllCoinsToAddrType(ht, alice, addrType)
 
 			// Let's fund a PSBT now where we want to send a few
-			// sats to our main address.
+			// loki to our main address.
 			assertPsbtFundSignSpend(
 				ht, alice, fundOutputs, changeType, false,
 			)
@@ -1088,7 +1088,7 @@ func testFundPsbt(ht *lntest.HarnessTest) {
 		}
 	}
 	if bobUtxo == nil {
-		ht.Fatalf("Bob doesn't have a UTXO of at least %d sats",
+		ht.Fatalf("Bob doesn't have a UTXO of at least %d loki",
 			sendAmount)
 	}
 
@@ -1134,7 +1134,7 @@ func testFundPsbt(ht *lntest.HarnessTest) {
 		packet.Inputs[0].SighashType = txscript.SigHashAll
 	}
 
-	// We have the template now. Bob basically funds the 5 million Sats to
+	// We have the template now. Bob basically funds the 5 million Loki to
 	// send to Alice and Alice now only needs to coin select to pay for the
 	// fees.
 	fundedPacket := fundPsbtCoinSelect(ht, alice, packet, 1)
