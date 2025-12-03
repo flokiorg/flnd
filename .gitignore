@@ -86,3 +86,4 @@ coverage.txt
 .play
 .gocache
 *.log
+.com
