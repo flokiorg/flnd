@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"sort"
 	"sync"
@@ -526,7 +527,10 @@ func (c *Client) ListUnspent(minConfs, maxConfs int32) ([]*lnrpc.Utxo, error) {
 	ctx, cancel := c.rpcContext(0)
 	defer cancel()
 
-	resp, err := c.walletKit.ListUnspent(ctx, &walletrpc.ListUnspentRequest{MinConfs: 0, MaxConfs: 0})
+	if maxConfs == 0 {
+		maxConfs = math.MaxInt32
+	}
+	resp, err := c.walletKit.ListUnspent(ctx, &walletrpc.ListUnspentRequest{MinConfs: minConfs, MaxConfs: maxConfs})
 	if err != nil {
 		return nil, err
 	}
