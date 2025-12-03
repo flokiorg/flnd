@@ -45,7 +45,7 @@ type BitcoindNotifier struct {
 	active  int32 // To be used atomically.
 	stopped int32 // To be used atomically.
 
-	chainConn   *chain.FlokicoindClient
+	chainConn   *chain.LokidClient
 	chainParams *chaincfg.Params
 
 	notificationCancels  chan interface{}
@@ -88,7 +88,7 @@ var _ chainntnfs.MempoolWatcher = (*BitcoindNotifier)(nil)
 // New returns a new BitcoindNotifier instance. This function assumes the
 // bitcoind node detailed in the passed configuration is already running, and
 // willing to accept RPC requests and new zmq clients.
-func New(chainConn *chain.FlokicoindConn, chainParams *chaincfg.Params,
+func New(chainConn *chain.LokidConn, chainParams *chaincfg.Params,
 	spendHintCache chainntnfs.SpendHintCache,
 	confirmHintCache chainntnfs.ConfirmHintCache,
 	blockCache *blockcache.BlockCache) *BitcoindNotifier {
@@ -110,7 +110,7 @@ func New(chainConn *chain.FlokicoindConn, chainParams *chaincfg.Params,
 		quit: make(chan struct{}),
 	}
 
-	notifier.chainConn = chainConn.NewFlokicoindClient()
+	notifier.chainConn = chainConn.NewLokidClient()
 
 	return notifier
 }

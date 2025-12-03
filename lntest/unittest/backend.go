@@ -84,7 +84,7 @@ func NewMiner(t *testing.T, netParams *chaincfg.Params, extraArgs []string,
 // A connection to the newly spawned bitcoind node is returned once the bitcoind
 // is synced to the miner's best height.
 func NewBitcoindBackend(t *testing.T, netParams *chaincfg.Params,
-	miner *rpctest.Harness, txindex, rpcpolling bool) *chain.FlokicoindConn {
+	miner *rpctest.Harness, txindex, rpcpolling bool) *chain.LokidConn {
 
 	t.Helper()
 
@@ -97,7 +97,7 @@ func NewBitcoindBackend(t *testing.T, netParams *chaincfg.Params,
 	zmqBlockHost := fmt.Sprintf("tcp://127.0.0.1:%d", zmqBlockPort)
 	zmqTxHost := fmt.Sprintf("tcp://127.0.0.1:%d", zmqTxPort)
 
-	// TODO(yy): Make this configurable via `chain.FlokicoindConfig` and
+	// TODO(yy): Make this configurable via `chain.LokidConfig` and
 	// replace the default P2P port when set.
 	p2pPort := port.NextAvailablePort()
 	netParams.DefaultPort = fmt.Sprintf("%d", p2pPort)
@@ -148,7 +148,7 @@ func NewBitcoindBackend(t *testing.T, netParams *chaincfg.Params,
 	time.Sleep(time.Second)
 
 	host := fmt.Sprintf("127.0.0.1:%d", rpcPort)
-	cfg := &chain.FlokicoindConfig{
+	cfg := &chain.LokidConfig{
 		ChainParams: netParams,
 		Host:        host,
 		User:        "weks",
@@ -172,10 +172,10 @@ func NewBitcoindBackend(t *testing.T, netParams *chaincfg.Params,
 		}
 	}
 
-	var conn *chain.FlokicoindConn
+	var conn *chain.LokidConn
 	err = wait.NoError(func() error {
 		var err error
-		conn, err = chain.NewFlokicoindConn(cfg)
+		conn, err = chain.NewLokidConn(cfg)
 		if err != nil {
 			return err
 		}

@@ -1930,7 +1930,7 @@ func TestInterfaces(t *testing.T, targetBackEnd string) {
 
 		switch notifierType {
 		case "bitcoind":
-			var bitcoindConn *chain.FlokicoindConn
+			var bitcoindConn *chain.LokidConn
 			bitcoindConn = unittest.NewBitcoindBackend(
 				t, unittest.NetParams, miner, true, false,
 			)
@@ -1942,7 +1942,7 @@ func TestInterfaces(t *testing.T, targetBackEnd string) {
 			}
 
 		case "bitcoind-rpc-polling":
-			var bitcoindConn *chain.FlokicoindConn
+			var bitcoindConn *chain.LokidConn
 			bitcoindConn = unittest.NewBitcoindBackend(
 				t, unittest.NetParams, miner, true, true,
 			)

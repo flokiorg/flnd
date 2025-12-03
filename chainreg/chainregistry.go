@@ -336,7 +336,7 @@ func NewPartialChainControl(cfg *Config) (*PartialChainControl, func(), error) {
 			}
 		}
 
-		bitcoindCfg := &chain.FlokicoindConfig{
+		bitcoindCfg := &chain.LokidConfig{
 			ChainParams:        cfg.ActiveNetParams.Params,
 			Host:               bitcoindHost,
 			User:               bitcoindMode.RPCUser,
@@ -363,7 +363,7 @@ func NewPartialChainControl(cfg *Config) (*PartialChainControl, func(), error) {
 
 		// Establish the connection to bitcoind and create the clients
 		// required for our relevant subsystems.
-		flokicoinConn, err := chain.NewFlokicoindConn(bitcoindCfg)
+		flokicoinConn, err := chain.NewLokidConn(bitcoindCfg)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -384,7 +384,7 @@ func NewPartialChainControl(cfg *Config) (*PartialChainControl, func(), error) {
 		cc.ChainView = chainview.NewBitcoindFilteredChainView(
 			flokicoinConn, cfg.BlockCache,
 		)
-		cc.ChainSource = flokicoinConn.NewFlokicoindClient()
+		cc.ChainSource = flokicoinConn.NewLokidClient()
 
 		// Initialize config to connect to bitcoind RPC.
 		rpcConfig := &rpcclient.ConnConfig{

@@ -51,7 +51,7 @@ func initHintCache(t *testing.T) *channeldb.HeightHintCache {
 
 // setUpNotifier is a helper function to start a new notifier backed by a
 // bitcoind driver.
-func setUpNotifier(t *testing.T, bitcoindConn *chain.FlokicoindConn,
+func setUpNotifier(t *testing.T, bitcoindConn *chain.LokidConn,
 	spendHintCache chainntnfs.SpendHintCache,
 	confirmHintCache chainntnfs.ConfirmHintCache,
 	blockCache *blockcache.BlockCache) *BitcoindNotifier {

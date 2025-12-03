@@ -2162,20 +2162,20 @@ func extractBtcdRPCParams(btcdConfigPath string) (string, string, error) {
 // existing bitcoind node instance. The routine looks for a cookie first,
 // optionally following the datadir configuration option in the bitcoin.conf. If
 // it doesn't find one, it looks for rpcuser/rpcpassword.
-func extractBitcoindRPCParams(networkName, bitcoindDataDir, flokicoindConfigPath,
+func extractBitcoindRPCParams(networkName, bitcoindDataDir, lokidConfigPath,
 	rpcCookiePath string) (string, string, string, string, error) {
 
 	// First, we'll open up the bitcoind configuration file found at the
 	// target destination.
-	flokicoindConfigFile, err := os.Open(flokicoindConfigPath)
+	lokidConfigFile, err := os.Open(lokidConfigPath)
 	if err != nil {
 		return "", "", "", "", err
 	}
-	defer func() { _ = flokicoindConfigFile.Close() }()
+	defer func() { _ = lokidConfigFile.Close() }()
 
 	// With the file open extract the contents of the configuration file so
 	// we can attempt to locate the RPC credentials.
-	configContents, err := io.ReadAll(flokicoindConfigFile)
+	configContents, err := io.ReadAll(lokidConfigFile)
 	if err != nil {
 		return "", "", "", "", err
 	}
@@ -2210,7 +2210,7 @@ func extractBitcoindRPCParams(networkName, bitcoindDataDir, flokicoindConfigPath
 
 	// Next, we'll try to find an auth cookie. We need to detect the chain
 	// by seeing if one is specified in the configuration file.
-	dataDir := filepath.Dir(flokicoindConfigPath)
+	dataDir := filepath.Dir(lokidConfigPath)
 	if bitcoindDataDir != "" {
 		dataDir = bitcoindDataDir
 	}

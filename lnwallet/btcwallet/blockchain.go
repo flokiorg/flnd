@@ -97,7 +97,7 @@ func (b *BtcWallet) GetUtxo(op *wire.OutPoint, pkScript []byte,
 			PkScript: pkScript,
 		}, nil
 
-	case *chain.FlokicoindClient:
+	case *chain.LokidClient:
 		txout, err := backend.GetTxOut(&op.Hash, op.Index, false)
 		if err != nil {
 			return nil, err

@@ -18,10 +18,10 @@ func createNewNotifier(args ...interface{}) (chainntnfs.ChainNotifier, error) {
 			".New(...), expected 5, instead passed %v", len(args))
 	}
 
-	chainConn, ok := args[0].(*chain.FlokicoindConn)
+	chainConn, ok := args[0].(*chain.LokidConn)
 	if !ok {
 		return nil, errors.New("first argument to bitcoindnotify.New " +
-			"is incorrect, expected a *chain.FlokicoindConn")
+			"is incorrect, expected a *chain.LokidConn")
 	}
 
 	chainParams, ok := args[1].(*chaincfg.Params)

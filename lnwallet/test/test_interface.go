@@ -3359,8 +3359,8 @@ func runTests(t *testing.T, walletDriver *lnwallet.WalletDriver,
 
 			// Create a btcwallet bitcoind client for both Alice and
 			// Bob.
-			aliceClient = chainConn.NewFlokicoindClient()
-			bobClient = chainConn.NewFlokicoindClient()
+			aliceClient = chainConn.NewLokidClient()
+			bobClient = chainConn.NewLokidClient()
 
 		case "bitcoind-rpc-polling":
 			// Start a bitcoind instance.
@@ -3370,8 +3370,8 @@ func runTests(t *testing.T, walletDriver *lnwallet.WalletDriver,
 
 			// Create a btcwallet bitcoind client for both Alice and
 			// Bob.
-			aliceClient = chainConn.NewFlokicoindClient()
-			bobClient = chainConn.NewFlokicoindClient()
+			aliceClient = chainConn.NewLokidClient()
+			bobClient = chainConn.NewLokidClient()
 
 		default:
 			t.Fatalf("unknown chain driver: %v", backEnd)

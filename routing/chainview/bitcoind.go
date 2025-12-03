@@ -31,7 +31,7 @@ type BitcoindFilteredChainView struct {
 
 	// TODO: Factor out common logic between bitcoind and btcd into a
 	// NodeFilteredView interface.
-	chainClient *chain.FlokicoindClient
+	chainClient *chain.LokidClient
 
 	// blockEventQueue is the ordered queue used to keep the order
 	// of connected and disconnected blocks sent to the reader of the
@@ -65,7 +65,7 @@ var _ FilteredChainView = (*BitcoindFilteredChainView)(nil)
 // NewBitcoindFilteredChainView creates a new instance of a FilteredChainView
 // from RPC credentials and a ZMQ socket address for a bitcoind instance.
 func NewBitcoindFilteredChainView(
-	chainConn *chain.FlokicoindConn,
+	chainConn *chain.LokidConn,
 	blockCache *blockcache.BlockCache) *BitcoindFilteredChainView {
 
 	chainView := &BitcoindFilteredChainView{
@@ -76,7 +76,7 @@ func NewBitcoindFilteredChainView(
 		quit:            make(chan struct{}),
 	}
 
-	chainView.chainClient = chainConn.NewFlokicoindClient()
+	chainView.chainClient = chainConn.NewLokidClient()
 	chainView.blockQueue = newBlockEventQueue()
 
 	return chainView
