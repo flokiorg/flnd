@@ -57,6 +57,8 @@ type Client struct {
 	closing    bool
 
 	syncPollingActive bool
+	syncPollingStop   chan struct{}
+	syncPollingDone   chan struct{}
 	isSynced          bool
 	syncedHeight      uint32
 	mu                sync.Mutex
@@ -74,6 +76,7 @@ const (
 	transactionFetchTimeout = 30 * time.Second
 	transactionPageSize     = 1000
 	transactionsCacheTTL    = 5 * time.Minute
+	recentHeaderThreshold   = 5 * time.Minute
 )
 
 func NewClient(ctx context.Context, conn *grpc.ClientConn, config *flnd.Config) *Client {
@@ -198,7 +201,7 @@ func (c *Client) subscribeState() {
 			c.submitHealth(Update{State: StatusNone})
 
 		case lnrpc.WalletState_RPC_ACTIVE:
-			synced, blockHeight, err := c.IsSynced()
+			synced, _, blockHeight, err := c.IsSynced()
 			if err != nil {
 				continue
 			} else if synced {
@@ -209,16 +212,14 @@ func (c *Client) subscribeState() {
 			}
 
 		case lnrpc.WalletState_SERVER_ACTIVE:
-			synced, blockHeight, err := c.IsSynced()
+			_, _, blockHeight, err := c.IsSynced()
 			if err != nil {
 				c.kill(err)
 				return
 			}
 
-			if !synced {
-				c.submitHealth(Update{State: StatusSyncing, BlockHeight: blockHeight})
-				go c.pollSyncStatus()
-			}
+			c.stopSyncPolling()
+			c.submitHealth(Update{State: StatusReady, BlockHeight: blockHeight})
 
 			c.subTxsOnce.Do(func() {
 				go c.subscribeTransactions()
@@ -239,13 +240,33 @@ func (c *Client) LoadMacaroon(path string) error {
 	return nil
 }
 
+func (c *Client) stopSyncPolling() {
+	var done chan struct{}
+
+	c.mu.Lock()
+	if c.syncPollingActive && c.syncPollingStop != nil {
+		close(c.syncPollingStop)
+		c.syncPollingStop = nil
+		done = c.syncPollingDone
+	}
+	c.mu.Unlock()
+
+	if done != nil {
+		<-done
+	}
+}
+
 func (c *Client) pollSyncStatus() {
 	c.mu.Lock()
 	if c.syncPollingActive {
 		c.mu.Unlock()
 		return
 	}
+	stopCh := make(chan struct{})
+	doneCh := make(chan struct{})
 	c.syncPollingActive = true
+	c.syncPollingStop = stopCh
+	c.syncPollingDone = doneCh
 	c.mu.Unlock()
 
 	ticker := time.NewTicker(5 * time.Second)
@@ -253,7 +274,10 @@ func (c *Client) pollSyncStatus() {
 	defer func() {
 		c.mu.Lock()
 		c.syncPollingActive = false
+		c.syncPollingStop = nil
+		c.syncPollingDone = nil
 		c.mu.Unlock()
+		close(doneCh)
 	}()
 
 	for {
@@ -261,8 +285,11 @@ func (c *Client) pollSyncStatus() {
 		case <-c.ctx.Done():
 			return
 
+		case <-stopCh:
+			return
+
 		case <-ticker.C:
-			synced, blockHeight, err := c.IsSynced()
+			synced, _, blockHeight, err := c.IsSynced()
 			if err != nil {
 				continue
 			}
@@ -274,6 +301,7 @@ func (c *Client) pollSyncStatus() {
 					return
 				}
 			}
+
 			if synced {
 				c.submitHealth(Update{State: StatusReady, BlockHeight: blockHeight})
 				return
@@ -332,9 +360,9 @@ func (c *Client) WalletExists() (bool, error) {
 	return true, nil
 }
 
-func (c *Client) IsSynced() (bool, uint32, error) {
+func (c *Client) IsSynced() (bool, bool, uint32, error) {
 	if c.closing {
-		return false, 0, ErrDaemonNotRunning
+		return false, false, 0, ErrDaemonNotRunning
 	}
 
 	ctx, cancel := c.rpcContext(0)
@@ -350,9 +378,16 @@ func (c *Client) IsSynced() (bool, uint32, error) {
 
 	var blockHeight uint32
 	var synced bool
+	var recentHeader bool
 	if resp != nil {
 		blockHeight = resp.BlockHeight
 		synced = err == nil && resp.SyncedToChain
+		if !synced && err == nil {
+			blockTime := time.Unix(resp.BestHeaderTimestamp, 0)
+			recentHeader = time.Since(blockTime) <= recentHeaderThreshold
+		} else {
+			recentHeader = synced
+		}
 	}
 
 	c.mu.Lock()
@@ -360,7 +395,7 @@ func (c *Client) IsSynced() (bool, uint32, error) {
 	c.syncedHeight = blockHeight
 	c.mu.Unlock()
 
-	return synced, blockHeight, err
+	return synced, recentHeader, blockHeight, err
 }
 
 func (c *Client) Unlock(passphrase string) error {
