@@ -878,6 +878,9 @@ func (c *Client) FetchTransactionsWithOptions(opts FetchTransactionsOptions) ([]
 		// Probe for new transactions after the last known index.
 		ctx, cancel := c.rpcContext(5 * time.Second)
 		probe, err := c.lnClient.GetTransactions(ctx, &lnrpc.GetTransactionsRequest{
+			StartHeight: 0,
+			EndHeight:   -1,
+
 			MaxTransactions: 1,
 			IndexOffset:     uint32(lastIndex + 1),
 		})
@@ -924,7 +927,7 @@ func (c *Client) FetchTransactionsWithOptions(opts FetchTransactionsOptions) ([]
 	c.mu.Lock()
 	if c.cache != nil && !opts.ForceRescan {
 		// Resume from the last index we saw (+1). This avoids gaps/dups if new txs arrive during paging.
-		cursor = c.cache.LastIndex + 1
+		cursor = c.cache.LastIndex
 
 		// Deep copy slice header under lock (elements are pointers; snapshot is fine for read-only).
 		if len(c.cache.Txs) > 0 {
@@ -939,6 +942,9 @@ func (c *Client) FetchTransactionsWithOptions(opts FetchTransactionsOptions) ([]
 	for {
 		ctx, cancel := c.rpcContext(transactionFetchTimeout)
 		resp, err := c.lnClient.GetTransactions(ctx, &lnrpc.GetTransactionsRequest{
+			StartHeight: 0,
+			EndHeight:   -1,
+
 			MaxTransactions: transactionPageSize,
 			IndexOffset:     uint32(cursor),
 		})
