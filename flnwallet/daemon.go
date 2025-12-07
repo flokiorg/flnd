@@ -118,7 +118,7 @@ func (d *daemon) exec(impl *flnd.ImplementationCfg) error {
 		defer d.wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
-				err := fmt.Errorf("panic: %v", r)
+				err := fmt.Errorf("unable to run FLND daemon: %v", r)
 				if d.client != nil {
 					d.client.kill(err)
 					return
