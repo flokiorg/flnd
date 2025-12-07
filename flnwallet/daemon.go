@@ -116,14 +116,24 @@ func (d *daemon) exec(impl *flnd.ImplementationCfg) error {
 	d.wg.Add(1)
 	go func() {
 		defer d.wg.Done()
-		if err := flnd.Main(d.config, flnd.ListenerCfg{}, impl, d.interceptor, flndStarted); err != nil {
-			select {
-			case errCh <- err:
-			default:
+		defer func() {
+			if r := recover(); r != nil {
+				err := fmt.Errorf("panic: %v", r)
 				if d.client != nil {
 					d.client.kill(err)
+					return
 				}
+
+				errCh <- err
 			}
+		}()
+		if err := flnd.Main(d.config, flnd.ListenerCfg{}, impl, d.interceptor, flndStarted); err != nil {
+			if d.client != nil {
+				d.client.kill(err)
+				return
+			}
+
+			errCh <- err
 		}
 	}()
 
