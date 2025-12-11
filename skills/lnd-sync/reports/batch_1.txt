@@ -8,22 +8,6 @@ ebefe63f8 contractcourt: add sync dispatch fast-path for single confirmation clo
 ab4f89128 contractcourt: unify+simplify new re-org aware logic
 fa8ba6f81 lncfg: increase DefaultIncomingBroadcastDelta to 16
 4aef4d00a docs/release-notes: add release notes entry
-aaaf235b2 Merge pull request #10331 from Roasbeef/cnct-reorg-v2
-c78a75f5d graphdb: reduce log noise from WRN to DBG
-8646d9846 Merge pull request #10514 from ziggie1984/reduce-log-noice
-05eed5cdb routerrpc: FailureDetail enums for invoice/AMP validation failures
-676386ce5 Merge pull request #10520 from darioAnongba/fix/routerrpc-failuredetail-additions
-c00047812 "Claude PR Assistant workflow"
-349b3dbb4 Merge pull request #10525 from lightningnetwork/add-claude-github-actions-1769542743473
-ba52a2786 build: add PR severity classification workflow
-22c2cc21e Merge pull request #10526 from lightningnetwork/pr-severity-workflow
-4d98b004a workflows/pr-severity: use pull_request_target for fork PRs
-19b2ad797 Merge pull request #10527 from Roasbeef/fix-pr-severity-fork-prs
-bcb589cc9 workflows/claude: fix PR checkout for fork PRs
-a77b9d9b8 workflows/pr-severity: allow non-write users for classification
-7ccab028f Merge pull request #10531 from Roasbeef/claude-fix
-8125286d3 btcwallet: support combined tweak to private key
-e532d4e49 btcwallet: add test coverage for maybeTweakPrivKey
 6e56c9a53 peer: fix MarkCoopBroadcasted to correctly use local parameter
 20a6b1726 Merge pull request #10532 from darioAnongba/fix/ignored-local-mark-coop
 dd29d5690 sqldb: close test db in cleanup
