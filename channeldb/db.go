@@ -10,13 +10,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/flokiorg/go-flokicoin/crypto"
-
 	"github.com/flokiorg/flnd/clock"
 	graphdb "github.com/flokiorg/flnd/graph/db"
 	"github.com/flokiorg/flnd/invoices"
 	"github.com/flokiorg/flnd/kvdb"
 	"github.com/flokiorg/flnd/lnwire"
+	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/flokiorg/go-flokicoin/wire"
 	"github.com/flokiorg/walletd/walletdb"
 	"github.com/stretchr/testify/require"
@@ -47,7 +46,7 @@ var (
 // up-to-date version of the database.
 type migration func(tx kvdb.RwTx) error
 
-// mandatoryVersion defines a db version that must be applied before the lnd
+// mandatoryVersion defines a db version that must be applied before the flnd
 // starts.
 type mandatoryVersion struct {
 	number    uint32
@@ -127,7 +126,7 @@ var (
 	channelOpeningStateBucket = []byte("channelOpeningState")
 )
 
-// DB is the primary datastore for the lnd daemon. The database stores
+// DB is the primary datastore for the flnd daemon. The database stores
 // information related to nodes, routing data, open/closed channels, fee
 // schedules, and reputation data.
 type DB struct {
@@ -1148,11 +1147,7 @@ func (c *ChannelStateDB) FetchClosedChannelForID(cid lnwire.ChannelID) (
 // the pending funds in a channel that has been forcibly closed have been
 // swept.
 func (c *ChannelStateDB) MarkChanFullyClosed(chanPoint *wire.OutPoint) error {
-	var (
-		openChannels  []*OpenChannel
-		pruneLinkNode *crypto.PublicKey
-	)
-	err := kvdb.Update(c.backend, func(tx kvdb.RwTx) error {
+	return kvdb.Update(c.backend, func(tx kvdb.RwTx) error {
 		var b bytes.Buffer
 		if err := graphdb.WriteOutpoint(&b, chanPoint); err != nil {
 			return err
@@ -1198,44 +1193,72 @@ func (c *ChannelStateDB) MarkChanFullyClosed(chanPoint *wire.OutPoint) error {
 		// other open channels with this peer. If we don't we'll
 		// garbage collect it to ensure we don't establish persistent
 		// connections to peers without open channels.
-		pruneLinkNode = chanSummary.RemotePub
-		openChannels, err = c.fetchOpenChannels(
-			tx, pruneLinkNode,
-		)
+		remotePub := chanSummary.RemotePub
+		openChannels, err := c.fetchOpenChannels(tx, remotePub)
 		if err != nil {
 			return fmt.Errorf("unable to fetch open channels for "+
 				"peer %x: %v",
-				pruneLinkNode.SerializeCompressed(), err)
+				remotePub.SerializeCompressed(), err)
+		}
+
+		if len(openChannels) > 0 {
+			return nil
+		}
+
+		// If there are no open channels with this peer, prune the
+		// link node. We do this within the same transaction to avoid
+		// a race condition where a new channel could be opened
+		// between this check and the deletion.
+		log.Infof("Pruning link node %x with zero open "+
+			"channels from database",
+			remotePub.SerializeCompressed())
+
+		err = deleteLinkNode(tx, remotePub)
+		if err != nil {
+			return fmt.Errorf("unable to delete link "+
+				"node: %w", err)
 		}
 
 		return nil
-	}, func() {
-		openChannels = nil
-		pruneLinkNode = nil
-	})
-	if err != nil {
-		return err
-	}
-
-	// Decide whether we want to remove the link node, based upon the number
-	// of still open channels.
-	return c.pruneLinkNode(openChannels, pruneLinkNode)
+	}, func() {})
 }
 
 // pruneLinkNode determines whether we should garbage collect a link node from
-// the database due to no longer having any open channels with it. If there are
-// any left, then this acts as a no-op.
-func (c *ChannelStateDB) pruneLinkNode(openChannels []*OpenChannel,
-	remotePub *crypto.PublicKey) error {
+// the database due to no longer having any open channels with it.
+//
+// NOTE: This function should be called after an initial check shows no open
+// channels exist. It will double-check within a write transaction to avoid a
+// race condition where a channel could be opened between the initial check
+// and the deletion.
+func (c *ChannelStateDB) pruneLinkNode(remotePub *crypto.PublicKey) error {
+	return kvdb.Update(c.backend, func(tx kvdb.RwTx) error {
+		// Double-check for open channels to avoid deleting a link node
+		// if a channel was opened since the caller's initial check.
+		//
+		// NOTE: This avoids a race condition where a channel could be
+		// opened between the initial check and the deletion.
+		openChannels, err := c.fetchOpenChannels(tx, remotePub)
+		if err != nil {
+			return err
+		}
 
-	if len(openChannels) > 0 {
+		// If channels exist now, don't prune.
+		if len(openChannels) > 0 {
+			return nil
+		}
+
+		// No open channels, safe to prune the link node.
+		log.Infof("Pruning link node %x with zero open channels "+
+			"from database",
+			remotePub.SerializeCompressed())
+
+		err = deleteLinkNode(tx, remotePub)
+		if err != nil {
+			return fmt.Errorf("unable to prune link node: %w", err)
+		}
+
 		return nil
-	}
-
-	log.Infof("Pruning link node %x with zero open channels from database",
-		remotePub.SerializeCompressed())
-
-	return c.linkNodeDB.DeleteLinkNode(remotePub)
+	}, func() {})
 }
 
 // PruneLinkNodes attempts to prune all link nodes found within the database
@@ -1264,7 +1287,11 @@ func (c *ChannelStateDB) PruneLinkNodes() error {
 			return err
 		}
 
-		err = c.pruneLinkNode(openChannels, linkNode.IdentityPub)
+		if len(openChannels) > 0 {
+			continue
+		}
+
+		err = c.pruneLinkNode(linkNode.IdentityPub)
 		if err != nil {
 			return err
 		}
