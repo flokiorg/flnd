@@ -562,3 +562,12 @@ func (s *Service) ReleaseOutputs(locks []*OutputLock) error {
 func (s *Service) GetLastEvent() *Update {
 	return s.lastEvent
 }
+
+func (s *Service) GetLightningConfig() (*LightningConfig, error) {
+	s.cmux.Lock()
+	defer s.cmux.Unlock()
+	if s.client == nil {
+		return nil, ErrDaemonNotRunning
+	}
+	return s.client.GetLightningConfig()
+}

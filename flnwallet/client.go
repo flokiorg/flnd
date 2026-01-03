@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net"
 	"os"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -29,6 +31,9 @@ var (
 	ErrWalletNotFound      = errors.New("wallet not found")
 	ErrWalletAlreadyExists = errors.New("wallet already exists")
 	ErrWalletMustBeLocked  = errors.New("wallet must be locked to change password")
+
+	defaultRPCPort  = 10005
+	defaultPeerPort = 5521
 )
 
 type txCache struct {
@@ -1107,4 +1112,86 @@ func matchRPCErrorMessage(err error, targets ...error) bool {
 		}
 	}
 	return false
+}
+
+type LightningConfig struct {
+	RpcAddress  string
+	PeerAddress string
+	PubKey      string
+	MacaroonHex string
+	TLSCertHex  string
+}
+
+func (c *Client) GetLightningConfig() (*LightningConfig, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.lnClient == nil {
+		return nil, ErrDaemonNotRunning
+	}
+
+	// RPC Address: Local outgoing IP + Configured RPC Port
+	var address string
+	// Peer Address: Local outgoing IP + Configured Peer Port
+	var peerAddress string
+
+	// Get local IP
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err == nil {
+		localAddr := conn.LocalAddr().(*net.UDPAddr)
+		conn.Close()
+		ip := localAddr.IP.String()
+
+		// RPC Port Logic
+		rpcPort := strconv.Itoa(defaultRPCPort) // Default
+		if len(c.config.RPCListeners) > 0 {
+			_, p, err := net.SplitHostPort(c.config.RPCListeners[0].String())
+			if err == nil {
+				rpcPort = p
+			}
+		}
+		address = net.JoinHostPort(ip, rpcPort)
+
+		// Peer Port Logic
+		peerPort := strconv.Itoa(defaultPeerPort)
+		if len(c.config.Listeners) > 0 {
+			_, p, err := net.SplitHostPort(c.config.Listeners[0].String())
+			if err == nil {
+				peerPort = p
+			}
+		}
+		peerAddress = net.JoinHostPort(ip, peerPort)
+
+	} else {
+		// Fallback
+		if len(c.config.RPCListeners) > 0 {
+			address = c.config.RPCListeners[0].String()
+		}
+		if len(c.config.Listeners) > 0 {
+			peerAddress = c.config.Listeners[0].String()
+		}
+	}
+
+	// PubKey
+	ctx, cancel := c.rpcContext(defaultRPCTimeout)
+	defer cancel()
+	info, err := c.lnClient.GetInfo(ctx, &lnrpc.GetInfoRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get info: %w", err)
+	}
+
+	// TLS Cert
+	certBytes, err := os.ReadFile(c.config.TLSCertPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read tls cert: %w", err)
+	}
+	certHex := hex.EncodeToString(certBytes)
+
+	return &LightningConfig{
+		RpcAddress:  address,
+		PeerAddress: peerAddress,
+		PubKey:      info.IdentityPubkey,
+		MacaroonHex: c.adminMacHex,
+		TLSCertHex:  certHex,
+	}, nil
 }
