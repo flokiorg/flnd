@@ -742,6 +742,11 @@ const (
 		TaprootHtlcOfferedRemoteTimeoutScriptSize + 1 +
 		TaprootBaseControlBlockWitnessSize + 32
 
+	// TaprootHtlcOfferedRemoteTimeoutWitnessSizeFinal: 174 bytes
+	// (production scripts).
+	TaprootHtlcOfferedRemoteTimeoutWitnessSizeFinal = 1 + 1 + 65 + 1 +
+		TaprootHtlcOfferedRemoteTimeoutScriptSizeFinal + 1 +
+		TaprootBaseControlBlockWitnessSize + 32
 	// TaprootHtlcOfferedLocalTmeoutScriptSize:
 	//	- OP_DATA: 1 byte (pub key len)
 	//	- local_key: 32 bytes
