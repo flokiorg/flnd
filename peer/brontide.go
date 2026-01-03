@@ -5260,6 +5260,15 @@ func (p *Brontide) addActiveChannel(c *lnpeer.NewChannel) error {
 		chanOpts = append(chanOpts, lnwallet.WithAuxResolver(s))
 	})
 
+	p.cfg.AuxTrafficShaper.WhenSome(
+		func(ts htlcswitch.AuxTrafficShaper) {
+			val := p.createHtlcValidator(c.OpenChannel, ts)
+			chanOpts = append(
+				chanOpts,
+				lnwallet.WithAuxHtlcValidator(val),
+			)
+		},
+	)
 	// If not already active, we'll add this channel to the set of active
 	// channels, so we can look it up later easily according to its channel
 	// ID.
