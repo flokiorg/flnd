@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	btclogv1 "github.com/btcsuite/btclog"
+	btclogv1 "github.com/flokiorg/go-flokicoin/log"
+	flog "github.com/flokiorg/go-flokicoin/log/v2"
 )
 
 const (
