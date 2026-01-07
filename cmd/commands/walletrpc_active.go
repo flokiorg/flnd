@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/flokiorg/flnd"
 	"github.com/flokiorg/flnd/lnrpc/walletrpc"
 	"github.com/flokiorg/flnd/lnwallet/chainfee"
 	"github.com/flokiorg/flnd/lnwallet/chanfunding"
@@ -31,7 +32,7 @@ var (
 	// operations.
 	psbtCommand = cli.Command{
 		Name: "psbt",
-		Usage: "Interact with partially signed bitcoin transactions " +
+		Usage: "Interact with partially signed flokicoin transactions " +
 			"(PSBTs).",
 		Subcommands: []cli.Command{
 			fundPsbtCommand,
@@ -131,8 +132,8 @@ var estimateFeeRateCommand = cli.Command{
 		"target.",
 	ArgsUsage: "conf_target",
 	Description: `
-	Returns the fee rate estimate for on-chain transactions in sat/kw and
-	sat/vb to achieve a given confirmation target. The source of the fee
+	Returns the fee rate estimate for on-chain transactions in loki/kw and
+	loki/vb to achieve a given confirmation target. The source of the fee
 	rate depends on the configuration and is either the on-chain backend or
 	alternatively an external URL.
 	`,
@@ -183,10 +184,10 @@ func estimateFeeRate(ctx *cli.Context) error {
 
 var pendingSweepsCommand = cli.Command{
 	Name:      "pendingsweeps",
-	Usage:     "List all outputs that are pending to be swept within lnd.",
+	Usage:     "List all outputs that are pending to be swept within flnd.",
 	ArgsUsage: "",
 	Description: `
-	List all on-chain outputs that lnd is currently attempting to sweep
+	List all on-chain outputs that flnd is currently attempting to sweep
 	within its central batching engine. Outputs with similar fee rates are
 	batched together in order to sweep them within a single transaction.
 	`,
@@ -234,14 +235,14 @@ var bumpFeeCommand = cli.Command{
 	Usage:     "Bumps the fee of an arbitrary input/transaction.",
 	ArgsUsage: "outpoint",
 	Description: `
-	BumpFee is an endpoint that allows users to interact with lnd's sweeper
+	BumpFee is an endpoint that allows users to interact with flnd's sweeper
 	directly. It takes an outpoint from an unconfirmed transaction and
 	sends it to the sweeper for potential fee bumping. Depending on whether
 	the outpoint has been registered in the sweeper (an existing input,
 	e.g., an anchor output) or not (a new input, e.g., an unconfirmed
 	wallet utxo), this will either be an RBF or CPFP attempt.
 
-	When receiving an input, lnd’s sweeper needs to understand its time
+	When receiving an input, flnd’s sweeper needs to understand its time
 	sensitivity to make economical fee bumps - internally a fee function is
 	created using the deadline and budget to guide the process. When the
 	deadline is approaching, the fee function will increase the fee rate
@@ -270,7 +271,7 @@ var bumpFeeCommand = cli.Command{
 			Usage: `
 	The conf target is the starting fee rate of the fee function expressed
 	in number of blocks. So instead of using sat_per_vbyte the conf target
-	can be specified and LND will query its fee estimator for the current
+	can be specified and flnd will query its fee estimator for the current
 	fee rate for the given target.`,
 		},
 		cli.Uint64Flag{
@@ -301,7 +302,7 @@ var bumpFeeCommand = cli.Command{
 		cli.Uint64Flag{
 			Name: "budget",
 			Usage: `
-	The max amount in sats that can be used as the fees. Setting this value
+	The max amount in loki that can be used as the fees. Setting this value
 	greater than the input's value may result in CPFP - one or more wallet
 	utxos will be used to pay the fees specified by the budget. If not set,
 	for new inputs, by default 50% of the input's value will be treated as
@@ -330,7 +331,7 @@ func bumpFee(ctx *cli.Context) error {
 	}
 
 	// Validate and parse the relevant arguments/flags.
-	protoOutPoint, err := NewProtoOutPoint(ctx.Args().Get(0))
+	protoOutPoint, err := flnd.NewProtoOutPoint(ctx.Args().Get(0))
 	if err != nil {
 		return err
 	}
@@ -389,7 +390,7 @@ var bumpCloseFeeCommand = cli.Command{
 			Usage: `
 	The conf target is the starting fee rate of the fee function expressed
 	in number of blocks. So instead of using sat_per_vbyte the conf target
-	can be specified and LND will query its fee estimator for the current
+	can be specified and flnd will query its fee estimator for the current
 	fee rate for the given target.`,
 		},
 		cli.Uint64Flag{
@@ -420,7 +421,7 @@ var bumpCloseFeeCommand = cli.Command{
 		cli.Uint64Flag{
 			Name: "budget",
 			Usage: `
-	The max amount in sats that can be used as the fees. Setting this value
+	The max amount in loki that can be used as the fees. Setting this value
 	greater than the input's value may result in CPFP - one or more wallet
 	utxos will be used to pay the fees specified by the budget. If not set,
 	for new inputs, by default 50% of the input's value will be treated as
@@ -448,7 +449,7 @@ var bumpForceCloseFeeCommand = cli.Command{
 			Usage: `
 	The conf target is the starting fee rate of the fee function expressed
 	in number of blocks. So instead of using sat_per_vbyte the conf target
-	can be specified and LND will query its fee estimator for the current
+	can be specified and flnd will query its fee estimator for the current
 	fee rate for the given target.`,
 		},
 		cli.Uint64Flag{
@@ -487,7 +488,7 @@ var bumpForceCloseFeeCommand = cli.Command{
 		cli.Uint64Flag{
 			Name: "budget",
 			Usage: `
-	The max amount in sats that can be used as the fees. For already
+	The max amount in loki that can be used as the fees. For already
 	registered anchor outputs if not set explicitly the old value will be
 	used. For channel force closes which have no HTLCs in their commitment
 	transaction this value has to be set to an appropriate amount to pay for
@@ -812,11 +813,11 @@ func removeTransaction(ctx *cli.Context) error {
 
 // utxoLease contains JSON annotations for a lease on an unspent output.
 type utxoLease struct {
-	ID         string   `json:"id"`
-	OutPoint   OutPoint `json:"outpoint"`
-	Expiration uint64   `json:"expiration"`
-	PkScript   []byte   `json:"pk_script"`
-	Value      uint64   `json:"value"`
+	ID         string        `json:"id"`
+	OutPoint   flnd.OutPoint `json:"outpoint"`
+	Expiration uint64        `json:"expiration"`
+	PkScript   []byte        `json:"pk_script"`
+	Value      uint64        `json:"value"`
 }
 
 // fundPsbtResponse is a struct that contains JSON annotations for nice result
@@ -859,8 +860,8 @@ var fundTemplatePsbtCommand = cli.Command{
 
 	    --inputs='["<txid1>:<output-index1>","<txid2>:<output-index2>",...]
 
-	Any inputs specified that belong to this lnd node MUST be locked/leased
-	(by using 'lncli wallet leaseoutput') manually to make sure they aren't
+	Any inputs specified that belong to this flnd node MUST be locked/leased
+	(by using 'flncli wallet leaseoutput') manually to make sure they aren't
 	selected again by the coin selection algorithm.
 
 	After verifying and possibly adding new inputs, all input UTXOs added by
@@ -1358,7 +1359,7 @@ func fundPsbt(ctx *cli.Context) error {
 			}
 
 			for idx, input := range inputs {
-				op, err := NewProtoOutPoint(input)
+				op, err := flnd.NewProtoOutPoint(input)
 				if err != nil {
 					return fmt.Errorf("error parsing "+
 						"UTXO outpoint %d: %v", idx,
@@ -1447,7 +1448,7 @@ func marshallLocks(lockedUtxos []*walletrpc.UtxoLease) []*utxoLease {
 	for idx, lock := range lockedUtxos {
 		jsonLocks[idx] = &utxoLease{
 			ID:         hex.EncodeToString(lock.Id),
-			OutPoint:   NewOutPointFromProto(lock.Outpoint),
+			OutPoint:   flnd.NewOutPointFromProto(lock.Outpoint),
 			Expiration: lock.Expiration,
 			PkScript:   lock.PkScript,
 			Value:      lock.Value,
@@ -1471,10 +1472,10 @@ var finalizePsbtCommand = cli.Command{
 	Description: `
 	The finalize command expects a partial transaction with all inputs
 	and outputs fully declared and tries to sign all inputs that belong to
-	the wallet. Lnd must be the last signer of the transaction. That means,
+	the wallet. flnd must be the last signer of the transaction. That means,
 	if there are any unsigned non-witness inputs or inputs without UTXO
 	information attached or inputs without witness data that do not belong
-	to lnd's wallet, this method will fail. If no error is returned, the
+	to flnd's wallet, this method will fail. If no error is returned, the
 	PSBT is ready to be extracted and the final TX within to be broadcast.
 
 	This method does NOT publish the transaction after it's been finalized
@@ -1578,7 +1579,7 @@ func leaseOutput(ctx *cli.Context) error {
 	}
 
 	outpointStr := ctx.String("outpoint")
-	outpoint, err := NewProtoOutPoint(outpointStr)
+	outpoint, err := flnd.NewProtoOutPoint(outpointStr)
 	if err != nil {
 		return fmt.Errorf("error parsing outpoint: %w", err)
 	}
@@ -1618,13 +1619,13 @@ func leaseOutput(ctx *cli.Context) error {
 
 var releaseOutputCommand = cli.Command{
 	Name:      "releaseoutput",
-	Usage:     "Release an output previously locked by lnd.",
+	Usage:     "Release an output previously locked by flnd.",
 	ArgsUsage: "outpoint",
 	Description: `
 	The releaseoutput command unlocks an output, allowing it to be available
 	for coin selection if it remains unspent.
 
-	If no lock ID is specified, the internal lnd app lock ID is used when
+	If no lock ID is specified, the internal flnd app lock ID is used when
 	releasing the output. With the internal ID, only UTXOs locked by the
 	fundpsbt command can be released.
 	`,
@@ -1663,7 +1664,7 @@ func releaseOutput(ctx *cli.Context) error {
 		return fmt.Errorf("outpoint argument missing")
 	}
 
-	outpoint, err := NewProtoOutPoint(outpointStr)
+	outpoint, err := flnd.NewProtoOutPoint(outpointStr)
 	if err != nil {
 		return fmt.Errorf("error parsing outpoint: %w", err)
 	}
@@ -1834,7 +1835,7 @@ var listAddressesCommand = cli.Command{
 		},
 		cli.BoolFlag{
 			Name: "show_custom_accounts",
-			Usage: "(optional) set this to true to show lnd's " +
+			Usage: "(optional) set this to true to show flnd's " +
 				"custom accounts",
 		},
 	},
@@ -1878,7 +1879,7 @@ var signMessageWithAddrCommand = cli.Command{
 	signature format. This is also done when signing with a P2TR address
 	meaning that the private key of the P2TR address (internal key) is used
 	to sign the provided message with the ECDSA format. Only addresses are
-	accepted which are owned by the internal lnd wallet.
+	accepted which are owned by the internal flnd wallet.
 	`,
 	Flags: []cli.Flag{
 		cli.StringFlag{
@@ -1995,7 +1996,7 @@ func verifyMessageWithAddr(ctx *cli.Context) error {
 	// Display the command's help message if we do not have the expected
 	// number of arguments/flags.
 	if ctx.NArg() > 3 || ctx.NumFlags() > 3 {
-		return cli.ShowCommandHelp(ctx, "signmessagewithaddr")
+		return cli.ShowCommandHelp(ctx, "verifymessagewithaddr")
 	}
 
 	walletClient, cleanUp := getWalletClient(ctx)
@@ -2012,7 +2013,7 @@ func verifyMessageWithAddr(ctx *cli.Context) error {
 	case ctx.IsSet("address"):
 		addr = ctx.String("address")
 
-	case args.Present():
+	case ctx.Args().Present():
 		addr = args.First()
 		args = args.Tail()
 
@@ -2047,9 +2048,9 @@ func verifyMessageWithAddr(ctx *cli.Context) error {
 	resp, err := walletClient.VerifyMessageWithAddr(
 		ctxc,
 		&walletrpc.VerifyMessageWithAddrRequest{
-			Msg:       msg,
-			Signature: sig,
-			Addr:      addr,
+			Msg:  msg,
+			Sig:  sig,
+			Addr: addr,
 		},
 	)
 	if err != nil {
@@ -2058,152 +2059,5 @@ func verifyMessageWithAddr(ctx *cli.Context) error {
 
 	printRespJSON(resp)
 
-	return nil
-}
-
-var importAccountCommand = cli.Command{
-	Name: "import",
-	Usage: "Import an on-chain account into the wallet through its " +
-		"extended public key.",
-	ArgsUsage: "extended_public_key name",
-	Description: `
-	Imports an account backed by an account extended public key. The master
-	key fingerprint denotes the fingerprint of the root key corresponding to
-	the account public key (also known as the key with derivation path m/).
-	This may be required by some hardware wallets for proper identification
-	and signing.
-
-	The address type can usually be inferred from the key's version, but may
-	be required for certain keys to map them into the proper scope.
-
-	If an account with the same name already exists (even with a different
-	key scope), an error will be returned.
-
-	For BIP-0044 keys, an address type must be specified as we intend to not
-	support importing BIP-0044 keys into the wallet using the legacy
-	pay-to-pubkey-hash (P2PKH) scheme. A nested witness address type will
-	force the standard BIP-0049 derivation scheme, while a witness address
-	type will force the standard BIP-0084 derivation scheme.
-
-	For BIP-0049 keys, an address type must also be specified to make a
-	distinction between the standard BIP-0049 address schema (nested witness
-	pubkeys everywhere) and our own BIP-0049Plus address schema (nested
-	pubkeys externally, witness pubkeys internally).
-
-	NOTE: Events (deposits/spends) for keys derived from an account will
-	only be detected by lnd if they happen after the import. Rescans to
-	detect past events will be supported later on.
-	`,
-	Flags: []cli.Flag{
-		cli.StringFlag{
-			Name: "address_type",
-			Usage: "(optional) specify the type of addresses the " +
-				"imported account should generate",
-		},
-		cli.StringFlag{
-			Name: "master_key_fingerprint",
-			Usage: "(optional) the fingerprint of the root key " +
-				"(derivation path m/) corresponding to the " +
-				"account public key",
-		},
-		cli.BoolFlag{
-			Name:  "dry_run",
-			Usage: "(optional) perform a dry run",
-		},
-	},
-	Action: actionDecorator(importAccount),
-}
-
-func importAccount(ctx *cli.Context) error {
-	ctxc := getContext()
-
-	// Display the command's help message if we do not have the expected
-	// number of arguments/flags.
-	if ctx.NArg() != 2 || ctx.NumFlags() > 3 {
-		return cli.ShowCommandHelp(ctx, "import")
-	}
-
-	addrType, err := parseAddrType(ctx.String("address_type"))
-	if err != nil {
-		return err
-	}
-
-	var mkfpBytes []byte
-	if ctx.IsSet("master_key_fingerprint") {
-		mkfpBytes, err = hex.DecodeString(
-			ctx.String("master_key_fingerprint"),
-		)
-		if err != nil {
-			return fmt.Errorf("invalid master key fingerprint: %w",
-				err)
-		}
-	}
-
-	walletClient, cleanUp := getWalletClient(ctx)
-	defer cleanUp()
-
-	dryRun := ctx.Bool("dry_run")
-	req := &walletrpc.ImportAccountRequest{
-		Name:                 ctx.Args().Get(1),
-		ExtendedPublicKey:    ctx.Args().Get(0),
-		MasterKeyFingerprint: mkfpBytes,
-		AddressType:          addrType,
-		DryRun:               dryRun,
-	}
-	resp, err := walletClient.ImportAccount(ctxc, req)
-	if err != nil {
-		return err
-	}
-
-	printRespJSON(resp)
-	return nil
-}
-
-var importPubKeyCommand = cli.Command{
-	Name:      "import-pubkey",
-	Usage:     "Import a public key as watch-only into the wallet.",
-	ArgsUsage: "public_key address_type",
-	Description: `
-	Imports a public key represented in hex as watch-only into the wallet.
-	The address type must be one of the following: np2wkh, p2wkh.
-
-	NOTE: Events (deposits/spends) for a key will only be detected by lnd if
-	they happen after the import. Rescans to detect past events will be
-	supported later on.
-	`,
-	Action: actionDecorator(importPubKey),
-}
-
-func importPubKey(ctx *cli.Context) error {
-	ctxc := getContext()
-
-	// Display the command's help message if we do not have the expected
-	// number of arguments/flags.
-	if ctx.NArg() != 2 || ctx.NumFlags() > 0 {
-		return cli.ShowCommandHelp(ctx, "import-pubkey")
-	}
-
-	pubKeyBytes, err := hex.DecodeString(ctx.Args().Get(0))
-	if err != nil {
-		return err
-	}
-	addrType, err := parseAddrType(ctx.Args().Get(1))
-	if err != nil {
-		return err
-	}
-
-	walletClient, cleanUp := getWalletClient(ctx)
-	defer cleanUp()
-
-	req := &walletrpc.ImportPublicKeyRequest{
-		PublicKey:   pubKeyBytes,
-		AddressType: addrType,
-	}
-	resp, err := walletClient.ImportPublicKey(ctxc, req)
-	if err != nil {
-		return err
-	}
-
-	printRespJSON(resp)
 	return nil
 }
