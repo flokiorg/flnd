@@ -1093,7 +1093,7 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	// If unset (marked by 0 value), then enforce proper default.
 	if cfg.MaxChanSize == 0 {
 		if cfg.ProtocolOptions.Wumbo() {
-			cfg.MaxChanSize = int64(funding.MaxBtcFundingAmountWumbo)
+			cfg.MaxChanSize = int64(funding.MaxFlcFundingAmountWumbo)
 		} else {
 			cfg.MaxChanSize = int64(funding.MaxBtcFundingAmount)
 		}

@@ -94,10 +94,10 @@ const (
 	// in the real world.
 	MaxBtcFundingAmount = chainutil.Amount(1<<24) - 1
 
-	// MaxBtcFundingAmountWumbo is a soft-limit on the maximum size of wumbo
+	// MaxFlcFundingAmountWumbo is a soft-limit on the maximum size of wumbo
 	// channels. This limit is 10 FLC and is the only thing standing between
 	// you and limitless channel size (apart from 21 million cap).
-	MaxBtcFundingAmountWumbo = chainutil.Amount(1000000000)
+	MaxFlcFundingAmountWumbo = chainutil.Amount(21000000000)
 
 	msgBufferSize = 50
 

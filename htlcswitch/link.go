@@ -39,17 +39,18 @@ import (
 const (
 	// DefaultMaxOutgoingCltvExpiry is the maximum outgoing time lock that
 	// the node accepts for forwarded payments. The value is relative to the
-	// current block height. The reason to have a maximum is to prevent
-	// funds getting locked up unreasonably long. Otherwise, an attacker
-	// willing to lock its own funds too, could force the funds of this node
-	// to be locked up for an indefinite (max int32) number of blocks.
+	// current block height.
 	//
-	// The value 2016 corresponds to on average two weeks worth of blocks
-	// and is based on the maximum number of hops (20), the default CLTV
-	// delta (40), and some extra margin to account for the other lightning
-	// implementations and past lnd versions which used to have a default
-	// CLTV delta of 144.
-	DefaultMaxOutgoingCltvExpiry = 2016
+	// The value 10080 corresponds to one week of blocks (at 1 minute/block).
+	// This value was chosen to balance routing capability with griefing risk:
+	// 1. Standard Case: With a default CLTV delta of 80, a 20-hop route requires
+	//    1600 blocks. 10080 provides a generous ~6x safety margin.
+	// 2. Conservative Case: If nodes use a time-equivalent delta to Bitcoin's
+	//    conservative settings (~400 blocks/hop = 6.6 hours), a 20-hop route
+	//    requires 8000 blocks. 10080 safely covers this scenario.
+	// 3. Griefing Risk: Reduces the max funds lockup time to 1 week (down from
+	//    Bitcoin's default of 2 weeks), improving capital efficiency.
+	DefaultMaxOutgoingCltvExpiry = 10080
 
 	// DefaultMinLinkFeeUpdateTimeout represents the minimum interval in
 	// which a link should propose to update its commitment fee rate.
