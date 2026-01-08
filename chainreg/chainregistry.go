@@ -123,7 +123,7 @@ const (
 	DefaultFlokicoinBaseFeeMSat = lnwire.MilliLoki(1000)
 
 	// DefaultFlokicoinFeeRate is the default forwarding fee rate.
-	DefaultFlokicoinFeeRate = lnwire.MilliLoki(1)
+	DefaultFlokicoinFeeRate = lnwire.MilliLoki(100)
 
 	// DefaultFlokicoinTimeLockDelta is the default forwarding time lock
 	// delta.
