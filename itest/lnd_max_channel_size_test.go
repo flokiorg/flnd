@@ -31,11 +31,11 @@ func testMaxChannelSize(ht *lntest.HarnessTest) {
 	// soft limit of 10 FLC.
 	ht.EnsureConnected(wumboNode, wumboNode2)
 
-	chanAmt := funding.MaxBtcFundingAmountWumbo + 1
+	chanAmt := funding.MaxFlcFundingAmountWumbo + 1
 	// The test should show failure due to the channel exceeding our max
 	// size.
 	expectedErr := lnwallet.ErrChanTooLarge(
-		chanAmt, funding.MaxBtcFundingAmountWumbo,
+		chanAmt, funding.MaxFlcFundingAmountWumbo,
 	)
 	ht.OpenChannelAssertErr(
 		wumboNode, wumboNode2,
@@ -49,7 +49,7 @@ func testMaxChannelSize(ht *lntest.HarnessTest) {
 			"--protocol.wumbo-channels",
 			fmt.Sprintf(
 				"--maxchansize=%v",
-				int64(funding.MaxBtcFundingAmountWumbo+1),
+				int64(funding.MaxFlcFundingAmountWumbo+1),
 			),
 		},
 	)
