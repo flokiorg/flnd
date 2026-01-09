@@ -43,12 +43,10 @@ const (
 	//
 	// The value 10080 corresponds to one week of blocks (at 1 minute/block).
 	// This value was chosen to balance routing capability with griefing risk:
-	// 1. Standard Case: With a default CLTV delta of 80, a 20-hop route requires
-	//    1600 blocks. 10080 provides a generous ~6x safety margin.
-	// 2. Conservative Case: If nodes use a time-equivalent delta to Bitcoin's
-	//    conservative settings (~400 blocks/hop = 6.6 hours), a 20-hop route
-	//    requires 8000 blocks. 10080 safely covers this scenario.
-	// 3. Griefing Risk: Reduces the max funds lockup time to 1 week (down from
+	// 1. Standard Case: With a default CLTV delta of 400 (equivalent to Bitcoin's
+	//    40 blocks in time), a 20-hop route requires 8000 blocks. 10080 covers
+	//    this with a sufficient safety margin (~2000 blocks).
+	// 2. Griefing Risk: Reduces the max funds lockup time to 1 week (down from
 	//    Bitcoin's default of 2 weeks), improving capital efficiency.
 	DefaultMaxOutgoingCltvExpiry = 10080
 

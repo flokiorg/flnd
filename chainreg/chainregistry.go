@@ -127,7 +127,7 @@ const (
 
 	// DefaultFlokicoinTimeLockDelta is the default forwarding time lock
 	// delta.
-	DefaultFlokicoinTimeLockDelta = 80
+	DefaultFlokicoinTimeLockDelta = 400
 
 	// DefaultFlokicoinStaticFeePerKW is the fee rate of 50 sat/vbyte
 	// expressed in sat/kw.
