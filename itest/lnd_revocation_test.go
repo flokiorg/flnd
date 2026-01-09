@@ -20,7 +20,7 @@ func breachRetributionTestCase(ht *lntest.HarnessTest,
 	commitType lnrpc.CommitmentType) {
 
 	const (
-		chanAmt     = funding.MaxBtcFundingAmount
+		chanAmt     = funding.MaxFlcFundingAmount
 		paymentAmt  = 10000
 		numInvoices = 6
 	)
@@ -211,7 +211,7 @@ func revokedCloseRetributionZeroValueRemoteOutputCase(ht *lntest.HarnessTest,
 	commitType lnrpc.CommitmentType) {
 
 	const (
-		chanAmt     = funding.MaxBtcFundingAmount
+		chanAmt     = funding.MaxFlcFundingAmount
 		paymentAmt  = 10000
 		numInvoices = 6
 	)
@@ -396,7 +396,7 @@ func revokedCloseRetributionRemoteHodlCase(ht *lntest.HarnessTest,
 	commitType lnrpc.CommitmentType) {
 
 	const (
-		chanAmt     = funding.MaxBtcFundingAmount
+		chanAmt     = funding.MaxFlcFundingAmount
 		pushAmt     = 200000
 		paymentAmt  = 10000
 		numInvoices = 6
@@ -434,7 +434,7 @@ func revokedCloseRetributionRemoteHodlCase(ht *lntest.HarnessTest,
 
 	// In order to test Dave's response to an uncooperative channel closure
 	// by Carol, we'll first open up a channel between them with a
-	// funding.MaxBtcFundingAmount (2^24) loki value.
+	// funding.MaxFlcFundingAmount (2^24) loki value.
 	privateChan := commitType == lnrpc.CommitmentType_SIMPLE_TAPROOT
 	chanPoint := ht.OpenChannel(
 		dave, carol, lntest.OpenChannelParams{

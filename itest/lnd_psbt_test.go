@@ -107,7 +107,7 @@ func runPsbtChanFunding(ht *lntest.HarnessTest, private bool,
 func runPsbtChanFundingWithNodes(ht *lntest.HarnessTest, carol,
 	dave *node.HarnessNode, private bool, commitType lnrpc.CommitmentType) {
 
-	const chanSize = funding.MaxBtcFundingAmount
+	const chanSize = funding.MaxFlcFundingAmount
 	ht.FundCoins(chainutil.LokiPerFlokicoin, dave)
 
 	// Before we start the test, we'll ensure both sides are connected so
@@ -315,7 +315,7 @@ func runPsbtChanFundingExternal(ht *lntest.HarnessTest, private bool,
 	ht.FundCoins(50_000, carol)
 	ht.FundCoins(50_000, dave)
 
-	const chanSize = funding.MaxBtcFundingAmount
+	const chanSize = funding.MaxFlcFundingAmount
 
 	// Before we start the test, we'll ensure both sides are connected so
 	// the funding flow can be properly executed.
@@ -490,7 +490,7 @@ func runPsbtChanFundingSingleStep(ht *lntest.HarnessTest, private bool,
 	carol := ht.NewNode("carol", args)
 	dave := ht.NewNode("dave", args)
 
-	const chanSize = funding.MaxBtcFundingAmount
+	const chanSize = funding.MaxFlcFundingAmount
 
 	alice := ht.NewNodeWithCoins("Alice", nil)
 
@@ -1579,7 +1579,7 @@ func testPsbtChanFundingFailFlow(ht *lntest.HarnessTest) {
 	alice := ht.NewNodeWithCoins("Alice", nil)
 	bob := ht.NewNodeWithCoins("Bob", nil)
 
-	const chanSize = funding.MaxBtcFundingAmount
+	const chanSize = funding.MaxFlcFundingAmount
 
 	// Decrease the timeout window for the remote peer to accelerate the
 	// funding fail process.

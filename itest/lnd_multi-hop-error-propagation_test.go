@@ -13,7 +13,7 @@ func testHtlcErrorPropagation(ht *lntest.HarnessTest) {
 	// In this test we wish to exercise the daemon's correct parsing,
 	// handling, and propagation of errors that occur while processing a
 	// multi-hop payment.
-	const chanAmt = funding.MaxBtcFundingAmount
+	const chanAmt = funding.MaxFlcFundingAmount
 
 	alice := ht.NewNodeWithCoins("Alice", nil)
 	bob := ht.NewNodeWithCoins("Bob", nil)

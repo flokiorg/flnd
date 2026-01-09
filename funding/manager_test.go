@@ -560,7 +560,7 @@ func createTestFundingManager(t *testing.T, privKey *crypto.PrivateKey,
 		},
 		ZombieSweeperInterval:         1 * time.Hour,
 		ReservationTimeout:            1 * time.Nanosecond,
-		MaxChanSize:                   MaxBtcFundingAmount,
+		MaxChanSize:                   MaxFlcFundingAmount,
 		MaxLocalCSVDelay:              defaultMaxLocalCSVDelay,
 		MaxPendingChannels:            lncfg.DefaultMaxPendingChannels,
 		NotifyOpenChannelEvent:        evt.NotifyOpenChannelEvent,
@@ -4082,9 +4082,9 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// We will spend all the funds in the wallet, and expect
 			// no change output due to the dust limit.
 			coins: constructTestUtxos(
-				MaxBtcFundingAmount + 1,
+				MaxFlcFundingAmount + 1,
 			),
-			fundUpToMaxAmt: MaxBtcFundingAmount,
+			fundUpToMaxAmt: MaxFlcFundingAmount,
 			minFundAmt:     MinChanFundingSize,
 			pushAmt:        0,
 			change:         false,
@@ -4093,9 +4093,9 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// We spend less than the funds in the wallet, so a
 			// change output should be created.
 			coins: constructTestUtxos(
-				2 * MaxBtcFundingAmount,
+				2 * MaxFlcFundingAmount,
 			),
-			fundUpToMaxAmt: MaxBtcFundingAmount,
+			fundUpToMaxAmt: MaxFlcFundingAmount,
 			minFundAmt:     MinChanFundingSize,
 			pushAmt:        0,
 			change:         true,
@@ -4105,9 +4105,9 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// setting a smaller channel size, so a change output
 			// should be created.
 			coins: constructTestUtxos(
-				MaxBtcFundingAmount,
+				MaxFlcFundingAmount,
 			),
-			fundUpToMaxAmt: MaxBtcFundingAmount / 2,
+			fundUpToMaxAmt: MaxFlcFundingAmount / 2,
 			minFundAmt:     MinChanFundingSize,
 			pushAmt:        0,
 			change:         true,
@@ -4116,9 +4116,9 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// We are using the entirety of two inputs for the
 			// funding of a channel, hence expect no change output.
 			coins: constructTestUtxos(
-				MaxBtcFundingAmount/2, MaxBtcFundingAmount/2,
+				MaxFlcFundingAmount/2, MaxFlcFundingAmount/2,
 			),
-			fundUpToMaxAmt: MaxBtcFundingAmount,
+			fundUpToMaxAmt: MaxFlcFundingAmount,
 			minFundAmt:     MinChanFundingSize,
 			pushAmt:        0,
 			change:         false,
@@ -4127,9 +4127,9 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// We are using a fraction of two inputs for the funding
 			// of our channel, hence expect a change output.
 			coins: constructTestUtxos(
-				MaxBtcFundingAmount/2, MaxBtcFundingAmount/2,
+				MaxFlcFundingAmount/2, MaxFlcFundingAmount/2,
 			),
-			fundUpToMaxAmt: MaxBtcFundingAmount / 2,
+			fundUpToMaxAmt: MaxFlcFundingAmount / 2,
 			minFundAmt:     MinChanFundingSize,
 			pushAmt:        0,
 			change:         true,
@@ -4139,10 +4139,10 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// our wallet hence expect a change output. Furthermore
 			// we push half of the funding amount to the remote end
 			// which we expect to succeed.
-			coins:          constructTestUtxos(MaxBtcFundingAmount),
-			fundUpToMaxAmt: MaxBtcFundingAmount / 2,
+			coins:          constructTestUtxos(MaxFlcFundingAmount),
+			fundUpToMaxAmt: MaxFlcFundingAmount / 2,
 			minFundAmt:     MinChanFundingSize / 4,
-			pushAmt:        MaxBtcFundingAmount / 4,
+			pushAmt:        MaxFlcFundingAmount / 4,
 			change:         true,
 		},
 	}
@@ -4318,10 +4318,10 @@ func TestMaxChannelSizeConfig(t *testing.T) {
 	// Create a set of funding managers that will reject wumbo
 	// channels but set --maxchansize explicitly lower than soft-limit.
 	// Verify that wumbo rejecting funding managers will respect
-	// --maxchansize below 16777215 satoshi (MaxBtcFundingAmount) limit.
+	// --maxchansize below 16777215 satoshi (MaxFlcFundingAmount) limit.
 	alice, bob := setupFundingManagers(t, func(cfg *Config) {
 		cfg.NoWumboChans = true
-		cfg.MaxChanSize = MaxBtcFundingAmount - 1
+		cfg.MaxChanSize = MaxFlcFundingAmount - 1
 	})
 
 	// Attempt to create a channel above the limit
@@ -4332,7 +4332,7 @@ func TestMaxChannelSizeConfig(t *testing.T) {
 		Peer:            bob,
 		TargetPubkey:    bob.privKey.PubKey(),
 		ChainHash:       *fundingNetParams.GenesisHash,
-		LocalFundingAmt: MaxBtcFundingAmount,
+		LocalFundingAmt: MaxFlcFundingAmount,
 		PushAmt:         lnwire.NewMSatFromLokis(0),
 		Private:         false,
 		Updates:         updateChan,
@@ -4352,7 +4352,7 @@ func TestMaxChannelSizeConfig(t *testing.T) {
 	tearDownFundingManagers(t, alice, bob)
 	alice, bob = setupFundingManagers(t, func(cfg *Config) {
 		cfg.NoWumboChans = true
-		cfg.MaxChanSize = MaxBtcFundingAmount + 1
+		cfg.MaxChanSize = MaxFlcFundingAmount + 1
 	})
 
 	// Reset the Peer to the newly created one.
@@ -4408,7 +4408,7 @@ func TestWumboChannelConfig(t *testing.T) {
 		Peer:            bob,
 		TargetPubkey:    bob.privKey.PubKey(),
 		ChainHash:       *fundingNetParams.GenesisHash,
-		LocalFundingAmt: MaxBtcFundingAmount,
+		LocalFundingAmt: MaxFlcFundingAmount,
 		PushAmt:         lnwire.NewMSatFromLokis(0),
 		Private:         false,
 		Updates:         updateChan,

@@ -25,9 +25,9 @@ func testUpdateChannelPolicy(ht *lntest.HarnessTest) {
 		defaultTimeLockDelta = chainreg.DefaultFlokicoinTimeLockDelta
 		defaultMinHtlc       = 1000
 	)
-	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxBtcFundingAmount)
+	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxFlcFundingAmount)
 
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlcFundingAmount
 	pushAmt := chanAmt / 2
 
 	// Create a channel Alice->Bob.
@@ -773,7 +773,7 @@ func testUpdateChannelPolicyForPrivateChannel(ht *lntest.HarnessTest) {
 // rounds fee rate values correctly as well as setting fee rate with ppm works
 // as expected.
 func testUpdateChannelPolicyFeeRateAccuracy(ht *lntest.HarnessTest) {
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlcFundingAmount
 	pushAmt := chanAmt / 2
 
 	// Create a channel Alice -> Bob.

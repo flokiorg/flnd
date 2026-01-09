@@ -263,7 +263,7 @@ func testDisconnectingTargetPeer(ht *lntest.HarnessTest) {
 	// Start by connecting Alice and Bob with no channels.
 	ht.EnsureConnected(alice, bob)
 
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlcFundingAmount
 	pushAmt := chainutil.Amount(0)
 
 	// Create a new channel that requires 1 confs before it's considered

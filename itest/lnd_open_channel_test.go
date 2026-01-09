@@ -68,7 +68,7 @@ func testOpenChannelAfterReorg(ht *lntest.HarnessTest) {
 	// Create a new channel that requires 1 confs before it's considered
 	// open, then broadcast the funding transaction
 	params := lntest.OpenChannelParams{
-		Amt:     funding.MaxBtcFundingAmount,
+		Amt:     funding.MaxFlcFundingAmount,
 		Private: true,
 	}
 	pendingUpdate := ht.OpenChannelAssertPending(alice, bob, params)
@@ -158,9 +158,9 @@ func testChannelFeePolicyDefault(ht *lntest.HarnessTest) {
 		defaultMinHtlc       = 1000
 	)
 
-	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxBtcFundingAmount)
+	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxFlcFundingAmount)
 
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlcFundingAmount
 	pushAmt := chanAmt / 2
 
 	feeScenario := lntest.OpenChannelParams{
@@ -202,9 +202,9 @@ func testChannelFeePolicyBaseFee(ht *lntest.HarnessTest) {
 		optionalBaseFee      = 1337
 	)
 
-	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxBtcFundingAmount)
+	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxFlcFundingAmount)
 
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlcFundingAmount
 	pushAmt := chanAmt / 2
 
 	feeScenario := lntest.OpenChannelParams{
@@ -247,9 +247,9 @@ func testChannelFeePolicyFeeRate(ht *lntest.HarnessTest) {
 		optionalFeeRate      = 1337
 	)
 
-	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxBtcFundingAmount)
+	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxFlcFundingAmount)
 
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlcFundingAmount
 	pushAmt := chanAmt / 2
 
 	feeScenario := lntest.OpenChannelParams{
@@ -293,9 +293,9 @@ func testChannelFeePolicyBaseFeeAndFeeRate(ht *lntest.HarnessTest) {
 		optionalFeeRate      = 1337
 	)
 
-	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxBtcFundingAmount)
+	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxFlcFundingAmount)
 
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlcFundingAmount
 	pushAmt := chanAmt / 2
 
 	feeScenario := lntest.OpenChannelParams{
@@ -341,9 +341,9 @@ func testChannelFeePolicyLowBaseFeeAndFeeRate(ht *lntest.HarnessTest) {
 		lowFeeRate           = 900
 	)
 
-	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxBtcFundingAmount)
+	defaultMaxHtlc := lntest.CalculateMaxHtlc(funding.MaxFlcFundingAmount)
 
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlcFundingAmount
 	pushAmt := chanAmt / 2
 
 	feeScenario := lntest.OpenChannelParams{
@@ -449,7 +449,7 @@ func runBasicChannelCreationAndUpdates(ht *lntest.HarnessTest,
 
 	const (
 		numChannels = 2
-		amount      = funding.MaxBtcFundingAmount
+		amount      = funding.MaxFlcFundingAmount
 	)
 
 	// Subscribe Bob and Alice to channel event notifications.
@@ -548,7 +548,7 @@ func runBasicChannelCreationAndUpdates(ht *lntest.HarnessTest,
 	// If Bob now tries to open a channel with an invalid memo, reject it.
 	invalidMemo := strings.Repeat("a", 501)
 	params := lntest.OpenChannelParams{
-		Amt:  funding.MaxBtcFundingAmount,
+		Amt:  funding.MaxFlcFundingAmount,
 		Memo: invalidMemo,
 	}
 	expErr := fmt.Errorf("provided memo (%s) is of length 501, exceeds 500",
@@ -634,8 +634,8 @@ func testUpdateOnFunderPendingOpenChannels(ht *lntest.HarnessTest) {
 	// Create a new channel that requires 1 confs before it's considered
 	// open.
 	params := lntest.OpenChannelParams{
-		Amt:     funding.MaxBtcFundingAmount,
-		PushAmt: funding.MaxBtcFundingAmount / 2,
+		Amt:     funding.MaxFlcFundingAmount,
+		PushAmt: funding.MaxFlcFundingAmount / 2,
 	}
 	pending := ht.OpenChannelAssertPending(alice, bob, params)
 	chanPoint := lntest.ChanPointFromPendingUpdate(pending)
@@ -710,7 +710,7 @@ func testUpdateOnFundeePendingOpenChannels(ht *lntest.HarnessTest) {
 	// Create a new channel that requires 1 confs before it's considered
 	// open.
 	params := lntest.OpenChannelParams{
-		Amt: funding.MaxBtcFundingAmount,
+		Amt: funding.MaxFlcFundingAmount,
 	}
 	pending := ht.OpenChannelAssertPending(alice, bob, params)
 	chanPoint := lntest.ChanPointFromPendingUpdate(pending)
@@ -1023,7 +1023,7 @@ func testPendingChannelAfterReorg(ht *lntest.HarnessTest) {
 	tempMiner := ht.SpawnTempMiner()
 
 	// Alice initiates a channel opening to Bob.
-	params := lntest.OpenChannelParams{Amt: funding.MaxBtcFundingAmount}
+	params := lntest.OpenChannelParams{Amt: funding.MaxFlcFundingAmount}
 	ht.OpenChannelAssertPending(alice, bob, params)
 
 	// Mine the first block containing the funding transaction.
@@ -1189,7 +1189,7 @@ func testOpenChannelLockedBalance(ht *lntest.HarnessTest) {
 	// same goroutine.
 	openChannelReq := &lnrpc.OpenChannelRequest{
 		NodePubkey:         bob.PubKey[:],
-		LocalFundingAmount: int64(funding.MaxBtcFundingAmount),
+		LocalFundingAmount: int64(funding.MaxFlcFundingAmount),
 		TargetConf:         6,
 	}
 	_ = alice.RPC.OpenChannel(openChannelReq)

@@ -218,7 +218,7 @@ func testUpdateChanStatus(ht *lntest.HarnessTest) {
 // testUnannouncedChannels checks unannounced channels are not returned by
 // describeGraph RPC request unless explicitly asked for.
 func testUnannouncedChannels(ht *lntest.HarnessTest) {
-	amount := funding.MaxBtcFundingAmount
+	amount := funding.MaxFlcFundingAmount
 	alice := ht.NewNodeWithCoins("Alice", nil)
 	bob := ht.NewNode("Bob", nil)
 	ht.EnsureConnected(alice, bob)
@@ -263,7 +263,7 @@ func testGraphTopologyNotifications(ht *lntest.HarnessTest) {
 }
 
 func testGraphTopologyNtfns(ht *lntest.HarnessTest, pinned bool) {
-	const chanAmt = funding.MaxBtcFundingAmount
+	const chanAmt = funding.MaxFlcFundingAmount
 
 	// Spin up Bob first, since we will need to grab his pubkey when
 	// starting Alice to test pinned syncing.

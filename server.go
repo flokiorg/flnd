@@ -138,7 +138,7 @@ var (
 	// to the value under the Flokicoin chain as default.
 	//
 	// TODO(roasbeef): add command line param to modify.
-	MaxFundingAmount = funding.MaxBtcFundingAmount
+	MaxFundingAmount = funding.MaxFlcFundingAmount
 
 	// EndorsementExperimentEnd is the time after which nodes should stop
 	// propagating experimental endorsement signals.
@@ -1375,8 +1375,8 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 
 	// Select the configuration and funding parameters for Flokicoin.
 	chainCfg := cfg.Flokicoin
-	minRemoteDelay := funding.MinBtcRemoteDelay
-	maxRemoteDelay := funding.MaxBtcRemoteDelay
+	minRemoteDelay := funding.MinFlcRemoteDelay
+	maxRemoteDelay := funding.MaxFlcRemoteDelay
 
 	var chanIDSeed [32]byte
 	if _, err := rand.Read(chanIDSeed[:]); err != nil {

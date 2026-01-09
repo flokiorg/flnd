@@ -275,7 +275,7 @@ func testListChannels(ht *lntest.HarnessTest) {
 // exists and works properly.
 func testMaxPendingChannels(ht *lntest.HarnessTest) {
 	maxPendingChannels := lncfg.DefaultMaxPendingChannels + 1
-	amount := funding.MaxBtcFundingAmount
+	amount := funding.MaxFlcFundingAmount
 
 	// Create a new node (Carol) with greater number of max pending
 	// channels.
@@ -545,7 +545,7 @@ func testRejectHTLC(ht *lntest.HarnessTest) {
 // testNodeSignVerify checks that only connected nodes are allowed to perform
 // signing and verifying messages.
 func testNodeSignVerify(ht *lntest.HarnessTest) {
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlcFundingAmount
 	pushAmt := chainutil.Amount(100000)
 	p := lntest.OpenChannelParams{
 		Amt:     chanAmt,
@@ -591,7 +591,7 @@ func testNodeSignVerify(ht *lntest.HarnessTest) {
 func testAbandonChannel(ht *lntest.HarnessTest) {
 	// First establish a channel between Alice and Bob.
 	channelParam := lntest.OpenChannelParams{
-		Amt:     funding.MaxBtcFundingAmount,
+		Amt:     funding.MaxFlcFundingAmount,
 		PushAmt: chainutil.Amount(100000),
 	}
 

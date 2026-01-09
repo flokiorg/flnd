@@ -618,7 +618,7 @@ func runWalletImportAccountScenario(ht *lntest.HarnessTest,
 	// along the way.
 	fundChanAndCloseFromImportedAccount(
 		ht, dave, alice, carol, importedAccount, addrType, utxoAmt,
-		int64(funding.MaxBtcFundingAmount),
+		int64(funding.MaxFlcFundingAmount),
 	)
 }
 
@@ -782,6 +782,6 @@ func testWalletImportPubKeyScenario(ht *lntest.HarnessTest,
 	// along the way.
 	fundChanAndCloseFromImportedAccount(
 		ht, dave, alice, carol, defaultImportedAccount, addrType,
-		utxoAmt, int64(funding.MaxBtcFundingAmount),
+		utxoAmt, int64(funding.MaxFlcFundingAmount),
 	)
 }
