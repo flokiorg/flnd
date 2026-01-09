@@ -17,9 +17,9 @@ import (
 // testChannelBalance creates a new channel between Alice and Bob, then checks
 // channel balance to be equal amount specified while creation of channel.
 func testChannelBalance(ht *lntest.HarnessTest) {
-	// Open a channel with 0.16 FLC between Alice and Bob, ensuring the
+	// Open a channel with 5 FLC between Alice and Bob, ensuring the
 	// channel has been opened properly.
-	amount := funding.MaxBtcFundingAmount
+	amount := funding.MaxFlcFundingAmount
 
 	// Creates a helper closure to be used below which asserts the proper
 	// response to a channel balance RPC.

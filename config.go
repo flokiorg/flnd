@@ -74,7 +74,7 @@ const (
 
 	defaultNoSeedBackup                  = false
 	defaultPaymentsExpirationGracePeriod = time.Duration(0)
-	defaultTrickleDelay                  = 90 * 1000
+	defaultTrickleDelay                  = 9 * 1000
 	defaultChanStatusSampleInterval      = time.Minute
 	defaultChanEnableTimeout             = 19 * time.Minute
 	defaultChanDisableTimeout            = 20 * time.Minute
@@ -112,15 +112,15 @@ const (
 	// out and return false if it hasn't yet received a response.
 	defaultAcceptorTimeout = 15 * time.Second
 
-	defaultAlias = ""
-	defaultColor = "#3399FF"
+	defaultAlias = "MyLokiNode"
+	defaultColor = "#da9526"
 
 	// defaultCoopCloseTargetConfs is the default confirmation target
 	// that will be used to estimate a fee rate to use during a
 	// cooperative channel closure initiated by a remote peer. By default
 	// we'll set this to a lax value since we weren't the ones that
 	// initiated the channel closure.
-	defaultCoopCloseTargetConfs = 6
+	defaultCoopCloseTargetConfs = 60
 
 	// defaultBlockCacheSize is the size (in bytes) of blocks that will be
 	// keep in memory if no size is specified.
@@ -195,7 +195,7 @@ const (
 	// commitment output. The local csv delay maximum is now equal to
 	// the remote csv delay maximum we require for the remote commitment
 	// transaction.
-	defaultMaxLocalCSVDelay = 2016
+	defaultMaxLocalCSVDelay = 10080
 
 	// defaultChannelCommitInterval is the default maximum time between
 	// receiving a channel state update and signing a new commitment.
@@ -1087,15 +1087,15 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	}
 
 	// Ensure that --maxchansize is properly handled when set by user.
-	// For non-Wumbo channels this limit remains 16777215 loki by default
-	// as specified in BOLT-02. For wumbo channels this limit is 1,000,000,000.
-	// loki (10 FLC). Always enforce --maxchansize explicitly set by user.
+	// For non-Wumbo channels this limit remains 500,000,000 loki (5 FLC) by default
+	// as specified in BOLT-02. For wumbo channels this limit is 21,000,000,000.
+	// loki (210 FLC). Always enforce --maxchansize explicitly set by user.
 	// If unset (marked by 0 value), then enforce proper default.
 	if cfg.MaxChanSize == 0 {
 		if cfg.ProtocolOptions.Wumbo() {
 			cfg.MaxChanSize = int64(funding.MaxFlcFundingAmountWumbo)
 		} else {
-			cfg.MaxChanSize = int64(funding.MaxBtcFundingAmount)
+			cfg.MaxChanSize = int64(funding.MaxFlcFundingAmount)
 		}
 	}
 
@@ -1322,15 +1322,15 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	// The target network must be provided, otherwise, we won't
 	// know how to initialize the daemon.
 	if numNets == 0 {
-		str := "either --bitcoin.mainnet, or --bitcoin.testnet, " +
-			"--bitcoin.testnet4, --bitcoin.simnet, " +
-			"--bitcoin.regtest or --bitcoin.signet must be " +
+		str := "either --flokicoin.mainnet, or --flokicoin.testnet, " +
+			"--flokicoin.testnet4, --flokicoin.simnet, " +
+			"--flokicoin.regtest or --flokicoin.signet must be " +
 			"specified"
 
 		return nil, mkErr(str)
 	}
 
-	err = cfg.Flokicoin.Validate(minTimeLockDelta, funding.MinBtcRemoteDelay)
+	err = cfg.Flokicoin.Validate(minTimeLockDelta, funding.MinFlcRemoteDelay)
 	if err != nil {
 		return nil, mkErr("error validating bitcoin params: %v", err)
 	}

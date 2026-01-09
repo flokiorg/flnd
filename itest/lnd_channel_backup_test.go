@@ -1151,7 +1151,7 @@ func testExportChannelBackup(ht *lntest.HarnessTest) {
 // opportunity to sweep its output.
 func testDataLossProtection(ht *lntest.HarnessTest) {
 	const (
-		chanAmt     = funding.MaxBtcFundingAmount
+		chanAmt     = funding.MaxFlcFundingAmount
 		paymentAmt  = 10000
 		numInvoices = 6
 	)

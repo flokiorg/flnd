@@ -75,27 +75,26 @@ func WriteOutpoint(w io.Writer, o *wire.OutPoint) error {
 }
 
 const (
-	// MinBtcRemoteDelay is the minimum CSV delay we will require the remote
+	// MinFlcRemoteDelay is the minimum CSV delay we will require the remote
 	// to use for its commitment transaction.
-	MinBtcRemoteDelay uint16 = 144
+	MinFlcRemoteDelay uint16 = 1440
 
-	// MaxBtcRemoteDelay is the maximum CSV delay we will require the remote
+	// MaxFlcRemoteDelay is the maximum CSV delay we will require the remote
 	// to use for its commitment transaction.
-	MaxBtcRemoteDelay uint16 = 2016
+	MaxFlcRemoteDelay uint16 = 10080
 
 	// MinChanFundingSize is the smallest channel that we'll allow to be
 	// created over the RPC interface.
 	MinChanFundingSize = chainutil.Amount(20000)
 
-	// MaxBtcFundingAmount is a soft-limit of the maximum channel size
+	// MaxFlcFundingAmount is a soft-limit of the maximum channel size
 	// currently accepted on the Flokicoin chain within the Lightning
-	// Protocol. This limit is defined in BOLT-0002, and serves as an
-	// initial precautionary limit while implementations are battle tested
-	// in the real world.
-	MaxBtcFundingAmount = chainutil.Amount(1<<24) - 1
+	// Protocol. This limit is defined in BOLT-0002, however for Flokicoin
+	// we have increased this default to 5 FLC to support larger standard usage.
+	MaxFlcFundingAmount = chainutil.Amount(500000000)
 
 	// MaxFlcFundingAmountWumbo is a soft-limit on the maximum size of wumbo
-	// channels. This limit is 10 FLC and is the only thing standing between
+	// channels. This limit is 210 FLC and is the only thing standing between
 	// you and limitless channel size (apart from 21 million cap).
 	MaxFlcFundingAmountWumbo = chainutil.Amount(21000000000)
 
