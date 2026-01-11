@@ -144,7 +144,7 @@ func SetupLoggers(root *build.SubLoggerManager, interceptor signal.Interceptor) 
 	// `btcwallet.chain`, which is overwritten by `lnwallet`. To ensure the
 	// overwriting works, we need to initialize the loggers here so they
 	// can be overwritten later.
-	AddV1SubLogger(root, "BTCN", interceptor, neutrino.UseLogger)
+	AddV1SubLogger(root, "FLCN", interceptor, neutrino.UseLogger)
 	AddV1SubLogger(root, "CMGR", interceptor, connmgr.UseLogger)
 	AddV1SubLogger(root, "RPCC", interceptor, rpcclient.UseLogger)
 
