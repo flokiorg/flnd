@@ -9,7 +9,7 @@ import (
 
 // ProtocolOptions is a struct that we use to be able to test backwards
 // compatibility of protocol additions, while defaulting to the latest within
-// lnd, or to enable experimental protocol changes.
+// flnd, or to enable experimental protocol changes.
 //
 // TODO(yy): delete this build flag to unify with `lncfg/protocol.go`.
 //
@@ -27,15 +27,15 @@ type ProtocolOptions struct {
 	// WumboChans should be set if we want to enable support for wumbo
 	// (channels larger than 0.16 FLC) channels, which is the opposite of
 	// mini.
-	WumboChans bool `long:"wumbo-channels" description:"if set, then lnd will create and accept requests for channels larger chan 0.16 FLC"`
+	WumboChans bool `long:"wumbo-channels" description:"if set, then flnd will create and accept requests for channels larger chan 0.16 FLC"`
 
 	// TaprootChans should be set if we want to enable support for the
 	// experimental simple taproot chans commitment type.
-	TaprootChans bool `long:"simple-taproot-chans" description:"if set, then lnd will create and accept requests for channels using the simple taproot commitment type"`
+	TaprootChans bool `long:"simple-taproot-chans" description:"if set, then flnd will create and accept requests for channels using the simple taproot commitment type"`
 
 	// TaprootOverlayChans should be set if we want to enable support for
 	// the experimental taproot overlay chan type.
-	TaprootOverlayChans bool `long:"simple-taproot-overlay-chans" description:"if set, then lnd will create and accept requests for channels using the taproot overlay commitment type"`
+	TaprootOverlayChans bool `long:"simple-taproot-overlay-chans" description:"if set, then flnd will create and accept requests for channels using the taproot overlay commitment type"`
 
 	// Anchors enables anchor commitments.
 	// TODO(halseth): transition itests to anchors instead!
@@ -43,7 +43,7 @@ type ProtocolOptions struct {
 
 	// RbfCoopClose should be set if we want to signal that we support for
 	// the new experimental RBF coop close feature.
-	RbfCoopClose bool `long:"rbf-coop-close" description:"if set, then lnd will signal that it supports the new RBF based coop close protocol"`
+	RbfCoopClose bool `long:"rbf-coop-close" description:"if set, then flnd will signal that it supports the new RBF based coop close protocol"`
 
 	// ScriptEnforcedLease enables script enforced commitments for channel
 	// leases.
@@ -74,8 +74,13 @@ type ProtocolOptions struct {
 	// NoRouteBlindingOption disables forwarding of payments in blinded routes.
 	NoRouteBlindingOption bool `long:"no-route-blinding" description:"do not forward payments that are a part of a blinded route"`
 
-	// NoExperimentalEndorsementOption disables experimental endorsement.
-	NoExperimentalEndorsementOption bool `long:"no-experimental-endorsement" description:"do not forward experimental endorsement signals"`
+	// NoExperimentalAccountabilityOption disables experimental accountability.
+	NoExperimentalAccountabilityOption bool `long:"no-experimental-accountability" description:"do not forward experimental accountability signals"`
+
+	// NoExperimentalEndorsementOption is the deprecated name for
+	// NoExperimentalAccountabilityOption. It is hidden and will be removed
+	// in a future release.
+	NoExperimentalEndorsementOption bool `long:"no-experimental-endorsement" hidden:"true" description:"deprecated: use no-experimental-accountability instead"`
 
 	// NoQuiescenceOption disables quiescence for all channels.
 	NoQuiescenceOption bool `long:"no-quiescence" description:"do not allow or advertise quiescence for any channel"`
@@ -98,7 +103,7 @@ type ProtocolOptions struct {
 	CustomInvoice []uint16 `long:"custom-invoice" description:"custom feature bits to advertise in the node's invoices"`
 }
 
-// Wumbo returns true if lnd should permit the creation and acceptance of wumbo
+// Wumbo returns true if flnd should permit the creation and acceptance of wumbo
 // channels.
 func (l *ProtocolOptions) Wumbo() bool {
 	return l.WumboChans
@@ -137,10 +142,12 @@ func (l *ProtocolOptions) NoRouteBlinding() bool {
 	return l.NoRouteBlindingOption
 }
 
-// NoExperimentalEndorsement returns true if experimental endorsement should
-// be disabled.
-func (l *ProtocolOptions) NoExperimentalEndorsement() bool {
-	return l.NoExperimentalEndorsementOption
+// NoExpAccountability returns true if experimental accountability should be
+// disabled. It also checks the deprecated NoExperimentalEndorsementOption for
+// backwards compatibility.
+func (l *ProtocolOptions) NoExpAccountability() bool {
+	return l.NoExperimentalAccountabilityOption ||
+		l.NoExperimentalEndorsementOption
 }
 
 // NoQuiescence returns true if quiescence is disabled.
