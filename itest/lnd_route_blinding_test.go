@@ -352,17 +352,15 @@ func (b *blindedForwardTest) setupNetwork(ctx context.Context,
 	withInterceptor bool) {
 
 	carolArgs := []string{
-		"--flokicoin.timelockdelta=18",
-		fmt.Sprintf("--flokicoin.defaultremotedelay=%v", toLocalCSV),
-	}
+"--flokicoin.timelockdelta=24",
+fmt.Sprintf("--flokicoin.defaultremotedelay=%v", toLocalCSV),	}
 	if withInterceptor {
 		carolArgs = append(carolArgs, "--requireinterceptor")
 	}
 
 	daveArgs := []string{
-		"--flokicoin.timelockdelta=18",
-		fmt.Sprintf("--flokicoin.defaultremotedelay=%v", toLocalCSV),
-	}
+"--flokicoin.timelockdelta=24",
+fmt.Sprintf("--flokicoin.defaultremotedelay=%v", toLocalCSV),	}
 	cfgs := [][]string{nil, nil, carolArgs, daveArgs}
 	param := lntest.OpenChannelParams{
 		Amt: chanAmt,
