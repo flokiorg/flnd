@@ -54,15 +54,15 @@ const (
 	// mining blocks.
 	maxBlocksAllowed = 100
 
-	finalCltvDelta  = routing.MinCLTVDelta // 18.
-	thawHeightDelta = finalCltvDelta * 2   // 36.
+	finalCltvDelta  = routing.MinCLTVDelta // 24.
+	thawHeightDelta = finalCltvDelta * 2   // 48.
 )
 
 var (
 	// MaxBlocksMinedPerTest is the maximum number of blocks that we allow
 	// a test to mine. This is an exported global variable so it can be
 	// overwritten by other projects that don't have the same constraints.
-	MaxBlocksMinedPerTest = 50
+	MaxBlocksMinedPerTest = 70
 )
 
 // TestCase defines a test case that's been used in the integration test.
@@ -408,14 +408,14 @@ func (h *HarnessTest) checkAndLimitBlocksMined(startHeight int32) {
 
 	desc += "1. break test into smaller individual tests, especially if " +
 		"this is a table-drive test.\n" +
-		"2. use smaller CSV via `--bitcoin.defaultremotedelay=1.`\n" +
-		"3. use smaller CLTV via `--bitcoin.timelockdelta=18.`\n" +
+		"2. use smaller CSV via `--flokicoin.defaultremotedelay=1.`\n" +
+		"3. use smaller CLTV via `--flokicoin.timelockdelta=24.`\n" +
 		"4. remove unnecessary CloseChannel when test ends.\n" +
 		"5. use `CreateSimpleNetwork` for efficient channel creation.\n"
 	h.Log(desc)
 
 	// We enforce that the test should not mine more than
-	// MaxBlocksMinedPerTest (50 by default) blocks, which is more than
+	// MaxBlocksMinedPerTest (70 by default) blocks, which is more than
 	// enough to test a multi hop force close scenario.
 	require.LessOrEqualf(
 		h, int(blocksMined), MaxBlocksMinedPerTest,
@@ -985,7 +985,7 @@ type OpenChannelParams struct {
 	Outpoints []*lnrpc.OutPoint
 
 	// CloseAddress sets the upfront_shutdown_script parameter during
-	// channel open. It is expected to be encoded as a bitcoin address.
+	// channel open. It is expected to be encoded as a flokicoin address.
 	CloseAddress string
 }
 
