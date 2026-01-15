@@ -4,7 +4,6 @@ package walletrpc
 
 import (
 	context "context"
-
 	lnrpc "github.com/flokiorg/flnd/lnrpc"
 	signrpc "github.com/flokiorg/flnd/lnrpc/signrpc"
 	grpc "google.golang.org/grpc"

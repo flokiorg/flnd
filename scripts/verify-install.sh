@@ -324,9 +324,9 @@ if [[ "$PACKAGE_BIN" != "" ]]; then
   echo "SUCCESS! Verified $PACKAGE_BIN against $MANIFEST signed by $NUM_CHECKS developers."
 
 else
-  check_hash "$LND_BIN" "lnd"
-  check_hash "$LNCLI_BIN" "lncli"
+  check_hash "$LND_BIN" "flnd"
+  check_hash "$LNCLI_BIN" "flncli"
 
   echo ""
-  echo "SUCCESS! Verified lnd and lncli against $MANIFEST signed by $NUM_CHECKS developers."
+  echo "SUCCESS! Verified flnd and flncli against $MANIFEST signed by $NUM_CHECKS developers."
 fi
