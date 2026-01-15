@@ -1749,19 +1749,19 @@ func (h *HarnessTest) AssertAmountPaid(channelName string, hn *node.HarnessNode,
 			return fmt.Errorf("assert amount failed: %w", err)
 		}
 
-		if channel.TotalLokisSent != amountSent {
+		if channel.TotalSatoshisSent != amountSent {
 			return fmt.Errorf("%v: incorrect amount"+
 				" sent: %v != %v", channelName,
-				channel.TotalLokisSent,
+				channel.TotalSatoshisSent,
 				amountSent)
 		}
-		if channel.TotalLokisReceived !=
+		if channel.TotalSatoshisReceived !=
 			amountReceived {
 
 			return fmt.Errorf("%v: incorrect amount"+
 				" received: %v != %v",
 				channelName,
-				channel.TotalLokisReceived,
+				channel.TotalSatoshisReceived,
 				amountReceived)
 		}
 

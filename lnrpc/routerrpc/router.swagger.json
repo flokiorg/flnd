@@ -1182,7 +1182,7 @@
         "total_amt": {
           "type": "string",
           "format": "int64",
-          "description": "The total amount of funds required to complete a payment over this route.\nThis value includes the cumulative fees at each hop. As a result, the HTLC\nextended to the first-hop in the route will need to have at least this many\nsatoshis, otherwise the route will fail at an intermediate node due to an\ninsufficient amount of fees."
+          "description": "The total amount of funds required to complete a payment over this route.\nThis value includes the cumulative fees at each hop. As a result, the HTLC\nextended to the first-hop in the route will need to have at least this many\nloki, otherwise the route will fail at an intermediate node due to an\ninsufficient amount of fees."
         },
         "hops": {
           "type": "array",

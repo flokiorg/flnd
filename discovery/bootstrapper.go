@@ -435,7 +435,7 @@ search:
 			"nodes", "tcp", primarySeed, d.timeout,
 		)
 		if err != nil {
-			log.Tracef("Unable to lookup SRV records via "+
+			log.Warnf("Unable to lookup SRV records via "+
 				"primary seed (%v): %v", primarySeed, err)
 
 			log.Trace("Falling back to secondary")
@@ -456,7 +456,7 @@ search:
 				soaShim, primarySeed,
 			)
 			if err != nil {
-				log.Tracef("Unable to query fall "+
+				log.Warnf("Unable to query fall "+
 					"back dns seed (%v): %v", soaShim, err)
 				continue
 			}
