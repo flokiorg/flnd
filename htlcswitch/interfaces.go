@@ -435,14 +435,17 @@ type InterceptedForward interface {
 
 	// Resume notifies the intention to resume an existing hold forward. This
 	// basically means the caller wants to resume with the default behavior for
-	// this htlc which usually means forward it.
-	Resume() error
+	// this htlc which usually means forward it. An optional outgoing channel
+	// ID can be provided to override the default channel selection.
+	Resume(outgoingChanId fn.Option[lnwire.ShortChannelID]) error
 
 	// ResumeModified notifies the intention to resume an existing hold
-	// forward with modified fields.
+	// forward with modified fields. An optional outgoing channel ID can
+	// be provided to override the default channel selection.
 	ResumeModified(inAmountMsat,
 		outAmountMsat fn.Option[lnwire.MilliLoki],
-		outWireCustomRecords fn.Option[lnwire.CustomRecords]) error
+		outWireCustomRecords fn.Option[lnwire.CustomRecords],
+		outgoingChanId fn.Option[lnwire.ShortChannelID]) error
 
 	// Settle notifies the intention to settle an existing hold
 	// forward with a given preimage.
