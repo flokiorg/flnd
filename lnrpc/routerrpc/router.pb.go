@@ -3168,8 +3168,14 @@ type ForwardHtlcInterceptResponse struct {
 	// replacing any conflicting types. Note that there currently is no support
 	// for deleting existing custom records (they can only be replaced).
 	OutWireCustomRecords map[uint64][]byte `protobuf:"bytes,8,rep,name=out_wire_custom_records,json=outWireCustomRecords,proto3" json:"out_wire_custom_records,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// The outgoing channel id to use for forwarding. When set, LND will
+	// attempt to forward the HTLC to this specific channel instead of
+	// using its default routing logic. This is particularly useful for
+	// LSPS2 JIT channel implementations where the LSP needs to direct
+	// payments to a newly opened channel with a different alias SCID.
+	OutgoingRequestedChanId uint64 `protobuf:"varint,9,opt,name=outgoing_requested_chan_id,json=outgoingRequestedChanId,proto3" json:"outgoing_requested_chan_id,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *ForwardHtlcInterceptResponse) Reset() {
@@ -3256,6 +3262,13 @@ func (x *ForwardHtlcInterceptResponse) GetOutWireCustomRecords() map[uint64][]by
 		return x.OutWireCustomRecords
 	}
 	return nil
+}
+
+func (x *ForwardHtlcInterceptResponse) GetOutgoingRequestedChanId() uint64 {
+	if x != nil {
+		return x.OutgoingRequestedChanId
+	}
+	return 0
 }
 
 type UpdateChanStatusRequest struct {
@@ -3819,7 +3832,7 @@ const file_routerrpc_router_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\fR\x05value:\x028\x01\x1aF\n" +
 	"\x18InWireCustomRecordsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\x04R\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\fR\x05value:\x028\x01\"\xb9\x04\n" +
+	"\x05value\x18\x02 \x01(\fR\x05value:\x028\x01\"\xfa\x04\n" +
 	"\x1cForwardHtlcInterceptResponse\x12G\n" +
 	"\x14incoming_circuit_key\x18\x01 \x01(\v2\x15.routerrpc.CircuitKeyR\x12incomingCircuitKey\x12;\n" +
 	"\x06action\x18\x02 \x01(\x0e2#.routerrpc.ResolveHoldForwardActionR\x06action\x12\x1a\n" +
@@ -3828,7 +3841,8 @@ const file_routerrpc_router_proto_rawDesc = "" +
 	"\ffailure_code\x18\x05 \x01(\x0e2\x1a.lnrpc.Failure.FailureCodeR\vfailureCode\x12$\n" +
 	"\x0ein_amount_msat\x18\x06 \x01(\x04R\finAmountMsat\x12&\n" +
 	"\x0fout_amount_msat\x18\a \x01(\x04R\routAmountMsat\x12x\n" +
-	"\x17out_wire_custom_records\x18\b \x03(\v2A.routerrpc.ForwardHtlcInterceptResponse.OutWireCustomRecordsEntryR\x14outWireCustomRecords\x1aG\n" +
+	"\x17out_wire_custom_records\x18\b \x03(\v2A.routerrpc.ForwardHtlcInterceptResponse.OutWireCustomRecordsEntryR\x14outWireCustomRecords\x12?\n" +
+	"\x1aoutgoing_requested_chan_id\x18\t \x01(\x04B\x020\x01R\x17outgoingRequestedChanId\x1aG\n" +
 	"\x19OutWireCustomRecordsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\x04R\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\fR\x05value:\x028\x01\"\x82\x01\n" +

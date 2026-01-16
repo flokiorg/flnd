@@ -1076,6 +1076,13 @@ message ForwardHtlcInterceptResponse {
     // replacing any conflicting types. Note that there currently is no support
     // for deleting existing custom records (they can only be replaced).
     map<uint64, bytes> out_wire_custom_records = 8;
+
+    // The outgoing channel id to use for forwarding. When set, LND will
+    // attempt to forward the HTLC to this specific channel instead of
+    // using its default routing logic. This is particularly useful for
+    // LSPS2 JIT channel implementations where the LSP needs to direct
+    // payments to a newly opened channel with a different alias SCID.
+    uint64 outgoing_requested_chan_id = 9 [jstype = JS_STRING];
 }
 
 enum ResolveHoldForwardAction {
