@@ -2432,10 +2432,9 @@ func (s *server) Start(ctx context.Context) error {
 
 		// Create the onion message actor factory that will be used to
 		// spawn per-peer actors for handling onion messages.
-		resolver := &onionmessage.GraphNodeResolver{
-			Graph:  s.graphDB,
-			OurPub: s.identityECDH.PubKey(),
-		}
+		resolver := onionmessage.NewGraphNodeResolver(
+			s.graphDB, s.identityECDH.PubKey(),
+		)
 		s.onionActorFactory = onionmessage.NewOnionActorFactory(
 			s.sphinxOnionMsg, resolver, s,
 			s.onionMessageServer,
