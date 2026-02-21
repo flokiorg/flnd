@@ -2,6 +2,7 @@ package peer
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
@@ -53,6 +54,7 @@ func (m *MusigChanCloser) ProposalClosingOpts() (
 		*m.remoteNonce, localKey, remoteKey,
 		m.channel.Signer, m.channel.FundingTxOut(),
 		lnwallet.RemoteMusigCommit, tapscriptTweak,
+		fn.None[io.Reader](),
 	)
 
 	err := m.musigSession.FinalizeSession(*m.localNonce)
