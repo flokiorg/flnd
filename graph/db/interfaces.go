@@ -22,7 +22,7 @@ import (
 type NodeTraverser interface {
 	// ForEachNodeDirectedChannel calls the callback for every channel of
 	// the given node.
-	ForEachNodeDirectedChannel(nodePub route.Vertex,
+	ForEachNodeDirectedChannel(ctx context.Context, nodePub route.Vertex,
 		cb func(channel *DirectedChannel) error, reset func()) error
 
 	// FetchNodeFeatures returns the features of the given node.

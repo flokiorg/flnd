@@ -201,14 +201,15 @@ func (c *ChannelGraph) populateCache(ctx context.Context) error {
 // Unknown policies are passed into the callback as nil values.
 //
 // NOTE: this is part of the graphdb.NodeTraverser interface.
-func (c *ChannelGraph) ForEachNodeDirectedChannel(node route.Vertex,
-	cb func(channel *DirectedChannel) error, reset func()) error {
+func (c *ChannelGraph) ForEachNodeDirectedChannel(ctx context.Context,
+	node route.Vertex, cb func(channel *DirectedChannel) error,
+	reset func()) error {
 
 	if c.graphCache != nil {
 		return c.graphCache.ForEachChannel(node, cb)
 	}
 
-	return c.V1Store.ForEachNodeDirectedChannel(node, cb, reset)
+	return c.V1Store.ForEachNodeDirectedChannel(ctx, node, cb, reset)
 }
 
 // FetchNodeFeatures returns the features of the given node. If no features are

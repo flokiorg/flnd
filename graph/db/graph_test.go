@@ -1567,7 +1567,7 @@ func TestGraphTraversalCacheable(t *testing.T) {
 		// Query the ChannelGraph which uses the cache to iterate
 		// through the channels for each node.
 		err = graph.ForEachNodeDirectedChannel(
-			node, func(d *DirectedChannel) error {
+			ctx, node, func(d *DirectedChannel) error {
 				delete(chanIndex, d.ChannelID)
 				return nil
 			}, func() {},
@@ -1576,7 +1576,7 @@ func TestGraphTraversalCacheable(t *testing.T) {
 
 		// Now skip the cache and query the DB directly.
 		err = graph.V1Store.ForEachNodeDirectedChannel(
-			node, func(d *DirectedChannel) error {
+			ctx, node, func(d *DirectedChannel) error {
 				delete(chanIndex2, d.ChannelID)
 				return nil
 			}, func() {},
@@ -4700,7 +4700,8 @@ func TestGraphCacheForEachNodeChannel(t *testing.T) {
 
 	getSingleChannel := func() *DirectedChannel {
 		var ch *DirectedChannel
-		err := graph.ForEachNodeDirectedChannel(node1.PubKeyBytes,
+		err := graph.ForEachNodeDirectedChannel(
+			ctx, node1.PubKeyBytes,
 			func(c *DirectedChannel) error {
 				require.Nil(t, ch)
 				ch = c
