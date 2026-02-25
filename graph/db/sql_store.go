@@ -412,10 +412,8 @@ func (s *SQLStore) DeleteNode(ctx context.Context,
 // known for the node, an empty feature vector is returned.
 //
 // NOTE: this is part of the graphdb.NodeTraverser interface.
-func (s *SQLStore) FetchNodeFeatures(nodePub route.Vertex) (
-	*lnwire.FeatureVector, error) {
-
-	ctx := context.TODO()
+func (s *SQLStore) FetchNodeFeatures(ctx context.Context,
+	nodePub route.Vertex) (*lnwire.FeatureVector, error) {
 
 	return fetchNodeFeatures(ctx, s.db, nodePub)
 }
@@ -3073,10 +3071,9 @@ func (s *sqlNodeTraverser) ForEachNodeDirectedChannel(nodePub route.Vertex,
 // unknown, assume no additional features are supported.
 //
 // NOTE: Part of the NodeTraverser interface.
-func (s *sqlNodeTraverser) FetchNodeFeatures(nodePub route.Vertex) (
+func (s *sqlNodeTraverser) FetchNodeFeatures(ctx context.Context,
+	nodePub route.Vertex) (
 	*lnwire.FeatureVector, error) {
-
-	ctx := context.TODO()
 
 	return fetchNodeFeatures(ctx, s.db, nodePub)
 }

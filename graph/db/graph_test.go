@@ -147,13 +147,13 @@ func TestNodeInsertionAndDeletion(t *testing.T) {
 
 	// Check that the node's features are fetched correctly. This check
 	// will use the graph cache to fetch the features.
-	features, err := graph.FetchNodeFeatures(node.PubKeyBytes)
+	features, err := graph.FetchNodeFeatures(ctx, node.PubKeyBytes)
 	require.NoError(t, err)
 	require.Equal(t, testFeatures, features)
 
 	// Check that the node's features are fetched correctly. This check
 	// will check the database directly.
-	features, err = graph.V1Store.FetchNodeFeatures(node.PubKeyBytes)
+	features, err = graph.V1Store.FetchNodeFeatures(ctx, node.PubKeyBytes)
 	require.NoError(t, err)
 	require.Equal(t, testFeatures, features)
 
