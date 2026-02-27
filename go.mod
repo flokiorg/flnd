@@ -27,6 +27,7 @@ require (
 	github.com/jrick/logrotate v1.1.2
 	github.com/kkdai/bstream v1.0.0
 	github.com/klauspost/compress v1.18.2
+	github.com/lightningnetwork/lnd/actor v0.0.3
 	github.com/miekg/dns v1.1.43
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
