@@ -27,7 +27,7 @@ require (
 	github.com/jrick/logrotate v1.1.2
 	github.com/kkdai/bstream v1.0.0
 	github.com/klauspost/compress v1.18.2
-	github.com/lightningnetwork/lnd/actor v0.0.3
+	github.com/lightningnetwork/lnd/actor v0.0.6
 	github.com/miekg/dns v1.1.43
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
@@ -57,7 +57,10 @@ require (
 	pgregory.net/rapid v1.2.0
 )
 
-require github.com/btcsuite/btclog v0.0.0-20241003133417-09c4e92e319c // indirect
+require (
+	github.com/btcsuite/btclog v0.0.0-20241003133417-09c4e92e319c // indirect
+	github.com/btcsuite/btclog/v2 v2.0.1-0.20250602222548-9967d19bb084 // indirect
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -107,8 +110,8 @@ require (
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/lightninglabs/gozmq v0.0.0-20191113021534-d20a764486bf // indirect
 	github.com/lightningnetwork/lnd/clock v1.1.1 // indirect
-	github.com/lightningnetwork/lnd/fn/v2 v2.0.8 // indirect
-	github.com/lightningnetwork/lnd/queue v1.1.1 // indirect
+	github.com/lightningnetwork/lnd/fn/v2 v2.0.8
+	github.com/lightningnetwork/lnd/queue v1.2.0
 	github.com/lightningnetwork/lnd/ticker v1.1.1 // indirect
 	github.com/lightningnetwork/lnd/tlv v1.3.1 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

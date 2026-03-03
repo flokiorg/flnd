@@ -12,7 +12,25 @@ import (
 	flog "github.com/flokiorg/go-flokicoin/log/v2"
 	"github.com/lightningnetwork/lnd/actor"
 	extfn "github.com/lightningnetwork/lnd/fn/v2"
+	"github.com/lightningnetwork/lnd/queue"
 )
+
+const (
+	// DefaultOnionMailboxSize is the buffer capacity for per-peer onion
+	// message actor mailboxes.
+	DefaultOnionMailboxSize = 50
+
+	// DefaultMinREDThreshold is the queue depth at which Random Early
+	// Detection begins probabilistically dropping onion messages. Below
+	// this threshold no drops occur; above DefaultOnionMailboxSize all
+	// messages are dropped. Must be strictly less than
+	// DefaultOnionMailboxSize.
+	DefaultMinREDThreshold = 40
+)
+
+// Compile-time assertion: DefaultMinREDThreshold must be strictly less than
+// DefaultOnionMailboxSize. If this overflows, the constants are misconfigured.
+const _ = uint(DefaultOnionMailboxSize - DefaultMinREDThreshold - 1)
 
 // Request is a message sent to an OnionPeerActor when an onion message is
 // received from the peer. The actor processes the message through the full
@@ -67,9 +85,12 @@ func NewOnionMessageServiceKey(
 // OnionActorFactory is a function that spawns a new OnionPeerActor for a
 // given peer within the actor system. The factory captures shared dependencies
 // (router, resolver, sender, dispatcher) and only requires per-peer parameters
-// at spawn time.
+// at spawn time. Callers may pass ActorOptions to customise the mailbox (size,
+// drop predicate, etc.) on a per-peer basis.
 type OnionActorFactory func(system *actor.ActorSystem,
-	peerPubKey [33]byte) (OnionPeerActorRef, error)
+	peerPubKey [33]byte,
+	opts ...actor.ActorOption[*Request, *Response]) (OnionPeerActorRef,
+	error)
 
 // OnionPeerActor handles the full onion message processing pipeline for a
 // specific peer connection. It decodes incoming onion messages, determines
@@ -203,13 +224,17 @@ func (a *OnionPeerActor) Receive(ctx context.Context,
 // NewOnionActorFactory creates a factory function that spawns OnionPeerActors
 // with shared dependencies. The returned factory captures the router,
 // resolver, peer sender, and update dispatcher, requiring only the actor
-// system and peer public key at spawn time.
+// system, peer public key, and optional per-peer ActorOptions at spawn time.
+//
+// Callers supply ActorOptions (mailbox factory, size overrides, etc.) via the
+// opts variadic so that backpressure policy can be customised per peer.
 func NewOnionActorFactory(router OnionRouter, resolver NodeIDResolver,
 	peerSender PeerMessageSender,
 	dispatcher OnionMessageUpdateDispatcher) OnionActorFactory {
 
-	return func(system *actor.ActorSystem,
-		peerPubKey [33]byte) (OnionPeerActorRef, error) {
+	return func(system *actor.ActorSystem, peerPubKey [33]byte,
+		opts ...actor.ActorOption[*Request, *Response],
+	) (OnionPeerActorRef, error) {
 
 		peerActor := &OnionPeerActor{
 			peerPubKey:       peerPubKey,
@@ -222,14 +247,67 @@ func NewOnionActorFactory(router OnionRouter, resolver NodeIDResolver,
 		serviceKey, pubKeyHex := NewOnionMessageServiceKey(
 			peerPubKey,
 		)
-		actorRef := serviceKey.Spawn(
+		actorRef, err := serviceKey.Spawn(
 			system, "onion-peer-actor-"+pubKeyHex, peerActor,
+			opts...,
 		)
+		if err != nil {
+			return nil, err
+		}
 
 		log.Debugf("Spawned onion peer actor for peer %s",
 			pubKeyHex)
 
 		return actorRef, nil
+	}
+}
+
+// DefaultOnionActorOpts returns ActorOptions that configure a
+// BackpressureMailbox with a RED drop predicate and the default onion mailbox
+// size. The RED thresholds are derived from the mailbox capacity so that all
+// parameters are centralised and self-consistent.
+func DefaultOnionActorOpts() []actor.ActorOption[*Request, *Response] {
+	factory := func(ctx context.Context,
+		capacity int) actor.Mailbox[*Request, *Response] {
+
+		// Dynamically calculate the min threshold to be
+		// the same proportion (40/50 = 80%) of the actual
+		// capacity.
+		minThreshold := (capacity * DefaultMinREDThreshold) /
+			DefaultOnionMailboxSize
+
+		// Ensure minThreshold is strictly less than
+		// capacity for RED to work.
+		if minThreshold >= capacity {
+			minThreshold = capacity - 1
+		}
+		if minThreshold < 0 {
+			minThreshold = 0
+		}
+
+		shouldDrop, err := queue.RandomEarlyDrop(
+			minThreshold, capacity,
+		)
+		if err != nil {
+			// This should never happen given the
+			// threshold clamping above, but fall back to
+			// dropping all messages rather than risking
+			// a blocked readHandler.
+			shouldDrop = func(int) bool {
+				return true
+			}
+		}
+
+		return actor.NewBackpressureMailbox[*Request, *Response](
+			ctx, capacity, shouldDrop,
+		)
+	}
+
+	return []actor.ActorOption[*Request, *Response]{
+		actor.WithMailboxFactory(factory),
+		actor.WithMailboxSize[*Request, *Response](
+			DefaultOnionMailboxSize,
+		),
 	}
 }
 

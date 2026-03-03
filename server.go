@@ -440,6 +440,14 @@ type server struct {
 	// each peer connection.
 	onionActorFactory onionmessage.OnionActorFactory
 
+	// defaultOnionActorOpts holds the default ActorOptions (backpressure
+	// mailbox with RED) applied to every onion peer actor. These are
+	// computed once during server start and returned by the per-peer
+	// OnionActorOpts callback.
+	defaultOnionActorOpts []actor.ActorOption[
+		*onionmessage.Request, *onionmessage.Response,
+	]
+
 	// txPublisher is a publisher with fee-bumping capability.
 	txPublisher *sweep.TxPublisher
 
@@ -2442,6 +2450,9 @@ func (s *server) Start(ctx context.Context) error {
 				s.sphinxOnionMsg, resolver, s,
 				s.onionMessageServer,
 			)
+
+			s.defaultOnionActorOpts = onionmessage.
+				DefaultOnionActorOpts()
 		}
 
 		cleanup = cleanup.add(s.chanStatusMgr.Stop)
@@ -4509,13 +4520,19 @@ func (s *server) peerConnected(conn net.Conn, connReq *connmgr.ConnReq,
 		RoutingPolicy:           s.cc.RoutingPolicy,
 		Sphinx:                  s.sphinx,
 		SpawnOnionActor:         s.onionActorFactory,
-		ActorSystem:             s.actorSystem,
-		WitnessBeacon:           s.witnessBeacon,
-		Invoices:                s.invoices,
-		ChannelNotifier:         s.channelNotifier,
-		HtlcNotifier:            s.htlcNotifier,
-		TowerClient:             towerClient,
-		DisconnectPeer:          s.DisconnectPeer,
+		OnionActorOpts: func(_ [33]byte) []actor.ActorOption[
+			*onionmessage.Request, *onionmessage.Response,
+		] {
+
+			return s.defaultOnionActorOpts
+		},
+		ActorSystem:     s.actorSystem,
+		WitnessBeacon:   s.witnessBeacon,
+		Invoices:        s.invoices,
+		ChannelNotifier: s.channelNotifier,
+		HtlcNotifier:    s.htlcNotifier,
+		TowerClient:     towerClient,
+		DisconnectPeer:  s.DisconnectPeer,
 		GenNodeAnnouncement: func(...netann.NodeAnnModifier) (
 			lnwire.NodeAnnouncement1, error) {
 
