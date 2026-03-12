@@ -1,8 +1,3 @@
-08c42b19d multi: add custom nonce rand support to MuSig2 sessions
-38c415a92 lnwallet: add taproot channel test vector generator
-fa97946ff lnwallet: emit actual MuSig2 partial sigs and nonces in test vectors
-b78de44d1 lnwallet: fix HTLC sig-to-transaction mapping in test vector generator
-745bdc189 lnwallet: fix HTLC trimming test case to use dust_limit for zero-fee HTLCs
 77da917c8 lnwallet: add 3rd-party signature verification for taproot test vectors
 70f189ffc lnwallet: regenerate taproot channel test vectors
 2148445c6 lnwallet: add secret nonce stashing to MusigSession for test vectors
