@@ -550,6 +550,32 @@ func SenderHtlcSpendTimeout(receiverSig Signature,
 	return witnessStack, nil
 }
 
+// taprootScriptOpts is a set of options that modify the behavior of the way we
+// create taproot scripts.
+type taprootScriptOpts struct {
+	prodScript bool
+}
+
+// TaprootScriptOpt is a functional option that allows us to modify the behavior
+// of the taproot script creation.
+type TaprootScriptOpt func(*taprootScriptOpts)
+
+// defaultTaprootScriptOpt is the default set of options that we use when
+// creating taproot scripts.
+func defaultTaprootScriptOpt() *taprootScriptOpts {
+	return &taprootScriptOpts{
+		prodScript: false,
+	}
+}
+
+// WithProdScripts is a functional option that allows us to create scripts to
+// match the final version of the taproot channels.
+func WithProdScripts() func(*taprootScriptOpts) {
+	return func(o *taprootScriptOpts) {
+		o.prodScript = true
+	}
+}
+
 // SenderHTLCTapLeafTimeout returns the full tapscript leaf for the timeout
 // path of the sender HTLC. This is a small script that allows the sender to
 // timeout the HTLC after a period of time:
@@ -557,7 +583,8 @@ func SenderHtlcSpendTimeout(receiverSig Signature,
 //	<local_key> OP_CHECKSIGVERIFY
 //	<remote_key> OP_CHECKSIG
 func SenderHTLCTapLeafTimeout(senderHtlcKey,
-	receiverHtlcKey *crypto.PublicKey) (txscript.TapLeaf, error) {
+	receiverHtlcKey *crypto.PublicKey,
+	_ ...TaprootScriptOpt) (txscript.TapLeaf, error) {
 
 	builder := txscript.NewScriptBuilder()
 
@@ -583,7 +610,12 @@ func SenderHTLCTapLeafTimeout(senderHtlcKey,
 //	<remote_htlcpubkey> OP_CHECKSIG
 //	1 OP_CHECKSEQUENCEVERIFY OP_DROP
 func SenderHTLCTapLeafSuccess(receiverHtlcKey *crypto.PublicKey,
-	paymentHash []byte) (txscript.TapLeaf, error) {
+	paymentHash []byte, opts ...TaprootScriptOpt) (txscript.TapLeaf, error) {
+
+	opt := defaultTaprootScriptOpt()
+	for _, o := range opts {
+		o(opt)
+	}
 
 	builder := txscript.NewScriptBuilder()
 
@@ -601,10 +633,16 @@ func SenderHTLCTapLeafSuccess(receiverHtlcKey *crypto.PublicKey,
 	// Verify the remote party's signature, then make them wait 1 block
 	// after confirmation to properly sweep.
 	builder.AddData(schnorr.SerializePubKey(receiverHtlcKey))
-	builder.AddOp(txscript.OP_CHECKSIG)
-	builder.AddOp(txscript.OP_1)
-	builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
-	builder.AddOp(txscript.OP_DROP)
+	if opt.prodScript {
+		builder.AddOp(txscript.OP_CHECKSIGVERIFY)
+		builder.AddOp(txscript.OP_1)
+		builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
+	} else {
+		builder.AddOp(txscript.OP_CHECKSIG)
+		builder.AddOp(txscript.OP_1)
+		builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
+		builder.AddOp(txscript.OP_DROP)
+	}
 
 	successLeafScript, err := builder.Script()
 	if err != nil {
@@ -734,18 +772,18 @@ var _ TapscriptDescriptor = (*HtlcScriptTree)(nil)
 // the HTLC key for HTLCs on the sender's commitment.
 func senderHtlcTapScriptTree(senderHtlcKey, receiverHtlcKey,
 	revokeKey *crypto.PublicKey, payHash []byte, hType htlcType,
-	auxLeaf AuxTapLeaf) (*HtlcScriptTree, error) {
+	auxLeaf AuxTapLeaf, opts ...TaprootScriptOpt) (*HtlcScriptTree, error) {
 
 	// First, we'll obtain the tap leaves for both the success and timeout
 	// path.
 	successTapLeaf, err := SenderHTLCTapLeafSuccess(
-		receiverHtlcKey, payHash,
+		receiverHtlcKey, payHash, opts...,
 	)
 	if err != nil {
 		return nil, err
 	}
 	timeoutTapLeaf, err := SenderHTLCTapLeafTimeout(
-		senderHtlcKey, receiverHtlcKey,
+		senderHtlcKey, receiverHtlcKey, opts...,
 	)
 	if err != nil {
 		return nil, err
@@ -812,8 +850,8 @@ func senderHtlcTapScriptTree(senderHtlcKey, receiverHtlcKey,
 // unilaterally spend the created output.
 func SenderHTLCScriptTaproot(senderHtlcKey, receiverHtlcKey,
 	revokeKey *crypto.PublicKey, payHash []byte,
-	whoseCommit lntypes.ChannelParty, auxLeaf AuxTapLeaf) (*HtlcScriptTree,
-	error) {
+	whoseCommit lntypes.ChannelParty, auxLeaf AuxTapLeaf,
+	opts ...TaprootScriptOpt) (*HtlcScriptTree, error) {
 
 	var hType htlcType
 	if whoseCommit.IsLocal() {
@@ -826,8 +864,8 @@ func SenderHTLCScriptTaproot(senderHtlcKey, receiverHtlcKey,
 	// tree that includes the top level output script, as well as the two
 	// tap leaf paths.
 	return senderHtlcTapScriptTree(
-		senderHtlcKey, receiverHtlcKey, revokeKey, payHash, hType,
-		auxLeaf,
+		senderHtlcKey, receiverHtlcKey, revokeKey, payHash,
+		hType, auxLeaf, opts...,
 	)
 }
 
@@ -1228,23 +1266,38 @@ func ReceiverHtlcSpendTimeout(signer Signer, signDesc *SignDescriptor,
 //	1 OP_CHECKSEQUENCEVERIFY OP_DROP
 //	<cltv_expiry> OP_CHECKLOCKTIMEVERIFY OP_DROP
 func ReceiverHtlcTapLeafTimeout(senderHtlcKey *crypto.PublicKey,
-	cltvExpiry uint32) (txscript.TapLeaf, error) {
+	cltvExpiry uint32, opts ...TaprootScriptOpt) (txscript.TapLeaf, error) {
+
+	opt := defaultTaprootScriptOpt()
+	for _, o := range opts {
+		o(opt)
+	}
 
 	builder := txscript.NewScriptBuilder()
 
 	// The first part of the script will verify a signature from the
 	// sender authorizing the spend (the timeout).
 	builder.AddData(schnorr.SerializePubKey(senderHtlcKey))
-	builder.AddOp(txscript.OP_CHECKSIG)
-	builder.AddOp(txscript.OP_1)
-	builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
-	builder.AddOp(txscript.OP_DROP)
 
-	// The second portion will ensure that the CLTV expiry on the spending
-	// transaction is correct.
-	builder.AddInt64(int64(cltvExpiry))
-	builder.AddOp(txscript.OP_CHECKLOCKTIMEVERIFY)
-	builder.AddOp(txscript.OP_DROP)
+	if opt.prodScript {
+		builder.AddOp(txscript.OP_CHECKSIGVERIFY)
+		builder.AddOp(txscript.OP_1)
+		builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
+		builder.AddOp(txscript.OP_VERIFY)
+		builder.AddInt64(int64(cltvExpiry))
+		builder.AddOp(txscript.OP_CHECKLOCKTIMEVERIFY)
+	} else {
+		builder.AddOp(txscript.OP_CHECKSIG)
+		builder.AddOp(txscript.OP_1)
+		builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
+		builder.AddOp(txscript.OP_DROP)
+
+		// The second portion will ensure that the CLTV expiry on the spending
+		// transaction is correct.
+		builder.AddInt64(int64(cltvExpiry))
+		builder.AddOp(txscript.OP_CHECKLOCKTIMEVERIFY)
+		builder.AddOp(txscript.OP_DROP)
+	}
 
 	timeoutLeafScript, err := builder.Script()
 	if err != nil {
@@ -1264,7 +1317,7 @@ func ReceiverHtlcTapLeafTimeout(senderHtlcKey *crypto.PublicKey,
 //	<sender_htlcpubkey> OP_CHECKSIG
 func ReceiverHtlcTapLeafSuccess(receiverHtlcKey *crypto.PublicKey,
 	senderHtlcKey *crypto.PublicKey,
-	paymentHash []byte) (txscript.TapLeaf, error) {
+	paymentHash []byte, _ ...TaprootScriptOpt) (txscript.TapLeaf, error) {
 
 	builder := txscript.NewScriptBuilder()
 
@@ -1298,18 +1351,19 @@ func ReceiverHtlcTapLeafSuccess(receiverHtlcKey *crypto.PublicKey,
 // the HTLC key for HTLCs on the receiver's commitment.
 func receiverHtlcTapScriptTree(senderHtlcKey, receiverHtlcKey,
 	revokeKey *crypto.PublicKey, payHash []byte, cltvExpiry uint32,
-	hType htlcType, auxLeaf AuxTapLeaf) (*HtlcScriptTree, error) {
+	hType htlcType, auxLeaf AuxTapLeaf,
+	opts ...TaprootScriptOpt) (*HtlcScriptTree, error) {
 
 	// First, we'll obtain the tap leaves for both the success and timeout
 	// path.
 	successTapLeaf, err := ReceiverHtlcTapLeafSuccess(
-		receiverHtlcKey, senderHtlcKey, payHash,
+		receiverHtlcKey, senderHtlcKey, payHash, opts...,
 	)
 	if err != nil {
 		return nil, err
 	}
 	timeoutTapLeaf, err := ReceiverHtlcTapLeafTimeout(
-		senderHtlcKey, cltvExpiry,
+		senderHtlcKey, cltvExpiry, opts...,
 	)
 	if err != nil {
 		return nil, err
@@ -1377,7 +1431,7 @@ func receiverHtlcTapScriptTree(senderHtlcKey, receiverHtlcKey,
 func ReceiverHTLCScriptTaproot(cltvExpiry uint32,
 	senderHtlcKey, receiverHtlcKey, revocationKey *crypto.PublicKey,
 	payHash []byte, whoseCommit lntypes.ChannelParty,
-	auxLeaf AuxTapLeaf) (*HtlcScriptTree, error) {
+	auxLeaf AuxTapLeaf, opts ...TaprootScriptOpt) (*HtlcScriptTree, error) {
 
 	var hType htlcType
 	if whoseCommit.IsLocal() {
@@ -1391,7 +1445,7 @@ func ReceiverHTLCScriptTaproot(cltvExpiry uint32,
 	// tap leaf paths.
 	return receiverHtlcTapScriptTree(
 		senderHtlcKey, receiverHtlcKey, revocationKey, payHash,
-		cltvExpiry, hType, auxLeaf,
+		cltvExpiry, hType, auxLeaf, opts...,
 	)
 }
 
@@ -1596,20 +1650,32 @@ func SecondLevelHtlcScript(revocationKey, delayKey *crypto.PublicKey,
 //	<local_delay_key> OP_CHECKSIG
 //	<to_self_delay> OP_CHECKSEQUENCEVERIFY OP_DROP
 func TaprootSecondLevelTapLeaf(delayKey *crypto.PublicKey,
-	csvDelay uint32) (txscript.TapLeaf, error) {
+	csvDelay uint32, opts ...TaprootScriptOpt) (txscript.TapLeaf, error) {
+
+	opt := defaultTaprootScriptOpt()
+	for _, o := range opts {
+		o(opt)
+	}
 
 	builder := txscript.NewScriptBuilder()
 
 	// Ensure the proper party can sign for this output.
 	builder.AddData(schnorr.SerializePubKey(delayKey))
-	builder.AddOp(txscript.OP_CHECKSIG)
 
-	// Assuming the above passes, then we'll now ensure that the CSV delay
-	// has been upheld, dropping the int we pushed on. If the sig above is
-	// valid, then a 1 will be left on the stack.
-	builder.AddInt64(int64(csvDelay))
-	builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
-	builder.AddOp(txscript.OP_DROP)
+	if opt.prodScript {
+		builder.AddOp(txscript.OP_CHECKSIGVERIFY)
+		builder.AddInt64(int64(csvDelay))
+		builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
+	} else {
+		builder.AddOp(txscript.OP_CHECKSIG)
+
+		// Assuming the above passes, then we'll now ensure that the CSV delay
+		// has been upheld, dropping the int we pushed on. If the sig above is
+		// valid, then a 1 will be left on the stack.
+		builder.AddInt64(int64(csvDelay))
+		builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
+		builder.AddOp(txscript.OP_DROP)
+	}
 
 	secondLevelLeafScript, err := builder.Script()
 	if err != nil {
@@ -1622,11 +1688,13 @@ func TaprootSecondLevelTapLeaf(delayKey *crypto.PublicKey,
 // SecondLevelHtlcTapscriptTree construct the indexed tapscript tree needed to
 // generate the tap tweak to create the final output and also control block.
 func SecondLevelHtlcTapscriptTree(delayKey *crypto.PublicKey, csvDelay uint32,
-	auxLeaf AuxTapLeaf) (*txscript.IndexedTapScriptTree, error) {
+	auxLeaf AuxTapLeaf, opts ...TaprootScriptOpt) (*txscript.IndexedTapScriptTree, error) {
 
 	// First grab the second level leaf script we need to create the top
 	// level output.
-	secondLevelTapLeaf, err := TaprootSecondLevelTapLeaf(delayKey, csvDelay)
+	secondLevelTapLeaf, err := TaprootSecondLevelTapLeaf(
+		delayKey, csvDelay, opts...,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1697,12 +1765,13 @@ type SecondLevelScriptTree struct {
 // TaprootSecondLevelScriptTree constructs the tapscript tree used to spend the
 // second level HTLC output.
 func TaprootSecondLevelScriptTree(revokeKey, delayKey *crypto.PublicKey,
-	csvDelay uint32, auxLeaf AuxTapLeaf) (*SecondLevelScriptTree, error) {
+	csvDelay uint32, auxLeaf AuxTapLeaf,
+	opts ...TaprootScriptOpt) (*SecondLevelScriptTree, error) {
 
 	// First, we'll make the tapscript tree that commits to the redemption
 	// path.
 	tapScriptTree, err := SecondLevelHtlcTapscriptTree(
-		delayKey, csvDelay, auxLeaf,
+		delayKey, csvDelay, auxLeaf, opts...,
 	)
 	if err != nil {
 		return nil, err
@@ -2176,19 +2245,23 @@ func (c *CommitScriptTree) Tree() ScriptTree {
 // NewLocalCommitScriptTree returns a new CommitScript tree that can be used to
 // create and spend the commitment output for the local party.
 func NewLocalCommitScriptTree(csvTimeout uint32, selfKey,
-	revokeKey *crypto.PublicKey, auxLeaf AuxTapLeaf) (*CommitScriptTree,
-	error) {
+	revokeKey *crypto.PublicKey, auxLeaf AuxTapLeaf,
+	opts ...TaprootScriptOpt) (*CommitScriptTree, error) {
 
 	// First, we'll need to construct the tapLeaf that'll be our delay CSV
 	// clause.
-	delayScript, err := TaprootLocalCommitDelayScript(csvTimeout, selfKey)
+	delayScript, err := TaprootLocalCommitDelayScript(
+		csvTimeout, selfKey, opts...,
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	// Next, we'll need to construct the revocation path, which is just a
 	// simple checksig script.
-	revokeScript, err := TaprootLocalCommitRevokeScript(selfKey, revokeKey)
+	revokeScript, err := TaprootLocalCommitRevokeScript(
+		selfKey, revokeKey, opts...,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -2228,22 +2301,34 @@ func NewLocalCommitScriptTree(csvTimeout uint32, selfKey,
 // TaprootLocalCommitDelayScript builds the tap leaf with the CSV delay script
 // for the to-local output.
 func TaprootLocalCommitDelayScript(csvTimeout uint32,
-	selfKey *crypto.PublicKey) ([]byte, error) {
+	selfKey *crypto.PublicKey, opts ...TaprootScriptOpt) ([]byte, error) {
+
+	opt := defaultTaprootScriptOpt()
+	for _, o := range opts {
+		o(opt)
+	}
 
 	builder := txscript.NewScriptBuilder()
 	builder.AddData(schnorr.SerializePubKey(selfKey))
-	builder.AddOp(txscript.OP_CHECKSIG)
-	builder.AddInt64(int64(csvTimeout))
-	builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
-	builder.AddOp(txscript.OP_DROP)
+
+	if opt.prodScript {
+		builder.AddOp(txscript.OP_CHECKSIGVERIFY)
+		builder.AddInt64(int64(csvTimeout))
+		builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
+	} else {
+		builder.AddOp(txscript.OP_CHECKSIG)
+		builder.AddInt64(int64(csvTimeout))
+		builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
+		builder.AddOp(txscript.OP_DROP)
+	}
 
 	return builder.Script()
 }
 
 // TaprootLocalCommitRevokeScript builds the tap leaf with the revocation path
 // for the to-local output.
-func TaprootLocalCommitRevokeScript(selfKey, revokeKey *crypto.PublicKey) (
-	[]byte, error) {
+func TaprootLocalCommitRevokeScript(selfKey, revokeKey *crypto.PublicKey,
+	_ ...TaprootScriptOpt) ([]byte, error) {
 
 	builder := txscript.NewScriptBuilder()
 	builder.AddData(schnorr.SerializePubKey(selfKey))
@@ -2617,16 +2702,29 @@ func CommitScriptToRemoteConfirmed(key *crypto.PublicKey) ([]byte, error) {
 // NewRemoteCommitScriptTree constructs a new script tree for the remote party
 // to sweep their funds after a hard coded 1 block delay.
 func NewRemoteCommitScriptTree(remoteKey *crypto.PublicKey,
-	auxLeaf AuxTapLeaf) (*CommitScriptTree, error) {
+	auxLeaf AuxTapLeaf,
+	opts ...TaprootScriptOpt) (*CommitScriptTree, error) {
+
+	opt := defaultTaprootScriptOpt()
+	for _, o := range opts {
+		o(opt)
+	}
 
 	// First, construct the remote party's tapscript they'll use to sweep
 	// their outputs.
 	builder := txscript.NewScriptBuilder()
 	builder.AddData(schnorr.SerializePubKey(remoteKey))
-	builder.AddOp(txscript.OP_CHECKSIG)
-	builder.AddOp(txscript.OP_1)
-	builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
-	builder.AddOp(txscript.OP_DROP)
+
+	if opt.prodScript {
+		builder.AddOp(txscript.OP_CHECKSIGVERIFY)
+		builder.AddOp(txscript.OP_1)
+		builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
+	} else {
+		builder.AddOp(txscript.OP_CHECKSIG)
+		builder.AddOp(txscript.OP_1)
+		builder.AddOp(txscript.OP_CHECKSEQUENCEVERIFY)
+		builder.AddOp(txscript.OP_DROP)
+	}
 
 	remoteScript, err := builder.Script()
 	if err != nil {
