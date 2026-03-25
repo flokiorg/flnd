@@ -490,7 +490,7 @@ func testForwardInterceptorRestart(ht *lntest.HarnessTest) {
 // the force-close, so only the on-chain interceptor entry exists.
 func testForwardInterceptorOnChainSettleAfterRestart(ht *lntest.HarnessTest) {
 	const (
-		chanAmt    = btcutil.Amount(300000)
+		chanAmt    = chainutil.Amount(300000)
 		invoiceAmt = int64(100000)
 	)
 
@@ -504,7 +504,7 @@ func testForwardInterceptorOnChainSettleAfterRestart(ht *lntest.HarnessTest) {
 
 	// Fund Bob so he can publish the on-chain HTLC success sweep once the
 	// interceptor supplies the preimage.
-	ht.FundCoins(btcutil.SatoshiPerBitcoin, bob)
+	ht.FundCoins(chainutil.LokiPerFlokicoin, bob)
 
 	interceptor, cancelInterceptor := bob.RPC.HtlcInterceptor()
 
@@ -582,7 +582,7 @@ func testForwardInterceptorOnChainSettleAfterRestart(ht *lntest.HarnessTest) {
 // on-chain contest resolver.
 func testForwardInterceptorOnChainSettleNoRestart(ht *lntest.HarnessTest) {
 	const (
-		chanAmt    = btcutil.Amount(300000)
+		chanAmt    = chainutil.Amount(300000)
 		invoiceAmt = int64(100000)
 	)
 
@@ -596,7 +596,7 @@ func testForwardInterceptorOnChainSettleNoRestart(ht *lntest.HarnessTest) {
 
 	// Fund Bob so he can publish the on-chain HTLC success sweep once the
 	// interceptor supplies the preimage.
-	ht.FundCoins(btcutil.SatoshiPerBitcoin, bob)
+	ht.FundCoins(chainutil.LokiPerFlokicoin, bob)
 
 	interceptor, cancelInterceptor := bob.RPC.HtlcInterceptor()
 	defer cancelInterceptor()
