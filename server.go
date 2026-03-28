@@ -634,6 +634,15 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 			"in a standalone lnd build")
 	}
 
+	// If either taproot channel type is enabled, we also need to enable
+	// the RBF cooperative close protocol, as it is required for taproot
+	// channel interoperability.
+	if cfg.ProtocolOptions.TaprootChans ||
+		cfg.ProtocolOptions.TaprootOverlayChans {
+
+		cfg.ProtocolOptions.RbfCoopClose = true
+	}
+
 	//nolint:ll
 	featureMgr, err := feature.NewManager(feature.Config{
 		NoTLVOnion:                   cfg.ProtocolOptions.LegacyOnion(),
@@ -1711,6 +1720,13 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 			blob.FlagTaprootChannel,
 		)
 
+		// Copy the policy for legacy channels and set the blob flags
+		// signalling support for production taproot channels.
+		taprootFinalPolicy := policy
+		taprootFinalPolicy.TxPolicy.BlobType |= blob.Type(
+			blob.FlagTaprootChannel | blob.FlagTaprootFinalChannel,
+		)
+
 		s.towerClientMgr, err = wtclient.NewManager(&wtclient.Config{
 			FetchClosedChannel:     fetchClosedChannel,
 			BuildBreachRetribution: buildBreachRetribution,
@@ -1741,7 +1757,7 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 			MinBackoff:         10 * time.Second,
 			MaxBackoff:         5 * time.Minute,
 			MaxTasksInMemQueue: cfg.WtClient.MaxTasksInMemQueue,
-		}, policy, anchorPolicy, taprootPolicy)
+		}, policy, anchorPolicy, taprootPolicy, taprootFinalPolicy)
 		if err != nil {
 			return nil, err
 		}
