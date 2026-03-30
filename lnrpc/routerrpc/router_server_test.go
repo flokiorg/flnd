@@ -887,7 +887,7 @@ func TestProbePaymentRequestUsesUniqueHashPerLSP(t *testing.T) {
 	// Act: estimate the route fee with a stubbed probe sender that records
 	// the generated per-LSP probe requests.
 	_, err = server.probePaymentRequestWithSender(
-		t.Context(), payReq, 1, sendProbe,
+		t.Context(), payReq, 1, nil, sendProbe,
 	)
 
 	// Assert: all LSPs were probed, each probe had a unique payment hash,
