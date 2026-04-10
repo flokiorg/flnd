@@ -1,8 +1,3 @@
-7a18fba66 watchtower: add production taproot channel support to justice kit
-086f69277 itest: extend watchtower breach test to cover production taproot channels
-890636a13 multi: fix linter issues
-91e35c4d5 docs/release-notes: add release note for production taproot channels
-aaf7c2942 lnwallet: return error from AggregateNonces in MusigSession
 98c086ba5 chanbackup: add SimpleTaprootFinalVersion for production taproot backups
 fd3b6386f multi: fix lint and itest failures for production taproot channels
 85bba2ca7 multi: add SCB restore support for production taproot channels
