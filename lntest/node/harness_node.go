@@ -20,7 +20,7 @@ import (
 	"github.com/flokiorg/flnd/lntest/rpc"
 	"github.com/flokiorg/flnd/lntest/wait"
 	"github.com/flokiorg/flnd/macaroons"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -949,7 +949,7 @@ func createTempPgDB(ctx context.Context) (string, error) {
 
 // executePgQuery executes a SQL statement in a postgres db.
 func executePgQuery(ctx context.Context, query string) error {
-	pool, err := pgxpool.Connect(ctx, postgresDatabaseDsn("postgres"))
+	pool, err := pgxpool.New(ctx, postgresDatabaseDsn("postgres"))
 	if err != nil {
 		return fmt.Errorf("unable to connect to database: %w", err)
 	}
