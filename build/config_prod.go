@@ -16,6 +16,7 @@ type consoleLoggerCfg struct {
 func defaultConsoleLoggerCfg() *consoleLoggerCfg {
 	return &consoleLoggerCfg{
 		LoggerConfig: &LoggerConfig{
+			Disable:  true,
 			CallSite: callSiteOff,
 		},
 	}
