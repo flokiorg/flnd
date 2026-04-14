@@ -33,11 +33,11 @@ type consoleLoggerCfg struct {
 func defaultConsoleLoggerCfg() *consoleLoggerCfg {
 	return &consoleLoggerCfg{
 		LoggerConfig: &LoggerConfig{
+			Disable:  true,
 			CallSite: callSiteShort,
 		},
 	}
 }
-
 // HandlerOptions returns the set of flog.HandlerOptions that the state of the
 // config struct translates to.
 func (cfg *consoleLoggerCfg) HandlerOptions() []flog.HandlerOption {

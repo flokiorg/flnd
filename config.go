@@ -610,7 +610,7 @@ func DefaultConfig() Config {
 			FeeRate:       chainreg.DefaultFlokicoinFeeRate,
 			TimeLockDelta: chainreg.DefaultFlokicoinTimeLockDelta,
 			MaxLocalDelay: defaultMaxLocalCSVDelay,
-			Node:          btcdBackendName,
+			Node:          neutrinoBackendName,
 		},
 		BtcdMode: &lncfg.Btcd{
 			Dir:     defaultBtcdDir,
@@ -634,7 +634,9 @@ func DefaultConfig() Config {
 		NoSeedBackup:       defaultNoSeedBackup,
 		MinBackoff:         defaultMinBackoff,
 		MaxBackoff:         defaultMaxBackoff,
-		ConnectionTimeout:  tor.DefaultConnTimeout,
+		ConnectionTimeout:  60 * time.Second,
+		RestCORS:           []string{"http://localhost:3000"},
+		TLSAutoRefresh:     true,
 
 		Fee: &lncfg.Fee{
 			MinUpdateTimeout: lncfg.DefaultMinUpdateTimeout,
@@ -760,6 +762,10 @@ func DefaultConfig() Config {
 				PolicyIncreaseMultiplier: lncfg.DefaultBlindedPathPolicyIncreaseMultiplier,
 				PolicyDecreaseMultiplier: lncfg.DefaultBlindedPathPolicyDecreaseMultiplier,
 			},
+		},
+		ProtocolOptions: &lncfg.ProtocolOptions{
+			OptionZeroConf:  true,
+			OptionScidAlias: true,
 		},
 		MaxOutgoingCltvExpiry:     htlcswitch.DefaultMaxOutgoingCltvExpiry,
 		MaxChannelFeeAllocation:   htlcswitch.DefaultMaxLinkFeeAllocation,
@@ -1321,13 +1327,14 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 
 	// The target network must be provided, otherwise, we won't
 	// know how to initialize the daemon.
+	// If no network is specified, we'll default to MainNet.
 	if numNets == 0 {
-		str := "either --flokicoin.mainnet, or --flokicoin.testnet, " +
-			"--flokicoin.testnet4, --flokicoin.simnet, " +
-			"--flokicoin.regtest or --flokicoin.signet must be " +
-			"specified"
+		cfg.Flokicoin.MainNet = true
+		cfg.ActiveNetParams = chainreg.FlokicoinMainNetParams
+	}
 
-		return nil, mkErr(str)
+	if cfg.Flokicoin.MainNet && cfg.Fee.URL == "" {
+		cfg.Fee.URL = "https://lokichain.info/api/v1/fees/recommended"
 	}
 
 	err = cfg.Flokicoin.Validate(minTimeLockDelta, funding.MinFlcRemoteDelay)
