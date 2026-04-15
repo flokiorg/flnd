@@ -385,7 +385,7 @@ type Config struct {
 
 	Flokicoin      *lncfg.Chain      `group:"Flokicoin" namespace:"flokicoin"`
 	BtcdMode       *lncfg.Btcd       `group:"Btcd" namespace:"btcd"`
-	FlokicoindMode *lncfg.Flokicoind `group:"Flokicoind" namespace:"bitcoind"`
+	FlokicoindMode *lncfg.Flokicoind `group:"Flokicoind" namespace:"flokicoind"`
 	NeutrinoMode   *lncfg.Neutrino   `group:"Neutrino" namespace:"neutrino"`
 
 	BlockCacheSize uint64 `long:"blockcachesize" description:"The maximum capacity of the block cache"`
