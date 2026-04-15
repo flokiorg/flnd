@@ -112,7 +112,7 @@ const (
 	// out and return false if it hasn't yet received a response.
 	defaultAcceptorTimeout = 15 * time.Second
 
-	defaultAlias = "MyLokiNode"
+	defaultAlias = "myLokinode"
 	defaultColor = "#da9526"
 
 	// defaultCoopCloseTargetConfs is the default confirmation target
