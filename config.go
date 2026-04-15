@@ -384,9 +384,9 @@ type Config struct {
 	FeeURL string `long:"feeurl" description:"DEPRECATED: Use 'fee.url' option. Optional URL for external fee estimation. If no URL is specified, the method for fee estimation will depend on the chosen backend and network. Must be set for neutrino on mainnet." hidden:"true"`
 
 	Flokicoin      *lncfg.Chain      `group:"Flokicoin" namespace:"flokicoin"`
-	BtcdMode       *lncfg.Btcd       `group:"btcd" namespace:"btcd"`
-	FlokicoindMode *lncfg.Flokicoind `group:"bitcoind" namespace:"bitcoind"`
-	NeutrinoMode   *lncfg.Neutrino   `group:"neutrino" namespace:"neutrino"`
+	BtcdMode       *lncfg.Btcd       `group:"Btcd" namespace:"btcd"`
+	FlokicoindMode *lncfg.Flokicoind `group:"Flokicoind" namespace:"bitcoind"`
+	NeutrinoMode   *lncfg.Neutrino   `group:"Neutrino" namespace:"neutrino"`
 
 	BlockCacheSize uint64 `long:"blockcachesize" description:"The maximum capacity of the block cache"`
 
