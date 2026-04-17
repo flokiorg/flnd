@@ -11,7 +11,7 @@ import (
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/routing/route"
 	"github.com/flokiorg/go-flokicoin/crypto"
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 )
 
 // BlindedPathNUMSHex is the hex encoded version of the blinded path target

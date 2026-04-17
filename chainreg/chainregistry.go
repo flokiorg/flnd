@@ -323,9 +323,9 @@ func NewPartialChainControl(cfg *Config) (*PartialChainControl, func(), error) {
 				if err != nil || conn == nil {
 					switch {
 					case cfg.Flokicoin.RegTest:
-						rpcPort = 18443
+						rpcPort = 25213
 					case cfg.Flokicoin.SigNet:
-						rpcPort = 38332
+						rpcPort = 55213
 					}
 					bitcoindHost = fmt.Sprintf("%v:%d",
 						bitcoindMode.RPCHost,

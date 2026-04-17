@@ -18,7 +18,7 @@ import (
 	"github.com/flokiorg/flnd/lnwallet"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/go-flokicoin/wire"
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 	"github.com/stretchr/testify/require"
 )
 

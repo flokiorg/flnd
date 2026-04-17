@@ -18,7 +18,7 @@ import (
 	"github.com/flokiorg/flnd/record"
 	"github.com/flokiorg/flnd/routing/route"
 	"github.com/flokiorg/go-flokicoin/chainutil"
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 )
 
 const (
@@ -975,7 +975,7 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 
 		routingInfoSize := toNodeDist.routingInfoSize + payloadSize
 		// Skip paths that would exceed the maximum routing info size.
-		if routingInfoSize > sphinx.MaxPayloadSize {
+		if routingInfoSize > sphinx.MaxRoutingPayloadSize {
 			return
 		}
 
