@@ -84,7 +84,7 @@ import (
 	flog "github.com/flokiorg/go-flokicoin/log/v2"
 	"github.com/flokiorg/go-flokicoin/txscript"
 	"github.com/flokiorg/go-flokicoin/wire"
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 )
 
 const (

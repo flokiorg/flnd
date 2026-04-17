@@ -14,7 +14,7 @@ import (
 	"github.com/flokiorg/flnd/record"
 	"github.com/flokiorg/flnd/tlv"
 	"github.com/flokiorg/go-flokicoin/crypto"
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 )
 
 // VertexSize is the size of the array to store a vertex.

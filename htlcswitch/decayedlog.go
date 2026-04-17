@@ -7,7 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/kvdb"
 )
