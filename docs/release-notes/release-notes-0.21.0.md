@@ -69,6 +69,16 @@
   channel that was only expected to be used for a single message. The erring
   goroutine would block on the second send, leading to a deadlock at shutdown.
 
+* [Fixed two follow-ups to the production taproot channels
+  work](https://github.com/lightningnetwork/lnd/pull/10763). The RPC channel
+  acceptor switch now maps `SIMPLE_TAPROOT_FINAL` (with every combination of
+  the `scid-alias` / `zero-conf` modifiers) so final-taproot opens are
+  reported to external acceptor clients with the correct commitment type
+  instead of `UNKNOWN_COMMITMENT_TYPE`. The taproot RBF cooperative-close
+  auto-enable is also narrowed to skip taproot-overlay channels, since the
+  RBF close state machine does not yet thread through the `AuxCloser` hook
+  that overlay channels rely on to build aux-aware close transactions.
+
 # New Features
 
 - Basic Support for [onion messaging forwarding](https://github.com/flokiorg/flnd/pull/9868) 
