@@ -3,10 +3,10 @@ package itest
 import (
 	"fmt"
 
-	"github.com/btcsuite/btcd/btcutil"
-	"github.com/lightningnetwork/lnd/lnrpc"
-	"github.com/lightningnetwork/lnd/lnrpc/walletrpc"
-	"github.com/lightningnetwork/lnd/lntest"
+	"github.com/flokiorg/go-flokicoin/chainutil"
+	"github.com/flokiorg/flnd/lnrpc"
+	"github.com/flokiorg/flnd/lnrpc/walletrpc"
+	"github.com/flokiorg/flnd/lntest"
 	"github.com/stretchr/testify/require"
 )
 
