@@ -51,6 +51,12 @@
   DBytes33 (33 bytes) records, preventing malformed TLV data from being
   accepted.
 
+- [Fixed `MarkCoopBroadcasted` to correctly use the `local`
+  parameter](https://github.com/flokiorg/flnd/pull/10532). The method was
+  ignoring the `local` parameter and always marking cooperative close
+  transactions as locally initiated, even when they were initiated by the remote
+  peer.
+
 # New Features
 
 - Basic Support for [onion messaging forwarding](https://github.com/flokiorg/flnd/pull/9868) 
