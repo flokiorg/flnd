@@ -1,0 +1,95 @@
+ece846905 lntest: make sure HTLCs are locked in when sending a payment
+86cde4b93 graphdb: add benchmark for isPublicNode query
+ac2cec462 graph: use UNION for isPublicNode query
+68f558c86 docs: add release note
+4d1faabd0 peer: fix log output when not applicable
+ac006d73c Merge pull request #10356 from Abdulkbk/ispublicnode-perf
+5f3079773 itest: fix endorsement itests
+801de79cf Merge pull request #10476 from ziggie1984/fix-endorsement-testcases
+e7b9515ed fn: fix Result[T].FlatMap
+51f3c6f52 channeldb: fix race condition in link node pruning
+d9fb9092b multi: make sure previous inconsitent states are fixed
+34329c684 multi: rename experimental endorsement signal to accountable
+6f49bea52 server: remove accountability signal experiment period
+d3ce622bd Merge pull request #10403 from gijswijs/fix-flatmap
+99d07fdb7 Merge pull request #10367 from elnosh/rename-endorsement-accountable
+d5d151cee Merge pull request #10462 from ziggie1984/fix-prune-node-race
+049f2c738 lnrpc: transaction inputs in  EstimateFeeRequest
+e5456d39f cmd: make types.go accessible in lnd package
+280929ba1 rpcserver: return inputs in EstimateFeeResponse
+44aa5efc6 cmd: EstimateFee for explicit inputs
+422aa7d18 itest: estimate on-chain fee with selected inputs
+202e473c7 docs: update release notes
+39a1421d1 Merge pull request #10296 from hieblmi/estimate-inputs
+cad1b957b discovery: enforce non-zero timestamp in gossip messages
+7bbf26c0e Merge pull request #10469 from Roasbeef/lnwire-timestamp-validation
+caf4850f7 discovery: add panic recovery for gossip message processing
+bcb65f5ac discovery: add panic recovery for serial announce signatures processing
+7da41cb36 docs/release-notes: add release notes
+ab6ff825c Merge pull request #10470 from Roasbeef/discovery-panic-recovery
+e05ee9a8f linter: update usetesting linter to match old behavior
+35260fc4a discovery: fix new usetesting linter issues
+72ab4d234 Merge pull request #10289 from GeorgeTsagk/move-aux-closer
+61d82fd1f build: update CI+release version to Go 1.25.5
+e26a114cd mod: update the minimum go version to 1.24.11
+0764f27b6 rpcserver: use protocol max for fundMax, not maxChanSize
+73e7708f1 itest: add fundMax with maxChanSize test
+f48e6ba14 docs: update release notes for fundMax fix
+28355a20b Merge pull request #10493 from ziggie1984/add-usetesting-linter
+7085f4706 fn: fix printf vet check in TestSomeToOkf Go 1.24+
+0426cf9e4 Merge pull request #10491 from ziggie1984/bump-golang-toolchain-go-1.25.5
+70dfbd284 Merge pull request #10488 from yashbhutwala/rpcserver-fix-fundmax-maxchansize
+04dab619c lncfg: add deprecated no-experimental-endorsement config option
+7be6f45d7 Merge pull request #10495 from ziggie1984/deprecate-no-experimental-endorsement
+eb7fbd47d Merge pull request #10460 from ziggie1984/fix-flake-revoked_uncooperative_close_retribution
+9e7491611 lnwallet: add new helper functions to scale confirmations based on amt
+45aa94c76 server: use new FundingConfsForAmounts helper func
+09c813a61 lnwallet: define helper func to coop close conf scaling
+4f43717d4 lnwallet: add tests for new conf scaling helper funcs
+931b54e84 peer+rpcserver: use new conf scaling for notifications
+622fa4476 lncfg: add new dev config option for scaling channel close confs
+c0f48d23b multi: add new ChannelCloseConfs param, thread thru as needed
+6553b61aa peer: send out a notification after the 1st conf, then wait for the rest
+12668b8af contractcourt: update close logic to handle re-orgs of depth n-1, where n is num confs
+0f59756b4 lntest: add new wait for conf helper method to ChainNotifier
+ce779a970 contractcourt: add new chainWatcherTestHarness
+e0f7b0a03 contractcourt: update existing chain watcher tests due to new logic
+b6b4cefd0 contractcourt: add unit tests for rbf re-org cases
+8f5656e6e contractcourt: add generic close re-org tests
+bb781bbe8 itest: add new coop close rbf itest
+ebefe63f8 contractcourt: add sync dispatch fast-path for single confirmation closes
+ab4f89128 contractcourt: unify+simplify new re-org aware logic
+fa8ba6f81 lncfg: increase DefaultIncomingBroadcastDelta to 16
+4aef4d00a docs/release-notes: add release notes entry
+4bce4ebe0 routing: increase MinCLTVDelta from 18 to 24 blocks
+3fb59b1b6 multi: increase min cltv delta to 24
+aaaf235b2 Merge pull request #10331 from Roasbeef/cnct-reorg-v2
+c78a75f5d graphdb: reduce log noise from WRN to DBG
+8646d9846 Merge pull request #10514 from ziggie1984/reduce-log-noice
+05eed5cdb routerrpc: FailureDetail enums for invoice/AMP validation failures
+676386ce5 Merge pull request #10520 from darioAnongba/fix/routerrpc-failuredetail-additions
+c00047812 "Claude PR Assistant workflow"
+349b3dbb4 Merge pull request #10525 from lightningnetwork/add-claude-github-actions-1769542743473
+ba52a2786 build: add PR severity classification workflow
+22c2cc21e Merge pull request #10526 from lightningnetwork/pr-severity-workflow
+4d98b004a workflows/pr-severity: use pull_request_target for fork PRs
+19b2ad797 Merge pull request #10527 from Roasbeef/fix-pr-severity-fork-prs
+bcb589cc9 workflows/claude: fix PR checkout for fork PRs
+a77b9d9b8 workflows/pr-severity: allow non-write users for classification
+7ccab028f Merge pull request #10531 from Roasbeef/claude-fix
+8125286d3 btcwallet: support combined tweak to private key
+e532d4e49 btcwallet: add test coverage for maybeTweakPrivKey
+6e56c9a53 peer: fix MarkCoopBroadcasted to correctly use local parameter
+20a6b1726 Merge pull request #10532 from darioAnongba/fix/ignored-local-mark-coop
+dd29d5690 sqldb: close test db in cleanup
+4ef2019dd config: default TrickleDelay to 1ms if non-positive
+22feff6db docs: update release notes for gossip trickle delay validation
+06b175a14 Merge pull request #10463 from hieblmi/fix-trickle
+df0bd94b9 scripts: update bw-compat test LND base version
+21588acb3 discovery: fix gossiper shutdown deadlock
+5fa025e9e docs: add release note
+56a7f45b9 graphdb: fix backwards-compat for channel edge feature deserialization
+d332cb076 Merge pull request #10529 from Roasbeef/fix-edge-features-decode-compat
+7b9344181 ci: add tool constraints to pr-severity prompt
+264398852 make: fix linter in git worktrees
+89b54abbc Merge pull request #10544 from ellemouton/updateBWCompatBaseVersion
