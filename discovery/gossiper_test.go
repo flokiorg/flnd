@@ -5278,8 +5278,8 @@ func TestGossiperShutdownWrongChainAnnouncement(t *testing.T) {
 	// second error message.
 	copy(wrongChainAnn.NodeID1[:], remoteKeyPub1.SerializeCompressed())
 	copy(wrongChainAnn.NodeID2[:], remoteKeyPub1.SerializeCompressed())
-	copy(wrongChainAnn.BitcoinKey1[:], bitcoinKeyPub1.SerializeCompressed())
-	copy(wrongChainAnn.BitcoinKey2[:], bitcoinKeyPub2.SerializeCompressed())
+	copy(wrongChainAnn.FlokicoinKey1[:], bitcoinKeyPub1.SerializeCompressed())
+	copy(wrongChainAnn.FlokicoinKey2[:], bitcoinKeyPub2.SerializeCompressed())
 
 	nodePeer := &mockPeer{remoteKeyPub1, nil, nil, atomic.Bool{}}
 

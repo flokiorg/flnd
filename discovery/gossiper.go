@@ -2340,7 +2340,7 @@ func (d *AuthenticatedGossiper) processZombieUpdate(_ context.Context,
 	switch {
 	case errors.Is(err, graphdb.ErrZombieEdgeNotFound):
 		log.Errorf("edge with chan_id=%v was not found in the "+
-			"zombie index: %v", err)
+			"zombie index: %v", scid, err)
 
 		return nil
 
@@ -2698,7 +2698,7 @@ func (d *AuthenticatedGossiper) handleChanAnnouncement(ctx context.Context,
 	if !bytes.Equal(ann.ChainHash[:], chainHash[:]) {
 		err := fmt.Errorf("ignoring ChannelAnnouncement1 from chain=%v"+
 			", gossiper on chain=%v", ann.ChainHash, chainHash)
-		log.Errorf(err.Error())
+		log.Errorf("%v", err)
 
 		key := newRejectCacheKey(
 			ann.GossipVersion(),
@@ -2716,7 +2716,7 @@ func (d *AuthenticatedGossiper) handleChanAnnouncement(ctx context.Context,
 	// not erroring out would be a DoS vector.
 	if nMsg.isRemote && d.cfg.IsAlias(scid) {
 		err := fmt.Errorf("ignoring remote alias channel=%v", scid)
-		log.Errorf(err.Error())
+		log.Errorf("%v", err)
 
 		key := newRejectCacheKey(
 			ann.GossipVersion(),
@@ -3133,7 +3133,7 @@ func (d *AuthenticatedGossiper) handleChanUpdate(ctx context.Context,
 	if !bytes.Equal(upd.ChainHash[:], chainHash[:]) {
 		err := fmt.Errorf("ignoring ChannelUpdate from chain=%v, "+
 			"gossiper on chain=%v", upd.ChainHash, chainHash)
-		log.Errorf(err.Error())
+		log.Errorf("%v", err)
 
 		key := newRejectCacheKey(
 			upd.GossipVersion(),
