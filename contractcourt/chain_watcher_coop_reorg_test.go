@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btcsuite/btcd/wire"
+	"github.com/flokiorg/go-flokicoin/wire"
 )
 
 // TestChainWatcherCoopCloseReorg tests that the chain watcher properly handles

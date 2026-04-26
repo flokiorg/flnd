@@ -8,26 +8,15 @@ import (
 	"testing"
 	"time"
 
-<<<<<<< HEAD
 	"github.com/flokiorg/flnd/chainio"
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
 	lnmock "github.com/flokiorg/flnd/lntest/mock"
 	"github.com/flokiorg/flnd/lnwallet"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/go-flokicoin/wire"
-=======
-	"github.com/btcsuite/btcd/wire"
-	"github.com/lightningnetwork/lnd/chainio"
-	"github.com/lightningnetwork/lnd/chainntnfs"
-	"github.com/lightningnetwork/lnd/channeldb"
-	"github.com/lightningnetwork/lnd/fn/v2"
-	"github.com/lightningnetwork/lnd/input"
-	lnmock "github.com/lightningnetwork/lnd/lntest/mock"
-	"github.com/lightningnetwork/lnd/lnwallet"
-	"github.com/lightningnetwork/lnd/lnwire"
->>>>>>> e0f7b0a03 (contractcourt: update existing chain watcher tests due to new logic)
 	"github.com/stretchr/testify/require"
 )
 

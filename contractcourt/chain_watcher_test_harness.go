@@ -4,14 +4,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/lightningnetwork/lnd/chainntnfs"
-	"github.com/lightningnetwork/lnd/channeldb"
-	"github.com/lightningnetwork/lnd/fn/v2"
-	lnmock "github.com/lightningnetwork/lnd/lntest/mock"
-	"github.com/lightningnetwork/lnd/lnwallet"
-	"github.com/lightningnetwork/lnd/lnwire"
+	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
+	"github.com/flokiorg/go-flokicoin/wire"
+	"github.com/flokiorg/flnd/chainntnfs"
+	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/fn"
+	lnmock "github.com/flokiorg/flnd/lntest/mock"
+	"github.com/flokiorg/flnd/lnwallet"
+	"github.com/flokiorg/flnd/lnwire"
 )
 
 // testReporter is a minimal interface for test reporting that is satisfied
@@ -297,7 +297,7 @@ func (h *chainWatcherTestHarness) createBreachCloseTx() *wire.MsgTx {
 	revokedCommit := h.bobChannel.State().LocalCommitment.CommitTx
 
 	// Add a fake HTLC to advance state.
-	htlcAmount := lnwire.NewMSatFromSatoshis(10000)
+	htlcAmount := lnwire.NewMSatFromLokis(10000)
 	paymentHash := [32]byte{4, 5, 6}
 	htlc := &lnwire.UpdateAddHTLC{
 		ID:          0,
