@@ -11,6 +11,4 @@ fa8ba6f81 lncfg: increase DefaultIncomingBroadcastDelta to 16
 20a6b1726 Merge pull request #10532 from darioAnongba/fix/ignored-local-mark-coop
 06b175a14 Merge pull request #10463 from hieblmi/fix-trickle
 d332cb076 Merge pull request #10529 from Roasbeef/fix-edge-features-decode-compat
-7b9344181 ci: add tool constraints to pr-severity prompt
-264398852 make: fix linter in git worktrees
 89b54abbc Merge pull request #10544 from ellemouton/updateBWCompatBaseVersion
