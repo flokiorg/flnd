@@ -11,9 +11,9 @@ const (
 	MaxFundingAmount = chainutil.Amount(16777215)
 )
 
-// FundingConfsForAmounts returns the number of confirmations required for a
-// channel to be considered open, given its capacity and push amount.
-func FundingConfsForAmounts(chanAmt chainutil.Amount,
+// ScaleNumConfs returns the number of confirmations required for a channel
+// to be considered open, given its capacity and push amount.
+func ScaleNumConfs(chanAmt chainutil.Amount,
 	pushAmt lnwire.MilliLoki) uint16 {
 
 	// For large channels we increase the number of confirmations we require
@@ -45,9 +45,10 @@ func FundingConfsForAmounts(chanAmt chainutil.Amount,
 	return uint16(conf)
 }
 
-// CloseConfsForCapacity returns the number of confirmations required for a
-// channel close to be considered final, given its capacity.
-func CloseConfsForCapacity(chanAmt chainutil.Amount) uint32 {
-	// For now we use the same scaling as for funding.
-	return uint32(FundingConfsForAmounts(chanAmt, 0))
+// FundingConfsForAmounts returns the number of confirmations required for a
+// channel to be considered open, given its capacity and push amount.
+func FundingConfsForAmounts(chanAmt chainutil.Amount,
+	pushAmt lnwire.MilliLoki) uint16 {
+
+	return ScaleNumConfs(chanAmt, pushAmt)
 }
