@@ -8,7 +8,6 @@ ebefe63f8 contractcourt: add sync dispatch fast-path for single confirmation clo
 ab4f89128 contractcourt: unify+simplify new re-org aware logic
 fa8ba6f81 lncfg: increase DefaultIncomingBroadcastDelta to 16
 4aef4d00a docs/release-notes: add release notes entry
-3fb59b1b6 multi: increase min cltv delta to 24
 aaaf235b2 Merge pull request #10331 from Roasbeef/cnct-reorg-v2
 c78a75f5d graphdb: reduce log noise from WRN to DBG
 8646d9846 Merge pull request #10514 from ziggie1984/reduce-log-noice

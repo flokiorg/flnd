@@ -200,21 +200,6 @@ func (h *HarnessTest) mineTillForceCloseResolved(hn *node.HarnessNode) {
 		hn.Name())
 }
 
-// AssertTxInMempool asserts a given transaction can be found in the mempool.
-func (h *HarnessTest) AssertTxInMempool(txid chainhash.Hash) *wire.MsgTx {
-	return h.miner.AssertTxInMempool(txid)
-}
-
-// AssertTxNotInMempool asserts a given transaction cannot be found in the
-// mempool. It assumes the mempool is not empty.
-//
-// NOTE: this should be used after `AssertTxInMempool` to ensure the tx has
-// entered the mempool before. Otherwise it might give false positive and the
-// tx may enter the mempool after the check.
-func (h *HarnessTest) AssertTxNotInMempool(txid chainhash.Hash) {
-	h.miner.AssertTxNotInMempool(txid)
-}
-
 // AssertNumTxsInMempool polls until finding the desired number of transactions
 // in the provided miner's mempool. It will assert if this number is not met
 // after the given timeout.
@@ -225,13 +210,6 @@ func (h *HarnessTest) AssertNumTxsInMempool(n int) []chainhash.Hash {
 // AssertOutpointInMempool asserts a given outpoint can be found in the mempool.
 func (h *HarnessTest) AssertOutpointInMempool(op wire.OutPoint) *wire.MsgTx {
 	return h.miner.AssertOutpointInMempool(op)
-}
-
-// AssertTxInBlock asserts that a given txid can be found in the passed block.
-func (h *HarnessTest) AssertTxInBlock(block *wire.MsgBlock,
-	txid chainhash.Hash) {
-
-	h.miner.AssertTxInBlock(block, txid)
 }
 
 // GetNumTxsFromMempool polls until finding the desired number of transactions
