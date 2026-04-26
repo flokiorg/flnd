@@ -9,12 +9,7 @@ ab4f89128 contractcourt: unify+simplify new re-org aware logic
 fa8ba6f81 lncfg: increase DefaultIncomingBroadcastDelta to 16
 4aef4d00a docs/release-notes: add release notes entry
 20a6b1726 Merge pull request #10532 from darioAnongba/fix/ignored-local-mark-coop
-22feff6db docs: update release notes for gossip trickle delay validation
 06b175a14 Merge pull request #10463 from hieblmi/fix-trickle
-df0bd94b9 scripts: update bw-compat test LND base version
-21588acb3 discovery: fix gossiper shutdown deadlock
-5fa025e9e docs: add release note
-56a7f45b9 graphdb: fix backwards-compat for channel edge feature deserialization
 d332cb076 Merge pull request #10529 from Roasbeef/fix-edge-features-decode-compat
 7b9344181 ci: add tool constraints to pr-severity prompt
 264398852 make: fix linter in git worktrees

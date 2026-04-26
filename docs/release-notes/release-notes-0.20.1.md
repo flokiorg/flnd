@@ -22,48 +22,48 @@
 # Bug Fixes
 
 * Fix bug where channels with both [policies disabled at startup could never
-  be used for routing](https://github.com/lightningnetwork/lnd/pull/10378)
+  be used for routing](https://github.com/flokiorg/flnd/pull/10378)
 
 * [Fix a case where resolving the 
-  to_local/to_remote output](https://github.com/lightningnetwork/lnd/pull/10387)
+  to_local/to_remote output](https://github.com/flokiorg/flnd/pull/10387)
   might take too long.
 
 * Fix a bug where [repeated network
-  addresses](https://github.com/lightningnetwork/lnd/pull/10341) were added to
+  addresses](https://github.com/flokiorg/flnd/pull/10341) were added to
   the node announcement and `getinfo` output.
  
 * [Fix source node race 
-  condition](https://github.com/lightningnetwork/lnd/pull/10371) which could
+  condition](https://github.com/flokiorg/flnd/pull/10371) which could
   prevent a node from starting up if two goroutines attempt to update the 
   node's announcement at the same time.
 
 * [Fix timestamp comparison in source node
-  updates](https://github.com/lightningnetwork/lnd/pull/10449) that could still
+  updates](https://github.com/flokiorg/flnd/pull/10449) that could still
   cause "sql: no rows in result set" startup errors. The previous fix (#10371)
   addressed concurrent updates with equal timestamps, but the seconds-only
   comparison could still fail when restarting with different minute/hour values.
   
 * [Fix a startup issue in LND when encountering a 
-  deserialization issue](https://github.com/lightningnetwork/lnd/pull/10383) 
+  deserialization issue](https://github.com/flokiorg/flnd/pull/10383) 
   in the mission control store. Now we skip over potential errors and also
   delete them from the store.
 
 * [Fix potential sql tx exhaustion 
-  issue](https://github.com/lightningnetwork/lnd/pull/10428) in LND which might
+  issue](https://github.com/flokiorg/flnd/pull/10428) in LND which might
   happen when running postgres with a limited number of connections configured.
 
 * [Add missing payment address/secret when probing an 
-  invoice](https://github.com/lightningnetwork/lnd/pull/10439). This makes sure
+  invoice](https://github.com/flokiorg/flnd/pull/10439). This makes sure
   the EstimateRouteFee API can probe Eclair and LDK nodes which enforce the
   payment address/secret.
  
 * Fix a bug where [missing edges for own channels could not be added to the
-  graph DB](https://github.com/lightningnetwork/lnd/pull/10410)
+  graph DB](https://github.com/flokiorg/flnd/pull/10410)
   due to validation checks in the graph Builder that were resurfaced after the
   graph refactor work.
 
 * [Fix backwards compatibility for channel edge feature
-  deserialization](https://github.com/lightningnetwork/lnd/pull/10529). Nodes
+  deserialization](https://github.com/flokiorg/flnd/pull/10529). Nodes
   upgrading from pre-v0.20 versions could fail to read channel edges from their
   graph database due to a format change in how channel features are serialized.
   The fix adds automatic format detection to handle both legacy (raw feature
@@ -80,7 +80,7 @@
 # Improvements
 ## Functional Updates
 
-* [Added panic recovery](https://github.com/lightningnetwork/lnd/pull/10470) to
+* [Added panic recovery](https://github.com/flokiorg/flnd/pull/10470) to
   the gossiper's message processing goroutines. This increases the robustness
   of the gossiper subsystem by allowing it to continue operating even if a
   logic error causes a panic during message processing. The recovery mechanism
@@ -88,7 +88,7 @@
   debugging.
 
 * [Improved confirmation scaling for cooperative
-  closes](https://github.com/lightningnetwork/lnd/pull/10331) to provide better
+  closes](https://github.com/flokiorg/flnd/pull/10331) to provide better
   reorg protection. Previously, cooperative closes required a minimum of 3
   confirmations. Now, small channels only require 1 confirmation, while larger
   channels scale proportionally using the standard 0.16 BTC threshold (matching
@@ -97,7 +97,7 @@
 ## RPC Updates
 
  * The `EstimateRouteFee` RPC now implements an [LSP detection 
-   heuristic](https://github.com/lightningnetwork/lnd/pull/10396) that probes up
+   heuristic](https://github.com/flokiorg/flnd/pull/10396) that probes up
    to 3 unique Lightning Service Providers when route hints indicate an LSP
    setup. The implementation returns worst-case (most expensive) fee estimates
    for conservative budgeting and includes griefing protection by limiting the
@@ -109,7 +109,7 @@
 ## Breaking Changes
 
 * [Increased MinCLTVDelta from 18 to
-  24](https://github.com/lightningnetwork/lnd/pull/TODO) to provide a larger
+  24](https://github.com/flokiorg/flnd/pull/TODO) to provide a larger
   safety margin above the `DefaultFinalCltvRejectDelta` (19 blocks). This
   affects users who create invoices with custom `cltv_expiry_delta` values
   between 18-23, which will now require a minimum of 24. The default value of
@@ -120,7 +120,7 @@
 ## Performance Improvements
 
 * [Added new Postgres configuration 
-  options](https://github.com/lightningnetwork/lnd/pull/10394) 
+  options](https://github.com/flokiorg/flnd/pull/10394) 
  `db.postgres.channeldb-with-global-lock` and 
  `db.postgres.walletdb-with-global-lock` to allow fine-grained control over
   database concurrency. The channeldb global lock defaults to `false` to enable
@@ -128,7 +128,7 @@
   safe single-writer behavior until the wallet subsystem is fully 
   concurrent-safe.
 
-* [Modified the query for `IsPublicV1Node`](https://github.com/lightningnetwork/lnd/pull/10356)
+* [Modified the query for `IsPublicV1Node`](https://github.com/flokiorg/flnd/pull/10356)
   to use `UNION ALL` instead of `OR` conditions in the `WHERE` clause, improving
   performance when checking for public nodes especially in large graphs when using `SQL` backends.
 
@@ -137,7 +137,7 @@
 # Technical and Architectural Updates
 ## BOLT Spec Updates
 
-* [Enforce non-zero timestamps](https://github.com/lightningnetwork/lnd/pull/10469)
+* [Enforce non-zero timestamps](https://github.com/flokiorg/flnd/pull/10469)
   for `channel_update` (as required by BOLT 7) and `node_announcement` messages.
   Gossip messages with zero timestamps are now rejected. For `channel_update`
   messages, remote peers sending such invalid messages will have their ban score
