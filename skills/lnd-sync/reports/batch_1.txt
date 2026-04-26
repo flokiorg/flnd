@@ -1,13 +1,3 @@
-f48e6ba14 docs: update release notes for fundMax fix
-28355a20b Merge pull request #10493 from ziggie1984/add-usetesting-linter
-7085f4706 fn: fix printf vet check in TestSomeToOkf Go 1.24+
-0426cf9e4 Merge pull request #10491 from ziggie1984/bump-golang-toolchain-go-1.25.5
-70dfbd284 Merge pull request #10488 from yashbhutwala/rpcserver-fix-fundmax-maxchansize
-04dab619c lncfg: add deprecated no-experimental-endorsement config option
-7be6f45d7 Merge pull request #10495 from ziggie1984/deprecate-no-experimental-endorsement
-eb7fbd47d Merge pull request #10460 from ziggie1984/fix-flake-revoked_uncooperative_close_retribution
-9e7491611 lnwallet: add new helper functions to scale confirmations based on amt
-45aa94c76 server: use new FundingConfsForAmounts helper func
 09c813a61 lnwallet: define helper func to coop close conf scaling
 4f43717d4 lnwallet: add tests for new conf scaling helper funcs
 931b54e84 peer+rpcserver: use new conf scaling for notifications
