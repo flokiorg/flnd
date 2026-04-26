@@ -3942,9 +3942,9 @@ func (s *server) InboundPeerConnected(conn net.Conn) {
 	// If we already have a valid connection that is scheduled to take
 	// precedence once the prior peer has finished disconnecting, we'll
 	// ignore this connection.
-	if p, ok := s.scheduledPeerConnection[pubStr]; ok {
-		srvrLog.Debugf("Ignoring connection from %v, peer %v already "+
-			"scheduled", conn.RemoteAddr(), p)
+	if _, ok := s.scheduledPeerConnection[pubStr]; ok {
+		srvrLog.Debugf("Ignoring connection from %v, peer already "+
+			"scheduled", conn.RemoteAddr())
 		conn.Close()
 		return
 	}

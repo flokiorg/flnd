@@ -535,7 +535,7 @@ func (t *TLSManager) LoadPermanentCertificate(
 	tmpCertPath := t.cfg.TLSCertPath + ".tmp"
 	err := os.Remove(tmpCertPath)
 	if err != nil {
-		ltndLog.Warn("Unable to delete temp cert at %v",
+		ltndLog.Warnf("Unable to delete temp cert at %v",
 			tmpCertPath)
 	}
 
