@@ -1579,22 +1579,22 @@ func (p *Brontide) maybeSendChannelUpdates() {
 		if err != nil {
 			p.log.Debugf("Unable to fetch channel update for "+
 				"ChannelPoint(%v), scid=%v: %v",
-				dbChan.FundingOutpoint, dbChan.ShortChanID, err)
+				dbChan.FundingOutpoint, dbChan.ShortChanID(), err)
 
 			return nil
 		}
 
 		p.log.Debugf("Sending channel update for ChannelPoint(%v), "+
-			"scid=%v", dbChan.FundingOutpoint, dbChan.ShortChanID)
+			"scid=%v", dbChan.FundingOutpoint, dbChan.ShortChanID())
 
 		// We'll send it as a normal message instead of using the lazy
 		// queue to prioritize transmission of the fresh update.
 		if err := p.SendMessage(false, chanUpd); err != nil {
 			err := fmt.Errorf("unable to send channel update for "+
-				"ChannelPoint(%v), scid=%v: %w",
+				"ChannelPoint(%v), scid=%v: %v",
 				dbChan.FundingOutpoint, dbChan.ShortChanID(),
 				err)
-			p.log.Errorf(err.Error())
+			p.log.Errorf("%v", err)
 
 			return err
 		}
@@ -1672,7 +1672,7 @@ func (p *Brontide) Disconnect(reason error) {
 	err := fmt.Errorf("disconnecting %s, reason: %v", p, reason)
 	p.storeError(err)
 
-	p.log.Infof(err.Error())
+	p.log.Infof("%v", err)
 
 	// Stop PingManager before closing TCP connection.
 	p.pingManager.Stop()
@@ -1845,10 +1845,10 @@ func (ms *msgStream) Stop() {
 // readHandler directly to the target channel.
 func (ms *msgStream) msgConsumer() {
 	defer ms.wg.Done()
-	defer peerLog.Tracef(ms.stopMsg)
+	defer peerLog.Tracef("%s", ms.stopMsg)
 	defer atomic.StoreInt32(&ms.streamShutdown, 1)
 
-	peerLog.Tracef(ms.startMsg)
+	peerLog.Tracef("%s", ms.startMsg)
 
 	for {
 		// First, we'll check our condition. If the queue of messages
@@ -3107,7 +3107,8 @@ func (p *Brontide) reenableActiveChannels() {
 			}
 
 			p.log.Warnf("Channel(%v) cannot be enabled as " +
-				"ChanStatusManager reported inactive, retrying")
+				"ChanStatusManager reported inactive, retrying",
+				chanPoint)
 
 			// Add the channel to the retry map.
 			retryChans[chanPoint] = struct{}{}
@@ -4270,7 +4271,7 @@ func (p *Brontide) handleLocalCloseReq(req *htlcswitch.ChanClose) {
 	if !ok || channel == nil {
 		err := fmt.Errorf("unable to close channel, ChannelID(%v) is "+
 			"unknown", chanID)
-		p.log.Errorf(err.Error())
+		p.log.Errorf("%v", err)
 		req.Err <- err
 		return
 	}
@@ -4300,7 +4301,7 @@ func (p *Brontide) handleLocalCloseReq(req *htlcswitch.ChanClose) {
 		}
 
 		if err != nil {
-			p.log.Errorf(err.Error())
+			p.log.Errorf("%v", err)
 			req.Err <- err
 		}
 
@@ -5346,7 +5347,7 @@ func (p *Brontide) handleNewActiveChannel(req *newChannelMsg) {
 		// Update the next revocation point.
 		err := p.updateNextRevocation(newChan.OpenChannel)
 		if err != nil {
-			p.log.Errorf(err.Error())
+			p.log.Errorf("%v", err)
 		}
 
 		return
@@ -5355,7 +5356,7 @@ func (p *Brontide) handleNewActiveChannel(req *newChannelMsg) {
 	// This is a new channel, we now add it to the map.
 	if err := p.addActiveChannel(req.channel); err != nil {
 		// Log and send back the error to the request.
-		p.log.Errorf(err.Error())
+		p.log.Errorf("%v", err)
 		req.err <- err
 
 		return

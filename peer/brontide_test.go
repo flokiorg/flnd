@@ -24,10 +24,9 @@ import (
 
 var (
 	// p2SHAddress is a valid pay to script hash address.
-	p2SHAddress = "2NBFNJTktNa7GZusGbDbGKRZTxdK9VVez3n"
-
+	p2SHAddress = "tb1pw8gzj8clt3v5lxykpgacpju5n8xteskt7gxhmudu6pa70nwfhe6s3unsyk"
 	// p2wshAddress is a valid pay to witness script hash address.
-	p2wshAddress = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3"
+	p2wshAddress = "tb1qfc8fusa98jx8uvnhzavxccqlzvg749tvjw82tg"
 )
 
 // TestPeerChannelClosureShutdownResponseLinkRemoved tests the shutdown
