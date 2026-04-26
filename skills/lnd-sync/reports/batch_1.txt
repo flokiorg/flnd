@@ -1,10 +1,3 @@
-09c813a61 lnwallet: define helper func to coop close conf scaling
-4f43717d4 lnwallet: add tests for new conf scaling helper funcs
-931b54e84 peer+rpcserver: use new conf scaling for notifications
-622fa4476 lncfg: add new dev config option for scaling channel close confs
-c0f48d23b multi: add new ChannelCloseConfs param, thread thru as needed
-6553b61aa peer: send out a notification after the 1st conf, then wait for the rest
-12668b8af contractcourt: update close logic to handle re-orgs of depth n-1, where n is num confs
 0f59756b4 lntest: add new wait for conf helper method to ChainNotifier
 ce779a970 contractcourt: add new chainWatcherTestHarness
 e0f7b0a03 contractcourt: update existing chain watcher tests due to new logic
@@ -15,7 +8,6 @@ ebefe63f8 contractcourt: add sync dispatch fast-path for single confirmation clo
 ab4f89128 contractcourt: unify+simplify new re-org aware logic
 fa8ba6f81 lncfg: increase DefaultIncomingBroadcastDelta to 16
 4aef4d00a docs/release-notes: add release notes entry
-4bce4ebe0 routing: increase MinCLTVDelta from 18 to 24 blocks
 3fb59b1b6 multi: increase min cltv delta to 24
 aaaf235b2 Merge pull request #10331 from Roasbeef/cnct-reorg-v2
 c78a75f5d graphdb: reduce log noise from WRN to DBG

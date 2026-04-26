@@ -757,7 +757,7 @@ justiceTxBroadcast:
 		)
 	})
 	if err != nil {
-		brarLog.Errorf("unable to notify broadcast: %w", err)
+		brarLog.Errorf("unable to notify broadcast: %v", err)
 		return
 	}
 

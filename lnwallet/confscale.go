@@ -9,6 +9,14 @@ const (
 	// MaxFundingAmount is the protocol-level maximum channel size for
 	// non-wumbo channels.
 	MaxFundingAmount = chainutil.Amount(16777215)
+
+	// minRequiredConfs is the minimum number of confirmations we'll require
+	// for a channel to be considered open.
+	minRequiredConfs = 3
+
+	// maxRequiredConfs is the maximum number of confirmations we'll require
+	// for a channel to be considered open.
+	maxRequiredConfs = 6
 )
 
 // ScaleNumConfs returns the number of confirmations required for a channel
@@ -21,13 +29,11 @@ func ScaleNumConfs(chanAmt chainutil.Amount,
 	// that gets to choose value, the pushAmt is value being pushed to us.
 	// This means we have more to lose in the case this gets re-orged out,
 	// and we will require more confirmations before we consider it open.
-	minConf := uint64(3)
-	maxConf := uint64(6)
 
 	// If this is a wumbo channel, then we'll require the max amount of
 	// confirmations.
 	if chanAmt > MaxFundingAmount {
-		return uint16(maxConf)
+		return uint16(maxRequiredConfs)
 	}
 
 	// If not we return a value scaled linearly between 3 and 6, depending on
@@ -35,12 +41,12 @@ func ScaleNumConfs(chanAmt chainutil.Amount,
 	maxChannelSize := uint64(
 		lnwire.NewMSatFromLokis(MaxFundingAmount))
 	stake := lnwire.NewMSatFromLokis(chanAmt) + pushAmt
-	conf := maxConf * uint64(stake) / maxChannelSize
-	if conf < minConf {
-		conf = minConf
+	conf := uint64(maxRequiredConfs) * uint64(stake) / maxChannelSize
+	if conf < minRequiredConfs {
+		conf = minRequiredConfs
 	}
-	if conf > maxConf {
-		conf = maxConf
+	if conf > maxRequiredConfs {
+		conf = maxRequiredConfs
 	}
 	return uint16(conf)
 }

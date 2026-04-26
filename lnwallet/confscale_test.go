@@ -3,8 +3,8 @@ package lnwallet
 import (
 	"testing"
 
-	"github.com/btcsuite/btcd/btcutil"
-	"github.com/lightningnetwork/lnd/lnwire"
+	"github.com/flokiorg/go-flokicoin/chainutil"
+	"github.com/flokiorg/flnd/lnwire"
 	"github.com/stretchr/testify/require"
 	"pgregory.net/rapid"
 )
@@ -20,17 +20,17 @@ func TestScaleNumConfsProperties(t *testing.T) {
 		rapid.Check(t, func(t *rapid.T) {
 			// Generate random channel amount and push amount.
 			chanAmt := rapid.Uint64Range(
-				0, maxChannelSize*10,
+				0, uint64(MaxFundingAmount)*10,
 			).Draw(t, "chanAmt")
 			pushAmtSats := rapid.Uint64Range(
 				0, chanAmt,
 			).Draw(t, "pushAmtSats")
-			pushAmt := lnwire.NewMSatFromSatoshis(
-				btcutil.Amount(pushAmtSats),
+			pushAmt := lnwire.NewMSatFromLokis(
+				chainutil.Amount(pushAmtSats),
 			)
 
 			result := ScaleNumConfs(
-				btcutil.Amount(chanAmt), pushAmt,
+				chainutil.Amount(chanAmt), pushAmt,
 			)
 
 			// Check bounds
@@ -51,10 +51,10 @@ func TestScaleNumConfsProperties(t *testing.T) {
 		rapid.Check(t, func(t *rapid.T) {
 			// Generate two channel amounts where amt1 <= amt2.
 			amt1 := rapid.Uint64Range(
-				0, maxChannelSize,
+				0, uint64(MaxFundingAmount),
 			).Draw(t, "amt1")
 			amt2 := rapid.Uint64Range(
-				amt1, maxChannelSize,
+				amt1, uint64(MaxFundingAmount),
 			).Draw(t, "amt2")
 
 			// Generate push amounts proportional to channel size.
@@ -65,15 +65,15 @@ func TestScaleNumConfsProperties(t *testing.T) {
 				pushAmt1Sats, amt2,
 			).Draw(t, "pushAmt2")
 
-			pushAmt1 := lnwire.NewMSatFromSatoshis(
-				btcutil.Amount(pushAmt1Sats),
+			pushAmt1 := lnwire.NewMSatFromLokis(
+				chainutil.Amount(pushAmt1Sats),
 			)
-			pushAmt2 := lnwire.NewMSatFromSatoshis(
-				btcutil.Amount(pushAmt2Sats),
+			pushAmt2 := lnwire.NewMSatFromLokis(
+				chainutil.Amount(pushAmt2Sats),
 			)
 
-			confs1 := ScaleNumConfs(btcutil.Amount(amt1), pushAmt1)
-			confs2 := ScaleNumConfs(btcutil.Amount(amt2), pushAmt2)
+			confs1 := ScaleNumConfs(chainutil.Amount(amt1), pushAmt1)
+			confs2 := ScaleNumConfs(chainutil.Amount(amt2), pushAmt2)
 
 			// Larger or equal stake should require equal or more
 			// confirmations.
@@ -89,19 +89,19 @@ func TestScaleNumConfsProperties(t *testing.T) {
 	// always require the maximum number of confirmations for safety.
 	t.Run("wumbo_max_confs", func(t *testing.T) {
 		rapid.Check(t, func(t *rapid.T) {
-			// Generate wumbo channel amount (above maxChannelSize).
+			// Generate wumbo channel amount (above uint64(MaxFundingAmount)).
 			wumboAmt := rapid.Uint64Range(
-				maxChannelSize+1, maxChannelSize*100,
+				uint64(MaxFundingAmount)+1, uint64(MaxFundingAmount)*100,
 			).Draw(t, "wumboAmt")
 			pushAmtSats := rapid.Uint64Range(
 				0, wumboAmt,
 			).Draw(t, "pushAmtSats")
-			pushAmt := lnwire.NewMSatFromSatoshis(
-				btcutil.Amount(pushAmtSats),
+			pushAmt := lnwire.NewMSatFromLokis(
+				chainutil.Amount(pushAmtSats),
 			)
 
 			result := ScaleNumConfs(
-				btcutil.Amount(wumboAmt), pushAmt,
+				chainutil.Amount(wumboAmt), pushAmt,
 			)
 
 			require.Equal(
@@ -127,24 +127,24 @@ func TestScaleNumConfsProperties(t *testing.T) {
 	t.Run("determinism", func(t *testing.T) {
 		rapid.Check(t, func(t *rapid.T) {
 			chanAmt := rapid.Uint64Range(
-				0, maxChannelSize*2,
+				0, uint64(MaxFundingAmount)*2,
 			).Draw(t, "chanAmt")
 			pushAmtSats := rapid.Uint64Range(
 				0, chanAmt,
 			).Draw(t, "pushAmtSats")
-			pushAmt := lnwire.NewMSatFromSatoshis(
-				btcutil.Amount(pushAmtSats),
+			pushAmt := lnwire.NewMSatFromLokis(
+				chainutil.Amount(pushAmtSats),
 			)
 
 			// Call multiple times with same inputs.
 			result1 := ScaleNumConfs(
-				btcutil.Amount(chanAmt), pushAmt,
+				chainutil.Amount(chanAmt), pushAmt,
 			)
 			result2 := ScaleNumConfs(
-				btcutil.Amount(chanAmt), pushAmt,
+				chainutil.Amount(chanAmt), pushAmt,
 			)
 			result3 := ScaleNumConfs(
-				btcutil.Amount(chanAmt), pushAmt,
+				chainutil.Amount(chanAmt), pushAmt,
 			)
 
 			require.Equal(
@@ -164,7 +164,7 @@ func TestScaleNumConfsProperties(t *testing.T) {
 		rapid.Check(t, func(t *rapid.T) {
 			// Fix channel amount, vary push amount
 			chanAmt := rapid.Uint64Range(
-				1, maxChannelSize,
+				1, uint64(MaxFundingAmount),
 			).Draw(t, "chanAmt")
 			pushAmt1Sats := rapid.Uint64Range(
 				0, chanAmt/2,
@@ -173,18 +173,18 @@ func TestScaleNumConfsProperties(t *testing.T) {
 				pushAmt1Sats, chanAmt,
 			).Draw(t, "pushAmt2")
 
-			pushAmt1 := lnwire.NewMSatFromSatoshis(
-				btcutil.Amount(pushAmt1Sats),
+			pushAmt1 := lnwire.NewMSatFromLokis(
+				chainutil.Amount(pushAmt1Sats),
 			)
-			pushAmt2 := lnwire.NewMSatFromSatoshis(
-				btcutil.Amount(pushAmt2Sats),
+			pushAmt2 := lnwire.NewMSatFromLokis(
+				chainutil.Amount(pushAmt2Sats),
 			)
 
 			confs1 := ScaleNumConfs(
-				btcutil.Amount(chanAmt), pushAmt1,
+				chainutil.Amount(chanAmt), pushAmt1,
 			)
 			confs2 := ScaleNumConfs(
-				btcutil.Amount(chanAmt), pushAmt2,
+				chainutil.Amount(chanAmt), pushAmt2,
 			)
 
 			// More push amount should require equal or more
@@ -205,8 +205,8 @@ func TestScaleNumConfsKnownValues(t *testing.T) {
 
 	testCases := []struct {
 		name     string
-		chanAmt  btcutil.Amount
-		pushAmt  lnwire.MilliSatoshi
+		chanAmt  chainutil.Amount
+		pushAmt  lnwire.MilliLoki
 		expected uint16
 	}{
 		{
@@ -229,35 +229,35 @@ func TestScaleNumConfsKnownValues(t *testing.T) {
 		},
 		{
 			name:     "half max channel no push",
-			chanAmt:  maxChannelSize / 2,
+			chanAmt:  chainutil.Amount(uint64(MaxFundingAmount) / 2),
 			pushAmt:  0,
-			expected: 2,
+			expected: minRequiredConfs,
 		},
 		{
 			name:     "max channel no push",
-			chanAmt:  maxChannelSize,
+			chanAmt:  chainutil.Amount(uint64(MaxFundingAmount)),
 			pushAmt:  0,
 			expected: maxRequiredConfs,
 		},
 		{
 			name:     "wumbo channel",
-			chanAmt:  maxChannelSize * 2,
+			chanAmt:  chainutil.Amount(uint64(MaxFundingAmount) * 2),
 			pushAmt:  0,
 			expected: maxRequiredConfs,
 		},
 		{
 			name:     "small channel with push",
 			chanAmt:  100_000,
-			pushAmt:  lnwire.NewMSatFromSatoshis(50_000),
+			pushAmt:  lnwire.NewMSatFromLokis(50_000),
 			expected: minRequiredConfs,
 		},
 		{
 			name:    "medium channel with significant push",
-			chanAmt: maxChannelSize / 4,
-			pushAmt: lnwire.NewMSatFromSatoshis(
-				maxChannelSize / 4,
+			chanAmt: chainutil.Amount(uint64(MaxFundingAmount) / 4),
+			pushAmt: lnwire.NewMSatFromLokis(
+				chainutil.Amount(uint64(MaxFundingAmount) / 4),
 			),
-			expected: 2,
+			expected: minRequiredConfs,
 		},
 	}
 
@@ -282,19 +282,19 @@ func TestFundingConfsForAmounts(t *testing.T) {
 
 	rapid.Check(t, func(t *rapid.T) {
 		chanAmt := rapid.Uint64Range(
-			0, maxChannelSize*2,
+			0, uint64(MaxFundingAmount)*2,
 		).Draw(t, "chanAmt")
 		pushAmtSats := rapid.Uint64Range(
 			0, chanAmt,
 		).Draw(t, "pushAmtSats")
-		pushAmt := lnwire.NewMSatFromSatoshis(
-			btcutil.Amount(pushAmtSats),
+		pushAmt := lnwire.NewMSatFromLokis(
+			chainutil.Amount(pushAmtSats),
 		)
 
 		// Both functions should return the same result.
-		scaleResult := ScaleNumConfs(btcutil.Amount(chanAmt), pushAmt)
+		scaleResult := ScaleNumConfs(chainutil.Amount(chanAmt), pushAmt)
 		fundingResult := FundingConfsForAmounts(
-			btcutil.Amount(chanAmt), pushAmt,
+			chainutil.Amount(chanAmt), pushAmt,
 		)
 
 		require.Equal(
@@ -313,14 +313,14 @@ func TestCloseConfsForCapacity(t *testing.T) {
 
 	rapid.Check(t, func(t *rapid.T) {
 		capacity := rapid.Uint64Range(
-			0, maxChannelSize*2,
+			0, uint64(MaxFundingAmount)*2,
 		).Draw(t, "capacity")
 
 		// CloseConfsForCapacity should be equivalent to ScaleNumConfs
 		// with 0 push, but with a minimum of 3 confirmations enforced
 		// for reorg safety.
-		closeConfs := CloseConfsForCapacity(btcutil.Amount(capacity))
-		scaleConfs := ScaleNumConfs(btcutil.Amount(capacity), 0)
+		closeConfs := CloseConfsForCapacity(chainutil.Amount(capacity))
+		scaleConfs := ScaleNumConfs(chainutil.Amount(capacity), 0)
 
 		// The result should be at least the scaled value, but with a
 		// minimum of 3 confirmations.
