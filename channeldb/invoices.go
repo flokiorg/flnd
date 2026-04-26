@@ -1601,7 +1601,7 @@ func fetchInvoice(invoiceNum []byte, invoices kvdb.RBucket,
 		// the sql implementation.
 		if err != nil {
 			log.Errorf("unable to fetch amp htlcs for inv "+
-				"%v and setIDs %v: %w", invoiceNum, setIDs, err)
+				"%v and setIDs %v: %v", invoiceNum, setIDs, err)
 		}
 
 		if filterAMPState {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/flokiorg/go-flokicoin/wire"
-	"github.com/lightningnetwork/lnd/kvdb"
+	"github.com/flokiorg/flnd/kvdb"
 	"github.com/stretchr/testify/require"
 )
 
