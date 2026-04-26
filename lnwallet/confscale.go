@@ -1,58 +1,53 @@
 package lnwallet
 
 import (
-	"github.com/btcsuite/btcd/btcutil"
-	"github.com/lightningnetwork/lnd/lnwire"
+	"github.com/flokiorg/flnd/lnwire"
+	"github.com/flokiorg/go-flokicoin/chainutil"
 )
 
 const (
-	// minRequiredConfs is the minimum number of confirmations we'll
-	// require for channel operations.
-	minRequiredConfs = 1
-
-	// maxRequiredConfs is the maximum number of confirmations we'll
-	// require for channel operations.
-	maxRequiredConfs = 6
-
-	// maxChannelSize is the maximum expected channel size in satoshis.
-	// This matches MaxBtcFundingAmount (0.16777215 BTC).
-	maxChannelSize = 16777215
+	// MaxFundingAmount is the protocol-level maximum channel size for
+	// non-wumbo channels.
+	MaxFundingAmount = chainutil.Amount(16777215)
 )
 
-// ScaleNumConfs returns a linearly scaled number of confirmations based on the
-// provided channel amount and push amount (for funding transactions). The push
-// amount represents additional risk when receiving funds.
-func ScaleNumConfs(chanAmt btcutil.Amount, pushAmt lnwire.MilliSatoshi) uint16 {
-	// For wumbo channels, always require maximum confirmations.
-	if chanAmt > maxChannelSize {
-		return maxRequiredConfs
+// FundingConfsForAmounts returns the number of confirmations required for a
+// channel to be considered open, given its capacity and push amount.
+func FundingConfsForAmounts(chanAmt chainutil.Amount,
+	pushAmt lnwire.MilliLoki) uint16 {
+
+	// For large channels we increase the number of confirmations we require
+	// for the channel to be considered open. As it is always the responder
+	// that gets to choose value, the pushAmt is value being pushed to us.
+	// This means we have more to lose in the case this gets re-orged out,
+	// and we will require more confirmations before we consider it open.
+	minConf := uint64(3)
+	maxConf := uint64(6)
+
+	// If this is a wumbo channel, then we'll require the max amount of
+	// confirmations.
+	if chanAmt > MaxFundingAmount {
+		return uint16(maxConf)
 	}
 
-	// Calculate total stake: channel amount + push amount. The push amount
-	// represents value at risk for the receiver.
-	maxChannelSizeMsat := lnwire.NewMSatFromSatoshis(maxChannelSize)
-	stake := lnwire.NewMSatFromSatoshis(chanAmt) + pushAmt
-
-	// Scale confirmations linearly based on stake.
-	conf := uint64(maxRequiredConfs) * uint64(stake) /
-		uint64(maxChannelSizeMsat)
-
-	// Bound the result between minRequiredConfs and maxRequiredConfs.
-	if conf < minRequiredConfs {
-		conf = minRequiredConfs
+	// If not we return a value scaled linearly between 3 and 6, depending on
+	// channel size.
+	maxChannelSize := uint64(
+		lnwire.NewMSatFromLokis(MaxFundingAmount))
+	stake := lnwire.NewMSatFromLokis(chanAmt) + pushAmt
+	conf := maxConf * uint64(stake) / maxChannelSize
+	if conf < minConf {
+		conf = minConf
 	}
-	if conf > maxRequiredConfs {
-		conf = maxRequiredConfs
+	if conf > maxConf {
+		conf = maxConf
 	}
-
 	return uint16(conf)
 }
 
-// FundingConfsForAmounts returns the number of confirmations to wait for a
-// funding transaction, taking into account both the channel amount and any
-// pushed amount (which represents additional risk).
-func FundingConfsForAmounts(chanAmt btcutil.Amount,
-	pushAmt lnwire.MilliSatoshi) uint16 {
-
-	return ScaleNumConfs(chanAmt, pushAmt)
+// CloseConfsForCapacity returns the number of confirmations required for a
+// channel close to be considered final, given its capacity.
+func CloseConfsForCapacity(chanAmt chainutil.Amount) uint32 {
+	// For now we use the same scaling as for funding.
+	return uint32(FundingConfsForAmounts(chanAmt, 0))
 }

@@ -783,7 +783,7 @@ func (r *rpcServer) addDeps(ctx context.Context, s *server,
 			return nil
 		},
 		ShouldSetExpEndorsement: func() bool {
-			if s.cfg.ProtocolOptions.NoExperimentalEndorsement() {
+			if s.cfg.ProtocolOptions.NoExpAccountability() {
 				return false
 			}
 

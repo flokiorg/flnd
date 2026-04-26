@@ -1,10 +1,3 @@
-e05ee9a8f linter: update usetesting linter to match old behavior
-35260fc4a discovery: fix new usetesting linter issues
-72ab4d234 Merge pull request #10289 from GeorgeTsagk/move-aux-closer
-61d82fd1f build: update CI+release version to Go 1.25.5
-e26a114cd mod: update the minimum go version to 1.24.11
-0764f27b6 rpcserver: use protocol max for fundMax, not maxChanSize
-73e7708f1 itest: add fundMax with maxChanSize test
 f48e6ba14 docs: update release notes for fundMax fix
 28355a20b Merge pull request #10493 from ziggie1984/add-usetesting-linter
 7085f4706 fn: fix printf vet check in TestSomeToOkf Go 1.24+
