@@ -57,6 +57,12 @@
   transactions as locally initiated, even when they were initiated by the remote
   peer.
 
+- [Fixed a panic in the gossiper](https://github.com/flokiorg/flnd/pull/10463)
+  when `TrickleDelay` is configured with a non-positive value. The configuration
+  validation now checks `TrickleDelay` at startup and defaults it to 1
+  millisecond if set to zero or a negative value, preventing `time.NewTicker`
+  from panicking.
+
 # New Features
 
 - Basic Support for [onion messaging forwarding](https://github.com/flokiorg/flnd/pull/9868) 
