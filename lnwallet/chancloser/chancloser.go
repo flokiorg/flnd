@@ -15,7 +15,6 @@ import (
 	"github.com/flokiorg/flnd/lnwallet/chainfee"
 	"github.com/flokiorg/flnd/lnwallet/types"
 	"github.com/flokiorg/flnd/lnwire"
-	"github.com/flokiorg/flnd/tlv"
 	"github.com/flokiorg/go-flokicoin/chaincfg"
 	"github.com/flokiorg/go-flokicoin/chainutil"
 	"github.com/flokiorg/go-flokicoin/crypto"
@@ -823,7 +822,7 @@ func (c *ChanCloser) ReceiveClosingSigned( //nolint:funlen
 		// during the negotiations. If it doesn't match any of our
 		// prior offers, then we'll attempt to ratchet the fee closer
 		// to our ideal fee.
-		remoteProposedFee := msg.FeeSatoshis
+		remoteProposedFee := msg.FeeLokis
 
 		_, feeMatchesOffer := c.priorFeeOffers[remoteProposedFee]
 		switch {

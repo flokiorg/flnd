@@ -219,7 +219,7 @@ type NurseryConfig struct {
 // considered mature after the relative time-lock within the pkScript has
 // passed. As outputs reach their maturity age, they're swept in batches into
 // the source wallet, returning the outputs so they can be used within future
-// channels, or regular Flokicoin transactions.
+// channels, or regular flokicoin transactions.
 type UtxoNursery struct {
 	started uint32 // To be used atomically.
 	stopped uint32 // To be used atomically.
@@ -1269,7 +1269,7 @@ func (c *ContractMaturityReport) AddLimboDirectHtlc(kid *kidOutput) {
 	c.Htlcs = append(c.Htlcs, htlcReport)
 }
 
-// AddLimboStage1SuccessHtlcHtlc adds an htlc crib output to the maturity
+// AddLimboStage1SuccessHtlc adds an htlc crib output to the maturity
 // report's set of HTLC's. We'll use this to report any incoming HTLC sweeps
 // where the second level transaction hasn't yet confirmed.
 func (c *ContractMaturityReport) AddLimboStage1SuccessHtlc(kid *kidOutput) {
