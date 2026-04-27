@@ -1,8 +1,3 @@
-63450b85f lnwallet: use BIP-340 nonce derivation for HTLC sigs in test vectors
-1866770f4 lnwallet: regenerate test vectors with BIP-340 HTLC signatures
-1d7b5bbe4 lnrpc: regenerate protobuf files for Go 1.26 compatibility
-a27970048 lnwallet: fix fundingTxid scope in TestChanSyncTaprootLocalNonces
-65d04f346 multi: fix linter issues
 7a18fba66 watchtower: add production taproot channel support to justice kit
 086f69277 itest: extend watchtower breach test to cover production taproot channels
 890636a13 multi: fix linter issues
