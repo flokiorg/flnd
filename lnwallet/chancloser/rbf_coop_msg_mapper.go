@@ -6,6 +6,7 @@ import (
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/msgmux"
+	"github.com/flokiorg/flnd/tlv"
 )
 
 // RbfMsgMapper is a struct that implements the MsgMapper interface for the
@@ -59,6 +60,13 @@ func (r *RbfMsgMapper) MapMsg(wireMsg msgmux.PeerMsg) fn.Option[ProtocolEvent] {
 		if !r.isForUs(msg.ChannelID, wireMsg.PeerPub) {
 			return fn.None[ProtocolEvent]()
 		}
+
+		var remoteShutdownNonce fn.Option[lnwire.Musig2Nonce]
+		msg.ShutdownNonce.WhenSome(
+			func(nonce tlv.RecordT[lnwire.ShutdownNonceType, lnwire.Musig2Nonce]) {
+				remoteShutdownNonce = fn.Some(nonce.Val)
+			},
+		)
 
 		return someEvent(&ShutdownReceived{
 			BlockHeight:         r.bestHeight(),
