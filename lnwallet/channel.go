@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"slices"
 	"sync"
 
@@ -834,6 +835,18 @@ type LightningChannel struct {
 type ChannelOpt func(*channelOpts)
 
 // channelOpts is the set of options used to create a new channel.
+// AuxHtlcValidator is an interface that allows external components (like an
+// aux traffic shaper) to perform final validation checks against the most
+// up-to-date channel state before the HTLC is committed.
+type AuxHtlcValidator interface {
+	// ValidateHtlc checks whether the given HTLC can be added to the
+	// channel given the current link bandwidth, custom records, and HTLC
+	// view.
+	ValidateHtlc(amount, linkBandwidth lnwire.MilliLoki,
+		customRecords lnwire.CustomRecords,
+		view AuxHtlcView) error
+}
+
 type channelOpts struct {
 	localNonce  *musig2.Nonces
 	remoteNonce *musig2.Nonces
@@ -841,6 +854,14 @@ type channelOpts struct {
 	leafStore   fn.Option[AuxLeafStore]
 	auxSigner   fn.Option[AuxSigner]
 	auxResolver fn.Option[AuxContractResolver]
+
+	// auxHtlcValidator is an optional validator that performs custom
+	// validation on HTLCs before they are added to the channel state.
+	auxHtlcValidator fn.Option[AuxHtlcValidator]
+
+	// customSigningRand is an optional random source for generating
+	// deterministic JIT signing nonces in MuSig2 sessions.
+	customSigningRand fn.Option[io.Reader]
 
 	skipNonceInit bool
 }

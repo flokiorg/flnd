@@ -233,6 +233,10 @@ const (
 	// A channel that uses musig2 for the funding output, and the new tapscript
 	// features where relevant.
 	CommitmentType_SIMPLE_TAPROOT CommitmentType = 5
+	// A channel that uses musig2 for the funding output, and the new tapscript
+	// features where relevant. This is the production version using final scripts
+	// and feature bits 80/81.
+	CommitmentType_SIMPLE_TAPROOT_FINAL CommitmentType = 7
 	// Identical to the SIMPLE_TAPROOT channel type, but with extra functionality.
 	// This channel type also commits to additional meta data in the tapscript
 	// leaves for the scripts in a channel.
@@ -248,6 +252,7 @@ var (
 		3: "ANCHORS",
 		4: "SCRIPT_ENFORCED_LEASE",
 		5: "SIMPLE_TAPROOT",
+		7: "SIMPLE_TAPROOT_FINAL",
 		6: "SIMPLE_TAPROOT_OVERLAY",
 	}
 	CommitmentType_value = map[string]int32{
@@ -257,6 +262,7 @@ var (
 		"ANCHORS":                 3,
 		"SCRIPT_ENFORCED_LEASE":   4,
 		"SIMPLE_TAPROOT":          5,
+		"SIMPLE_TAPROOT_FINAL":    7,
 		"SIMPLE_TAPROOT_OVERLAY":  6,
 	}
 )

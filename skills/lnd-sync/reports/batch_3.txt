@@ -1,50 +1,49 @@
-a8a3e1312 Merge pull request #10763 from GeorgeTsagk/taproot-final-acceptor
-33f623c85 docs: add release note for SIMPLE_TAPROOT_FINAL follow-ups
-6d9515480 server: do not auto-enable RBF coop close for overlay channels
-58231f1ff chanacceptor: map SIMPLE_TAPROOT_FINAL in rpc acceptor
-8f7376454 Merge pull request #10762 from yyforyongyu/update-release-notes
-e12435ef0 docs: update contributor list
-ba32f2e7a Merge pull request #10741 from saubyk/update-code-contribution-guideline
-2e7faf0e1 docs: add new contributors section to contribution guidelines
-3accc5111 Merge pull request #10754 from gijswijs/onion-msg-block-same-peer-cycle
-84ec3cb23 docs: add release note for same-peer onion message cycle drop
-261babcf0 onionmessage: drop onion messages cycling back to the sending peer
-52a904118 Merge pull request #10713 from lightningnetwork/onion-msg-rate-limit
-8e91bcc46 docs: add release note for onion message rate limiting (#10713)
-fc1ac5c63 docs: add onion message rate limiting explainer
-335b75981 lncfg+peer+server: add protocol.onion-msg-relay-all to bypass channel gate
-c0827e8e3 peer: gate onion message ingress on having an open channel
-1db6eb66a server+docs: construct onion message rate limiters and document config
-9cad57bfc peer: enforce onion message rate limits at ingress
-69468c321 lncfg+config: add tunable onion message rate limit options
-d95bcbfa0 onionmessage: add token-bucket rate limiter primitives
-10808eb2e Merge pull request #10628 from Roasbeef/funding-optimization
-3fc674161 Merge pull request #10730 from ziggie1984/itest/fix-introduction-blinded-error-flake
-33cb63f33 itest: fix flake in testIntroductionNodeError
-c68397b9b funding/test: add test for inline channel_ready processing
-312dda86c funding: process channel_ready messages inline in the coordinator
-ad303828c Merge pull request #9985 from Roasbeef/prod-taproot-chans
-85bba2ca7 multi: add SCB restore support for production taproot channels
-fd3b6386f multi: fix lint and itest failures for production taproot channels
-98c086ba5 chanbackup: add SimpleTaprootFinalVersion for production taproot backups
-aaf7c2942 lnwallet: return error from AggregateNonces in MusigSession
-91e35c4d5 docs/release-notes: add release note for production taproot channels
-890636a13 multi: fix linter issues
-086f69277 itest: extend watchtower breach test to cover production taproot channels
-7a18fba66 watchtower: add production taproot channel support to justice kit
-65d04f346 multi: fix linter issues
-a27970048 lnwallet: fix fundingTxid scope in TestChanSyncTaprootLocalNonces
-1d7b5bbe4 lnrpc: regenerate protobuf files for Go 1.26 compatibility
-1866770f4 lnwallet: regenerate test vectors with BIP-340 HTLC signatures
-63450b85f lnwallet: use BIP-340 nonce derivation for HTLC sigs in test vectors
-50981dfce lnwallet: regenerate taproot test vectors with secret nonces
-4c225ddf3 lnwallet: add MuSig2 secret nonces and partial sig replay to test vectors
-2148445c6 lnwallet: add secret nonce stashing to MusigSession for test vectors
-70f189ffc lnwallet: regenerate taproot channel test vectors
-77da917c8 lnwallet: add 3rd-party signature verification for taproot test vectors
-745bdc189 lnwallet: fix HTLC trimming test case to use dust_limit for zero-fee HTLCs
-b78de44d1 lnwallet: fix HTLC sig-to-transaction mapping in test vector generator
-fa97946ff lnwallet: emit actual MuSig2 partial sigs and nonces in test vectors
-38c415a92 lnwallet: add taproot channel test vector generator
 08c42b19d multi: add custom nonce rand support to MuSig2 sessions
-29de2c861 cmd/commands: add taproot-final to lncli open command
+38c415a92 lnwallet: add taproot channel test vector generator
+fa97946ff lnwallet: emit actual MuSig2 partial sigs and nonces in test vectors
+b78de44d1 lnwallet: fix HTLC sig-to-transaction mapping in test vector generator
+745bdc189 lnwallet: fix HTLC trimming test case to use dust_limit for zero-fee HTLCs
+77da917c8 lnwallet: add 3rd-party signature verification for taproot test vectors
+70f189ffc lnwallet: regenerate taproot channel test vectors
+2148445c6 lnwallet: add secret nonce stashing to MusigSession for test vectors
+4c225ddf3 lnwallet: add MuSig2 secret nonces and partial sig replay to test vectors
+50981dfce lnwallet: regenerate taproot test vectors with secret nonces
+63450b85f lnwallet: use BIP-340 nonce derivation for HTLC sigs in test vectors
+1866770f4 lnwallet: regenerate test vectors with BIP-340 HTLC signatures
+1d7b5bbe4 lnrpc: regenerate protobuf files for Go 1.26 compatibility
+a27970048 lnwallet: fix fundingTxid scope in TestChanSyncTaprootLocalNonces
+65d04f346 multi: fix linter issues
+7a18fba66 watchtower: add production taproot channel support to justice kit
+086f69277 itest: extend watchtower breach test to cover production taproot channels
+890636a13 multi: fix linter issues
+91e35c4d5 docs/release-notes: add release note for production taproot channels
+aaf7c2942 lnwallet: return error from AggregateNonces in MusigSession
+98c086ba5 chanbackup: add SimpleTaprootFinalVersion for production taproot backups
+fd3b6386f multi: fix lint and itest failures for production taproot channels
+85bba2ca7 multi: add SCB restore support for production taproot channels
+ad303828c Merge pull request #9985 from Roasbeef/prod-taproot-chans
+312dda86c funding: process channel_ready messages inline in the coordinator
+c68397b9b funding/test: add test for inline channel_ready processing
+33cb63f33 itest: fix flake in testIntroductionNodeError
+3fc674161 Merge pull request #10730 from ziggie1984/itest/fix-introduction-blinded-error-flake
+10808eb2e Merge pull request #10628 from Roasbeef/funding-optimization
+d95bcbfa0 onionmessage: add token-bucket rate limiter primitives
+69468c321 lncfg+config: add tunable onion message rate limit options
+9cad57bfc peer: enforce onion message rate limits at ingress
+1db6eb66a server+docs: construct onion message rate limiters and document config
+c0827e8e3 peer: gate onion message ingress on having an open channel
+335b75981 lncfg+peer+server: add protocol.onion-msg-relay-all to bypass channel gate
+fc1ac5c63 docs: add onion message rate limiting explainer
+8e91bcc46 docs: add release note for onion message rate limiting (#10713)
+52a904118 Merge pull request #10713 from lightningnetwork/onion-msg-rate-limit
+261babcf0 onionmessage: drop onion messages cycling back to the sending peer
+84ec3cb23 docs: add release note for same-peer onion message cycle drop
+3accc5111 Merge pull request #10754 from gijswijs/onion-msg-block-same-peer-cycle
+2e7faf0e1 docs: add new contributors section to contribution guidelines
+ba32f2e7a Merge pull request #10741 from saubyk/update-code-contribution-guideline
+e12435ef0 docs: update contributor list
+8f7376454 Merge pull request #10762 from yyforyongyu/update-release-notes
+58231f1ff chanacceptor: map SIMPLE_TAPROOT_FINAL in rpc acceptor
+6d9515480 server: do not auto-enable RBF coop close for overlay channels
+33f623c85 docs: add release note for SIMPLE_TAPROOT_FINAL follow-ups
+a8a3e1312 Merge pull request #10763 from GeorgeTsagk/taproot-final-acceptor
