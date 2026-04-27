@@ -48,6 +48,7 @@ import (
 	"github.com/flokiorg/flnd/pool"
 	"github.com/flokiorg/flnd/protofsm"
 	"github.com/flokiorg/flnd/queue"
+	"github.com/flokiorg/flnd/routing/route"
 	"github.com/flokiorg/flnd/subscribe"
 	"github.com/flokiorg/flnd/ticker"
 	"github.com/flokiorg/flnd/tlv"
@@ -5532,4 +5533,90 @@ func (p *Brontide) TriggerCoopCloseRbfBump(ctx context.Context,
 	}
 
 	return closeUpdates, nil
+}
+
+type auxHtlcValidator struct {
+	peer   *Brontide
+	dbChan *channeldb.OpenChannel
+	ts     htlcswitch.AuxTrafficShaper
+}
+
+// ValidateHtlc performs final aux balance validation before an HTLC is added
+// to the channel state. It calls into the traffic shaper's PaymentBandwidth
+// method to check external balance against the most up-to-date channel state,
+// preventing race conditions where multiple HTLCs could be approved based on
+// stale bandwidth.
+func (v *auxHtlcValidator) ValidateHtlc(amount,
+	linkBandwidth lnwire.MilliLoki,
+	customRecords lnwire.CustomRecords,
+	view lnwallet.AuxHtlcView) error {
+
+	// Get the short channel ID for logging.
+	scid := v.dbChan.ShortChannelID
+
+	// Extract the HTLC custom records to pass to the traffic shaper.
+	var htlcBlob fn.Option[tlv.Blob]
+	if len(customRecords) > 0 {
+		blob, err := customRecords.Serialize()
+		if err != nil {
+			return fmt.Errorf("unable to serialize "+
+				"custom records: %v", err)
+		}
+		htlcBlob = fn.Some(blob)
+	}
+
+	// Get the funding and commitment blobs for this channel.
+	fundingBlob := v.dbChan.CustomBlob
+	commitmentBlob := v.dbChan.LocalCommitment.CustomBlob
+
+	// Check if this channel should be handled by the traffic shaper. If
+	// not, we skip the aux validation entirely and allow the HTLC to
+	// proceed through normal validation.
+	shouldHandle, err := v.ts.ShouldHandleTraffic(
+		scid, fundingBlob, htlcBlob,
+	)
+	if err != nil {
+		return fmt.Errorf("traffic shaper failed to decide "+
+			"whether to handle traffic: %v", err)
+	}
+	if !shouldHandle {
+		return nil
+	}
+
+	peer := route.NewVertex(v.peer.IdentityKey())
+
+	// Call the traffic shaper's PaymentBandwidth method with the current
+	// state. This performs the same bandwidth checks as during
+	// pathfinding/forwarding, but against the absolute latest channel
+	// state.
+	//
+	// The linkBandwidth is provided by the channel and represents the
+	// current available balance, which is used by the traffic shaper to
+	// ensure we don't dip below channel reserves.
+	bandwidth, err := v.ts.PaymentBandwidth(
+		fundingBlob, htlcBlob, commitmentBlob,
+		linkBandwidth, amount, view, peer,
+	)
+	if err != nil {
+		return fmt.Errorf("traffic shaper bandwidth check "+
+			"failed: %v", err)
+	}
+
+	if amount > bandwidth {
+		return fmt.Errorf("insufficient aux bandwidth: "+
+			"need %v, have %v (scid=%v)", amount,
+			bandwidth, scid)
+	}
+
+	return nil
+}
+
+func (p *Brontide) createHtlcValidator(dbChan *channeldb.OpenChannel,
+	ts htlcswitch.AuxTrafficShaper) lnwallet.AuxHtlcValidator {
+
+	return &auxHtlcValidator{
+		peer:   p,
+		dbChan: dbChan,
+		ts:     ts,
+	}
 }
