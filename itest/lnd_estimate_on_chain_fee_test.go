@@ -20,9 +20,9 @@ func testEstimateOnChainFeeWithSelectedInputs(ht *lntest.HarnessTest) {
 	// Fund Alice with multiple UTXOs of different amounts to give us
 	// several inputs to choose from.
 	const (
-		utxo1Amount = btcutil.Amount(500_000)
-		utxo2Amount = btcutil.Amount(300_000)
-		utxo3Amount = btcutil.Amount(200_000)
+		utxo1Amount = chainutil.Amount(500_000)
+		utxo2Amount = chainutil.Amount(300_000)
+		utxo3Amount = chainutil.Amount(200_000)
 		targetConf  = 2
 	)
 
@@ -75,7 +75,7 @@ func testEstimateOnChainFeeWithSelectedInputs(ht *lntest.HarnessTest) {
 	estimateResp, err := alice.RPC.LN.EstimateFee(ht.Context(), estimateReq)
 	require.NoError(ht, err, "EstimateFee failed")
 
-	ht.Logf("Fee estimate: %d sats, fee rate: %d sat/vbyte",
+	ht.Logf("Fee estimate: %d loki, fee rate: %d loki/vbyte",
 		estimateResp.FeeSat, estimateResp.SatPerVbyte)
 
 	// Verify that the estimate response includes the inputs we specified.
@@ -125,7 +125,7 @@ func testEstimateOnChainFeeWithSelectedInputs(ht *lntest.HarnessTest) {
 		if tx.TxHash == txid {
 			actualFee = tx.TotalFees
 			found = true
-			ht.Logf("Actual fee paid: %d sats", actualFee)
+			ht.Logf("Actual fee paid: %d loki", actualFee)
 
 			break
 		}
@@ -150,9 +150,9 @@ func testEstimateOnChainFeeAutoSelectedInputs(ht *lntest.HarnessTest) {
 
 	// Fund Alice with multiple UTXOs.
 	const (
-		utxo1Amount = btcutil.Amount(500_000)
-		utxo2Amount = btcutil.Amount(300_000)
-		utxo3Amount = btcutil.Amount(200_000)
+		utxo1Amount = chainutil.Amount(500_000)
+		utxo2Amount = chainutil.Amount(300_000)
+		utxo3Amount = chainutil.Amount(200_000)
 		targetConf  = 2
 	)
 
@@ -180,8 +180,8 @@ func testEstimateOnChainFeeAutoSelectedInputs(ht *lntest.HarnessTest) {
 	estimateResp, err := alice.RPC.LN.EstimateFee(ht.Context(), estimateReq)
 	require.NoError(ht, err, "EstimateFee failed")
 
-	ht.Logf("Fee estimate (auto-select): %d sats, "+
-		"fee rate: %d sat/vbyte, inputs selected: %d",
+	ht.Logf("Fee estimate (auto-select): %d loki, "+
+		"fee rate: %d loki/vbyte, inputs selected: %d",
 		estimateResp.FeeSat, estimateResp.SatPerVbyte,
 		len(estimateResp.Inputs))
 
@@ -215,7 +215,7 @@ func testEstimateOnChainFeeAutoSelectedInputs(ht *lntest.HarnessTest) {
 		if tx.TxHash == txid {
 			actualFee = tx.TotalFees
 			found = true
-			ht.Logf("Actual fee paid: %d sats", actualFee)
+			ht.Logf("Actual fee paid: %d loki", actualFee)
 
 			break
 		}

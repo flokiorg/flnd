@@ -2,9 +2,6 @@ d3ce622bd Merge pull request #10403 from gijswijs/fix-flatmap
 99d07fdb7 Merge pull request #10367 from elnosh/rename-endorsement-accountable
 d5d151cee Merge pull request #10462 from ziggie1984/fix-prune-node-race
 049f2c738 lnrpc: transaction inputs in  EstimateFeeRequest
-e5456d39f cmd: make types.go accessible in lnd package
-280929ba1 rpcserver: return inputs in EstimateFeeResponse
-44aa5efc6 cmd: EstimateFee for explicit inputs
 422aa7d18 itest: estimate on-chain fee with selected inputs
 202e473c7 docs: update release notes
 39a1421d1 Merge pull request #10296 from hieblmi/estimate-inputs
@@ -14,8 +11,6 @@ caf4850f7 discovery: add panic recovery for gossip message processing
 bcb65f5ac discovery: add panic recovery for serial announce signatures processing
 7da41cb36 docs/release-notes: add release notes
 ab6ff825c Merge pull request #10470 from Roasbeef/discovery-panic-recovery
-e05ee9a8f linter: update usetesting linter to match old behavior
-35260fc4a discovery: fix new usetesting linter issues
 72ab4d234 Merge pull request #10289 from GeorgeTsagk/move-aux-closer
 61d82fd1f build: update CI+release version to Go 1.25.5
 e26a114cd mod: update the minimum go version to 1.24.11
