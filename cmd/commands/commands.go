@@ -16,7 +16,7 @@ import (
 	"strings"
 	"sync"
 
-	lnd "github.com/flokiorg/flnd"
+	flnd "github.com/flokiorg/flnd"
 	"github.com/flokiorg/flnd/lnrpc"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/routing"
@@ -379,7 +379,7 @@ var coinSelectionStrategyFlag = cli.StringFlag{
 		"coins. Possible values are 'largest', 'random', or " +
 		"'global-config'. If either 'largest' or 'random' is " +
 		"specified, it will override the globally configured " +
-		"strategy in lnd.conf",
+		"strategy in flnd.conf",
 	Value: "global-config",
 }
 
@@ -435,7 +435,7 @@ func estimateFees(ctx *cli.Context) error {
 	if ctx.IsSet("utxo") {
 		utxos := ctx.StringSlice("utxo")
 
-		inputs, err = lnd.UtxosToOutpoints(utxos)
+		inputs, err = flnd.UtxosToOutpoints(utxos)
 		if err != nil {
 			return fmt.Errorf("unable to decode utxos: %w", err)
 		}
@@ -626,7 +626,7 @@ func sendCoins(ctx *cli.Context) error {
 	if ctx.IsSet("utxo") {
 		utxos := ctx.StringSlice("utxo")
 
-		outpoints, err = lnd.UtxosToOutpoints(utxos)
+		outpoints, err = flnd.UtxosToOutpoints(utxos)
 		if err != nil {
 			return fmt.Errorf("unable to decode utxos: %w", err)
 		}
@@ -803,12 +803,12 @@ func listUnspent(ctx *cli.Context) error {
 	// to stdout. At the moment, this filters out the raw txid bytes from
 	// each utxo's outpoint and only prints the txid string.
 	var listUnspentResp = struct {
-		Utxos []*lnd.Utxo `json:"utxos"`
+		Utxos []*flnd.Utxo `json:"utxos"`
 	}{
-		Utxos: make([]*lnd.Utxo, 0, len(resp.Utxos)),
+		Utxos: make([]*flnd.Utxo, 0, len(resp.Utxos)),
 	}
 	for _, protoUtxo := range resp.Utxos {
-		utxo := lnd.NewUtxoFromProto(protoUtxo)
+		utxo := flnd.NewUtxoFromProto(protoUtxo)
 		listUnspentResp.Utxos = append(listUnspentResp.Utxos, utxo)
 	}
 
@@ -1514,7 +1514,7 @@ var abandonChannelCommand = cli.Command{
 	Description: `
 	Removes all channel state from the database except for a close
 	summary. This method can be used to get rid of permanently unusable
-	channels due to bugs fixed in newer versions of lnd.
+	channels due to bugs fixed in newer versions of flnd.
 
 	Only available when lnd is built in debug mode. The flag
 	--i_know_what_i_am_doing can be set to override the debug/dev mode
@@ -1721,7 +1721,7 @@ func ChannelBalance(ctx *cli.Context) error {
 var generateManPageCommand = cli.Command{
 	Name: "generatemanpage",
 	Usage: "Generates a man page for lncli and lnd as " +
-		"lncli.1 and lnd.1 respectively.",
+		"lncli.1 and flnd.1 respectively.",
 	Hidden: true,
 	Action: actionDecorator(generateManPage),
 }
@@ -1737,15 +1737,15 @@ func generateManPage(ctx *cli.Context) error {
 		return err
 	}
 
-	// Generate the man pages for lnd as lnd.1.
-	config := lnd.DefaultConfig()
+	// Generate the man pages for lnd as flnd.1.
+	config := flnd.DefaultConfig()
 	fileParser := flags.NewParser(&config, flags.Default)
 	fileParser.Name = "lnd"
 
 	var buf bytes.Buffer
 	fileParser.WriteManPage(&buf)
 
-	err = os.WriteFile("lnd.1", buf.Bytes(), 0644)
+	err = os.WriteFile("flnd.1", buf.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
@@ -2808,14 +2808,14 @@ func updateChannelPolicy(ctx *cli.Context) error {
 	// to stdout. At the moment, this filters out the raw txid bytes from
 	// each failed update's outpoint and only prints the txid string.
 	var listFailedUpdateResp = struct {
-		FailedUpdates []*lnd.FailedUpdate `json:"failed_updates"`
+		FailedUpdates []*flnd.FailedUpdate `json:"failed_updates"`
 	}{
 		FailedUpdates: make(
-			[]*lnd.FailedUpdate, 0, len(resp.FailedUpdates),
+			[]*flnd.FailedUpdate, 0, len(resp.FailedUpdates),
 		),
 	}
 	for _, protoUpdate := range resp.FailedUpdates {
-		failedUpdate := lnd.NewFailedUpdateFromProto(protoUpdate)
+		failedUpdate := flnd.NewFailedUpdateFromProto(protoUpdate)
 		listFailedUpdateResp.FailedUpdates = append(
 			listFailedUpdateResp.FailedUpdates, failedUpdate)
 	}

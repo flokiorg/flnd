@@ -159,7 +159,7 @@ linters:
         - github.com/ulikunitz/xz
         - github.com/gogo/protobuf
         - google.golang.org/protobuf
-        - github.com/lightningnetwork/lnd/sqldb
+        - github.com/flokiorg/flnd/sqldb
       replace-local: true
 
     gosec:
@@ -274,7 +274,7 @@ linters:
         path: config\.go
       - linters:
           - forbidigo
-        path: lnd\.go
+        path: flnd\.go
 
       - linters:
           # forcetypeassert is skipped for the mock because the test would fail
