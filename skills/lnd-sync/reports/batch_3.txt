@@ -1,8 +1,3 @@
-98c086ba5 chanbackup: add SimpleTaprootFinalVersion for production taproot backups
-fd3b6386f multi: fix lint and itest failures for production taproot channels
-85bba2ca7 multi: add SCB restore support for production taproot channels
-ad303828c Merge pull request #9985 from Roasbeef/prod-taproot-chans
-312dda86c funding: process channel_ready messages inline in the coordinator
 c68397b9b funding/test: add test for inline channel_ready processing
 33cb63f33 itest: fix flake in testIntroductionNodeError
 3fc674161 Merge pull request #10730 from ziggie1984/itest/fix-introduction-blinded-error-flake
