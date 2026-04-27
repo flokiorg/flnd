@@ -122,6 +122,11 @@ type ShutdownReceived struct {
 	// received. This is used for channel leases to determine if a co-op
 	// close can occur.
 	BlockHeight uint32
+
+	// RemoteShutdownNonce is the nonce the remote party will use to sign
+	// the first co-op sign offer. This is only populated for taproot
+	// channels.
+	RemoteShutdownNonce fn.Option[lnwire.Musig2Nonce]
 }
 
 // protocolSealed indicates that this struct is a ProtocolEvent instance.
