@@ -331,7 +331,11 @@ func bumpFee(ctx *cli.Context) error {
 	}
 
 	// Validate and parse the relevant arguments/flags.
+<<<<<<< HEAD
 	protoOutPoint, err := flnd.NewProtoOutPoint(ctx.Args().Get(0))
+=======
+	protoOutPoint, err := lnd.NewProtoOutPoint(ctx.Args().Get(0))
+>>>>>>> e5456d39f (cmd: make types.go accessible in lnd package)
 	if err != nil {
 		return err
 	}
@@ -813,11 +817,19 @@ func removeTransaction(ctx *cli.Context) error {
 
 // utxoLease contains JSON annotations for a lease on an unspent output.
 type utxoLease struct {
+<<<<<<< HEAD
 	ID         string        `json:"id"`
 	OutPoint   flnd.OutPoint `json:"outpoint"`
 	Expiration uint64        `json:"expiration"`
 	PkScript   []byte        `json:"pk_script"`
 	Value      uint64        `json:"value"`
+=======
+	ID         string       `json:"id"`
+	OutPoint   lnd.OutPoint `json:"outpoint"`
+	Expiration uint64       `json:"expiration"`
+	PkScript   []byte       `json:"pk_script"`
+	Value      uint64       `json:"value"`
+>>>>>>> e5456d39f (cmd: make types.go accessible in lnd package)
 }
 
 // fundPsbtResponse is a struct that contains JSON annotations for nice result
@@ -1359,7 +1371,11 @@ func fundPsbt(ctx *cli.Context) error {
 			}
 
 			for idx, input := range inputs {
+<<<<<<< HEAD
 				op, err := flnd.NewProtoOutPoint(input)
+=======
+				op, err := lnd.NewProtoOutPoint(input)
+>>>>>>> e5456d39f (cmd: make types.go accessible in lnd package)
 				if err != nil {
 					return fmt.Errorf("error parsing "+
 						"UTXO outpoint %d: %v", idx,
@@ -1448,7 +1464,11 @@ func marshallLocks(lockedUtxos []*walletrpc.UtxoLease) []*utxoLease {
 	for idx, lock := range lockedUtxos {
 		jsonLocks[idx] = &utxoLease{
 			ID:         hex.EncodeToString(lock.Id),
+<<<<<<< HEAD
 			OutPoint:   flnd.NewOutPointFromProto(lock.Outpoint),
+=======
+			OutPoint:   lnd.NewOutPointFromProto(lock.Outpoint),
+>>>>>>> e5456d39f (cmd: make types.go accessible in lnd package)
 			Expiration: lock.Expiration,
 			PkScript:   lock.PkScript,
 			Value:      lock.Value,
@@ -1579,7 +1599,11 @@ func leaseOutput(ctx *cli.Context) error {
 	}
 
 	outpointStr := ctx.String("outpoint")
+<<<<<<< HEAD
 	outpoint, err := flnd.NewProtoOutPoint(outpointStr)
+=======
+	outpoint, err := lnd.NewProtoOutPoint(outpointStr)
+>>>>>>> e5456d39f (cmd: make types.go accessible in lnd package)
 	if err != nil {
 		return fmt.Errorf("error parsing outpoint: %w", err)
 	}
@@ -1664,7 +1688,11 @@ func releaseOutput(ctx *cli.Context) error {
 		return fmt.Errorf("outpoint argument missing")
 	}
 
+<<<<<<< HEAD
 	outpoint, err := flnd.NewProtoOutPoint(outpointStr)
+=======
+	outpoint, err := lnd.NewProtoOutPoint(outpointStr)
+>>>>>>> e5456d39f (cmd: make types.go accessible in lnd package)
 	if err != nil {
 		return fmt.Errorf("error parsing outpoint: %w", err)
 	}
