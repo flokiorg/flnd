@@ -12,19 +12,19 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/lightningnetwork/lnd/channeldb"
-	"github.com/lightningnetwork/lnd/fn/v2"
-	"github.com/lightningnetwork/lnd/input"
-	"github.com/lightningnetwork/lnd/keychain"
-	"github.com/lightningnetwork/lnd/lntypes"
-	"github.com/lightningnetwork/lnd/lnwallet/chainfee"
-	"github.com/lightningnetwork/lnd/lnwire"
-	"github.com/lightningnetwork/lnd/shachain"
+	"github.com/flokiorg/go-flokicoin/crypto"
+	"github.com/flokiorg/go-flokicoin/chainutil"
+	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
+	"github.com/flokiorg/go-flokicoin/txscript"
+	"github.com/flokiorg/go-flokicoin/wire"
+	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/fn"
+	"github.com/flokiorg/flnd/input"
+	"github.com/flokiorg/flnd/keychain"
+	"github.com/flokiorg/flnd/lntypes"
+	"github.com/flokiorg/flnd/lnwallet/chainfee"
+	"github.com/flokiorg/flnd/lnwire"
+	"github.com/flokiorg/flnd/shachain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,23 +47,23 @@ const (
 
 // deriveKeyFromSeed derives a deterministic private key from a seed and a
 // label string. The key is computed as SHA256(seed || label).
-func deriveKeyFromSeed(seed []byte, label string) *btcec.PrivateKey {
+func deriveKeyFromSeed(seed []byte, label string) *crypto.PrivateKey {
 	h := sha256.New()
 	h.Write(seed)
 	h.Write([]byte(label))
 	keyBytes := h.Sum(nil)
 
-	privKey, _ := btcec.PrivKeyFromBytes(keyBytes)
+	privKey, _ := crypto.PrivKeyFromBytes(keyBytes)
 	return privKey
 }
 
 // pubHex returns the compressed hex encoding of a public key.
-func pubHex(pub *btcec.PublicKey) string {
+func pubHex(pub *crypto.PublicKey) string {
 	return hex.EncodeToString(pub.SerializeCompressed())
 }
 
 // privHex returns the hex encoding of a private key scalar.
-func privHex(priv *btcec.PrivateKey) string {
+func privHex(priv *crypto.PrivateKey) string {
 	return hex.EncodeToString(priv.Serialize())
 }
 
@@ -84,19 +84,19 @@ func leafHash(script []byte) string {
 type taprootTestContext struct {
 	seed []byte
 
-	localFundingPrivkey                *btcec.PrivateKey
-	remoteFundingPrivkey               *btcec.PrivateKey
-	localPaymentBasepointSecret        *btcec.PrivateKey
-	remotePaymentBasepointSecret       *btcec.PrivateKey
-	localDelayedPaymentBasepointSecret *btcec.PrivateKey
-	remoteRevocationBasepointSecret    *btcec.PrivateKey
-	localHtlcBasepointSecret           *btcec.PrivateKey
-	remoteHtlcBasepointSecret          *btcec.PrivateKey
+	localFundingPrivkey                *crypto.PrivateKey
+	remoteFundingPrivkey               *crypto.PrivateKey
+	localPaymentBasepointSecret        *crypto.PrivateKey
+	remotePaymentBasepointSecret       *crypto.PrivateKey
+	localDelayedPaymentBasepointSecret *crypto.PrivateKey
+	remoteRevocationBasepointSecret    *crypto.PrivateKey
+	localHtlcBasepointSecret           *crypto.PrivateKey
+	remoteHtlcBasepointSecret          *crypto.PrivateKey
 
 	localPerCommitSecret lntypes.Hash
 
-	fundingAmount btcutil.Amount
-	dustLimit     btcutil.Amount
+	fundingAmount chainutil.Amount
+	dustLimit     chainutil.Amount
 	localCsvDelay uint16
 	commitHeight  uint64
 
@@ -149,7 +149,7 @@ func newTaprootTestContext(t *testing.T) *taprootTestContext {
 }
 
 // commitPoint returns the per-commitment point derived from the secret.
-func (tc *taprootTestContext) commitPoint() *btcec.PublicKey {
+func (tc *taprootTestContext) commitPoint() *crypto.PublicKey {
 	return input.ComputeCommitmentPoint(tc.localPerCommitSecret[:])
 }
 
@@ -167,8 +167,8 @@ type TaprootTestVectors struct {
 // TestVectorParams holds the seed, channel parameters, and all keys.
 type TestVectorParams struct {
 	Seed                  string `json:"seed"`
-	FundingAmountSatoshis int64  `json:"funding_amount_satoshis"`
-	DustLimitSatoshis     int64  `json:"dust_limit_satoshis"`
+	FundingAmountLokis int64  `json:"funding_amount_lokis"`
+	DustLimitLokis     int64  `json:"dust_limit_lokis"`
 	CsvDelay              uint16 `json:"csv_delay"`
 	CommitHeight          uint64 `json:"commit_height"`
 	NumsPoint             string `json:"nums_point"`
@@ -262,7 +262,7 @@ type TransactionTestCase struct {
 	LocalBalanceMsat        uint64     `json:"local_balance_msat"`
 	RemoteBalanceMsat       uint64     `json:"remote_balance_msat"`
 	FeePerKw                int64      `json:"fee_per_kw"`
-	DustLimitSatoshis       int64      `json:"dust_limit_satoshis,omitempty"`
+	DustLimitLokis       int64      `json:"dust_limit_lokis,omitempty"`
 	Htlcs                   []HtlcInput `json:"htlcs"`
 	LocalNonce              string     `json:"local_nonce"`
 	RemoteNonce             string     `json:"remote_nonce"`
@@ -297,8 +297,8 @@ func (tc *taprootTestContext) generateParams() TestVectorParams {
 
 	return TestVectorParams{
 		Seed:                  taprootVectorSeedHex,
-		FundingAmountSatoshis: int64(tc.fundingAmount),
-		DustLimitSatoshis:     int64(tc.dustLimit),
+		FundingAmountLokis: int64(tc.fundingAmount),
+		DustLimitLokis:     int64(tc.dustLimit),
 		CsvDelay:              tc.localCsvDelay,
 		CommitHeight:          tc.commitHeight,
 		NumsPoint:             input.TaprootNUMSHex,
@@ -602,8 +602,8 @@ var taprootChanType = channeldb.SingleFunderTweaklessBit |
 // instances configured for taproot test vector generation. All keys are
 // deterministic.
 func createTaprootTestChannelsForVectors(tc *taprootTestContext,
-	feeRate btcutil.Amount, remoteBalance,
-	localBalance btcutil.Amount) (*LightningChannel, *LightningChannel) {
+	feeRate chainutil.Amount, remoteBalance,
+	localBalance chainutil.Amount) (*LightningChannel, *LightningChannel) {
 
 	t := tc.t
 
@@ -627,7 +627,7 @@ func createTaprootTestChannelsForVectors(tc *taprootTestContext,
 		Value:    int64(tc.fundingAmount),
 		PkScript: pkScript,
 	})
-	btcFundingTx := btcutil.NewTx(fundingTx)
+	btcFundingTx := chainutil.NewTx(fundingTx)
 
 	prevOut := &wire.OutPoint{
 		Hash:  *btcFundingTx.Hash(),
@@ -640,7 +640,7 @@ func createTaprootTestChannelsForVectors(tc *taprootTestContext,
 	// Channel configurations using all deterministic keys.
 	remoteCfg := channeldb.ChannelConfig{
 		ChannelStateBounds: channeldb.ChannelStateBounds{
-			MaxPendingAmount: lnwire.NewMSatFromSatoshis(
+			MaxPendingAmount: lnwire.NewMSatFromLokis(
 				tc.fundingAmount,
 			),
 			ChanReserve:      0,
@@ -669,7 +669,7 @@ func createTaprootTestChannelsForVectors(tc *taprootTestContext,
 	}
 	localCfg := channeldb.ChannelConfig{
 		ChannelStateBounds: channeldb.ChannelStateBounds{
-			MaxPendingAmount: lnwire.NewMSatFromSatoshis(
+			MaxPendingAmount: lnwire.NewMSatFromLokis(
 				tc.fundingAmount,
 			),
 			ChanReserve:      0,
@@ -720,7 +720,7 @@ func createTaprootTestChannelsForVectors(tc *taprootTestContext,
 	feePerKw := chainfee.SatPerKWeight(feeRate)
 	commitWeight := lntypes.WeightUnit(input.AnchorCommitWeight)
 	commitFee := feePerKw.FeeForWeight(commitWeight)
-	anchorAmt := btcutil.Amount(2 * AnchorSize)
+	anchorAmt := chainutil.Amount(2 * AnchorSize)
 
 	remoteCommitTx, localCommitTx, err := CreateCommitmentTxns(
 		remoteBalance, localBalance-commitFee,
@@ -733,19 +733,19 @@ func createTaprootTestChannelsForVectors(tc *taprootTestContext,
 
 	remoteCommit := channeldb.ChannelCommitment{
 		CommitHeight:  commitHeight,
-		LocalBalance:  lnwire.NewMSatFromSatoshis(remoteBalance),
-		RemoteBalance: lnwire.NewMSatFromSatoshis(localBalance - commitFee - anchorAmt),
+		LocalBalance:  lnwire.NewMSatFromLokis(remoteBalance),
+		RemoteBalance: lnwire.NewMSatFromLokis(localBalance - commitFee - anchorAmt),
 		CommitFee:     commitFee,
-		FeePerKw:      btcutil.Amount(feePerKw),
+		FeePerKw:      chainutil.Amount(feePerKw),
 		CommitTx:      remoteCommitTx,
 		CommitSig:     testSigBytes,
 	}
 	localCommit := channeldb.ChannelCommitment{
 		CommitHeight:  commitHeight,
-		LocalBalance:  lnwire.NewMSatFromSatoshis(localBalance - commitFee - anchorAmt),
-		RemoteBalance: lnwire.NewMSatFromSatoshis(remoteBalance),
+		LocalBalance:  lnwire.NewMSatFromLokis(localBalance - commitFee - anchorAmt),
+		RemoteBalance: lnwire.NewMSatFromLokis(remoteBalance),
 		CommitFee:     commitFee,
-		FeePerKw:      btcutil.Amount(feePerKw),
+		FeePerKw:      chainutil.Amount(feePerKw),
 		CommitTx:      localCommitTx,
 		CommitSig:     testSigBytes,
 	}
@@ -792,14 +792,14 @@ func createTaprootTestChannelsForVectors(tc *taprootTestContext,
 	// Create mock signers with all deterministic keys. The funding key must
 	// be at index 0 because the MusigSessionManager's key fetcher always
 	// returns Privkeys[0] as the MuSig2 signing key.
-	localSigner := input.NewMockSigner([]*btcec.PrivateKey{
+	localSigner := input.NewMockSigner([]*crypto.PrivateKey{
 		tc.localFundingPrivkey,
 		tc.localPaymentBasepointSecret,
 		tc.localDelayedPaymentBasepointSecret,
 		tc.localHtlcBasepointSecret,
 	}, nil)
 
-	remoteSigner := input.NewMockSigner([]*btcec.PrivateKey{
+	remoteSigner := input.NewMockSigner([]*crypto.PrivateKey{
 		tc.remoteFundingPrivkey,
 		tc.remoteRevocationBasepointSecret,
 		tc.remotePaymentBasepointSecret,
@@ -870,10 +870,10 @@ func createTaprootTestChannelsForVectors(tc *taprootTestContext,
 // taprootTransactionTestCases defines the set of transaction test cases.
 var taprootTransactionTestCases = []struct {
 	name         string
-	localBalance lnwire.MilliSatoshi
-	remoteBalance lnwire.MilliSatoshi
-	feePerKw     btcutil.Amount
-	dustLimit    btcutil.Amount
+	localBalance lnwire.MilliLoki
+	remoteBalance lnwire.MilliLoki
+	feePerKw     chainutil.Amount
+	dustLimit    chainutil.Amount
 	useTestHtlcs bool
 }{
 	{
@@ -927,14 +927,14 @@ func (tc *taprootTestContext) generateTransactionVectors() []TransactionTestCase
 
 		// Verify balances add up to channel capacity.
 		require.EqualValues(t,
-			lnwire.NewMSatFromSatoshis(tc.fundingAmount),
+			lnwire.NewMSatFromLokis(tc.fundingAmount),
 			remoteBalance+localBalance,
 		)
 
 		remoteChannel, localChannel := createTaprootTestChannelsForVectors(
 			tc, testCase.feePerKw,
-			remoteBalance.ToSatoshis(),
-			localBalance.ToSatoshis(),
+			remoteBalance.ToLokis(),
+			localBalance.ToLokis(),
 		)
 
 		// Add HTLCs if needed.
@@ -1094,7 +1094,7 @@ func (tc *taprootTestContext) generateTransactionVectors() []TransactionTestCase
 			HtlcDescs:               htlcDescs,
 		}
 		if testCase.dustLimit != 0 {
-			result.DustLimitSatoshis = int64(testCase.dustLimit)
+			result.DustLimitLokis = int64(testCase.dustLimit)
 		}
 
 		results = append(results, result)
