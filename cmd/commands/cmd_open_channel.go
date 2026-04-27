@@ -407,7 +407,11 @@ func openChannel(ctx *cli.Context) error {
 	if ctx.IsSet("utxo") {
 		utxos := ctx.StringSlice("utxo")
 
+<<<<<<< HEAD
 		outpoints, err := flnd.UtxosToOutpoints(utxos)
+=======
+		outpoints, err := lnd.UtxosToOutpoints(utxos)
+>>>>>>> e5456d39f (cmd: make types.go accessible in lnd package)
 		if err != nil {
 			return fmt.Errorf("unable to decode utxos: %w", err)
 		}
