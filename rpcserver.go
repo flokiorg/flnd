@@ -2170,7 +2170,7 @@ func (r *rpcServer) parseOpenChannelReq(in *lnrpc.OpenChannelRequest,
 		// Use the protocol-level maximum as the upper bound for our
 		// funding attempt.
 		if wumboEnabled {
-			fundUpToMaxAmt = funding.MaxBtcFundingAmountWumbo
+			fundUpToMaxAmt = funding.MaxFlokicoinFundingAmountWumbo
 		} else {
 			fundUpToMaxAmt = MaxFundingAmount
 		}

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/kvdb"
 	"github.com/flokiorg/flnd/lntest/mock"

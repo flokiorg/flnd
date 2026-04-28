@@ -85,3 +85,5 @@ coverage.txt
 
 # All test data generated from rapid.
 */testdata
+
+.agents

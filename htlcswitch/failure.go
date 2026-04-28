@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 	"github.com/flokiorg/flnd/htlcswitch/hop"
 	"github.com/flokiorg/flnd/lnwire"
 )

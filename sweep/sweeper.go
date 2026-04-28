@@ -39,7 +39,7 @@ var (
 
 	// DefaultDeadlineDelta defines a default deadline delta (1 week) to be
 	// used when sweeping inputs with no deadline pressure.
-	DefaultDeadlineDelta = int32(1008)
+	DefaultDeadlineDelta = int32(10080)
 )
 
 // Params contains the parameters that control the sweeping process.

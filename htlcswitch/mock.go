@@ -34,7 +34,7 @@ import (
 	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/flokiorg/go-flokicoin/crypto/ecdsa"
 	"github.com/flokiorg/go-flokicoin/wire"
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 )
 
 func isAlias(scid lnwire.ShortChannelID) bool {

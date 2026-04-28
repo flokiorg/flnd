@@ -11,7 +11,7 @@ import (
 	"github.com/flokiorg/flnd/record"
 	"github.com/flokiorg/flnd/tlv"
 	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 )
 
 // PayloadViolation is an enum encapsulating the possible invalid payload

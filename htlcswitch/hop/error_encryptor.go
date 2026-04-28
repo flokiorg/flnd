@@ -7,7 +7,7 @@ import (
 
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/go-flokicoin/crypto"
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 )
 
 // EncrypterType establishes an enum used in serialization to indicate how to

@@ -195,7 +195,7 @@ const (
 	// commitment output. The local csv delay maximum is now equal to
 	// the remote csv delay maximum we require for the remote commitment
 	// transaction.
-	defaultMaxLocalCSVDelay = 2016
+	defaultMaxLocalCSVDelay = 10080
 
 	// defaultChannelCommitInterval is the default maximum time between
 	// receiving a channel state update and signing a new commitment.
@@ -1087,15 +1087,15 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	}
 
 	// Ensure that --maxchansize is properly handled when set by user.
-	// For non-Wumbo channels this limit remains 16777215 loki by default
-	// as specified in BOLT-02. For wumbo channels this limit is 1,000,000,000.
-	// loki (10 FLC). Always enforce --maxchansize explicitly set by user.
+	// For non-Wumbo channels this limit is 100,000 FLC by default.
+	// For wumbo channels this limit is 1,000,000 FLC.
+	// Always enforce --maxchansize explicitly set by user.
 	// If unset (marked by 0 value), then enforce proper default.
 	if cfg.MaxChanSize == 0 {
 		if cfg.ProtocolOptions.Wumbo() {
-			cfg.MaxChanSize = int64(funding.MaxBtcFundingAmountWumbo)
+			cfg.MaxChanSize = int64(funding.MaxFlokicoinFundingAmountWumbo)
 		} else {
-			cfg.MaxChanSize = int64(funding.MaxBtcFundingAmount)
+			cfg.MaxChanSize = int64(funding.MaxFlokicoinFundingAmount)
 		}
 	}
 
@@ -1330,7 +1330,7 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 		return nil, mkErr(str)
 	}
 
-	err = cfg.Flokicoin.Validate(minTimeLockDelta, funding.MinBtcRemoteDelay)
+	err = cfg.Flokicoin.Validate(minTimeLockDelta, funding.MinFlokicoinRemoteDelay)
 	if err != nil {
 		return nil, mkErr("error validating bitcoin params: %v", err)
 	}

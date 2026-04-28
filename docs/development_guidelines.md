@@ -784,7 +784,7 @@ $  go mod edit -replace=IMPORT-PATH-IN-LND@LND-VERSION=DEV-FORK-IMPORT-PATH@DEV-
 
 Here's an example replacing the `lightning-onion` version checked into `lnd` with a version in roasbeef's fork:
 ```shell
-$  go mod edit -replace=github.com/lightningnetwork/lightning-onion@v0.0.0-20180605012408-ac4d9da8f1d6=github.com/roasbeef/lightning-onion@2e5ae87696046298365ab43bcd1cf3a7a1d69695
+$  go mod edit -replace=github.com/flokiorg/lightning-onion@v0.0.0-20180605012408-ac4d9da8f1d6=github.com/roasbeef/lightning-onion@2e5ae87696046298365ab43bcd1cf3a7a1d69695
 ```
 
 ## Use of Log Levels
