@@ -1694,9 +1694,7 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 			commitHeight uint64) (*lnwallet.BreachRetribution,
 			channeldb.ChannelType, error) {
 
-			channel, err := s.chanStateDB.FetchChannelByID(
-				nil, chanID,
-			)
+			channel, err := s.chanStateDB.FetchChannelByID(chanID)
 			if err != nil {
 				return nil, 0, err
 			}
