@@ -11,6 +11,7 @@ import (
 	"github.com/flokiorg/flnd/chanfitness"
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/channelnotifier"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/cluster"
 	"github.com/flokiorg/flnd/contractcourt"
 	"github.com/flokiorg/flnd/discovery"
@@ -176,6 +177,7 @@ func SetupLoggers(root *build.SubLoggerManager, interceptor signal.Interceptor) 
 	AddSubLogger(root, "IRPC", interceptor, invoicesrpc.UseLogger)
 	AddSubLogger(root, "CHNF", interceptor, channelnotifier.UseLogger)
 	AddSubLogger(root, "CHBU", interceptor, chanbackup.UseLogger)
+	AddSubLogger(root, "CHST", interceptor, chanstate.UseLogger)
 	AddSubLogger(root, "PROM", interceptor, monitoring.UseLogger)
 	AddSubLogger(root, "WTCL", interceptor, wtclient.UseLogger)
 	AddSubLogger(root, "PRNF", interceptor, peernotifier.UseLogger)
