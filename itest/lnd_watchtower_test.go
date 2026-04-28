@@ -42,7 +42,7 @@ func testTowerClientTowerAndSessionManagement(ht *lntest.HarnessTest) {
 	alice := ht.NewNode("Alice", nil)
 
 	const (
-		chanAmt           = funding.MaxBtcFundingAmount
+		chanAmt           = funding.MaxFlokicoinFundingAmount
 		externalIP        = "1.2.3.4"
 		externalIP2       = "1.2.3.5"
 		sessionCloseRange = 1
@@ -244,7 +244,7 @@ func testTowerClientSessionDeletion(ht *lntest.HarnessTest) {
 	alice := ht.NewNode("Alice", nil)
 
 	const (
-		chanAmt           = funding.MaxBtcFundingAmount
+		chanAmt           = funding.MaxFlokicoinFundingAmount
 		numInvoices       = 5
 		maxUpdates        = numInvoices * 2
 		externalIP        = "1.2.3.4"
@@ -374,7 +374,7 @@ func testRevokedCloseRetributionAltruistWatchtowerCase(ht *lntest.HarnessTest,
 	commitType lnrpc.CommitmentType) {
 
 	const (
-		chanAmt     = funding.MaxBtcFundingAmount
+		chanAmt     = funding.MaxFlokicoinFundingAmount
 		paymentAmt  = 10000
 		numInvoices = 6
 		externalIP  = "1.2.3.4"

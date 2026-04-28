@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 	"github.com/flokiorg/flnd/routing/route"
 	"github.com/stretchr/testify/require"
 )
@@ -39,8 +39,7 @@ func FuzzHopData(f *testing.F) {
 
 func FuzzHopPayload(f *testing.F) {
 	f.Fuzz(func(t *testing.T, data []byte) {
-		if len(data) > sphinx.MaxPayloadSize {
-			return
+		if len(data) > sphinx.MaxRoutingPayloadSize {			return
 		}
 
 		r := bytes.NewReader(data)
@@ -129,8 +128,7 @@ func FuzzPayloadIntermediateNoBlinding(f *testing.F) {
 
 func fuzzPayload(f *testing.F, finalPayload, updateAddBlinded bool) {
 	f.Fuzz(func(t *testing.T, data []byte) {
-		if len(data) > sphinx.MaxPayloadSize {
-			return
+		if len(data) > sphinx.MaxRoutingPayloadSize {			return
 		}
 
 		r := bytes.NewReader(data)

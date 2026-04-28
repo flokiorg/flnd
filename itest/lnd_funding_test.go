@@ -262,7 +262,7 @@ func basicChannelFundingTest(ht *lntest.HarnessTest,
 	privateChan bool, commitType *lnrpc.CommitmentType) (*lnrpc.Channel,
 	*lnrpc.Channel) {
 
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlokicoinFundingAmount
 	pushAmt := chainutil.Amount(100000)
 	satPerVbyte := chainutil.Amount(1)
 
@@ -339,7 +339,7 @@ func basicChannelFundingTest(ht *lntest.HarnessTest,
 // be used to fund channels.
 func testUnconfirmedChannelFunding(ht *lntest.HarnessTest) {
 	const (
-		chanAmt = funding.MaxBtcFundingAmount
+		chanAmt = funding.MaxFlokicoinFundingAmount
 		pushAmt = chainutil.Amount(100000)
 	)
 
@@ -469,7 +469,7 @@ func runChannelFundingInputTypes(ht *lntest.HarnessTest, alice,
 	carol *node.HarnessNode) {
 
 	const (
-		chanAmt  = funding.MaxBtcFundingAmount
+		chanAmt  = funding.MaxFlokicoinFundingAmount
 		burnAddr = "bcrt1qxsnqpdc842lu8c0xlllgvejt6rhy49u6fmpgyz"
 	)
 
@@ -626,7 +626,7 @@ func runExternalFundingScriptEnforced(ht *lntest.HarnessTest) {
 	// flow. To start with, we'll create a pending channel with a shim for
 	// a transaction that will never be published.
 	const thawHeight uint32 = 10
-	const chanSize = funding.MaxBtcFundingAmount
+	const chanSize = funding.MaxFlokicoinFundingAmount
 	fundingShim1, chanPoint1 := ht.DeriveFundingShim(
 		carol, dave, chanSize, thawHeight, false, commitmentType,
 	)
@@ -737,7 +737,7 @@ func runExternalFundingTaproot(ht *lntest.HarnessTest) {
 	// flow. To start with, we'll create a pending channel with a shim for
 	// a transaction that will never be published.
 	const thawHeight uint32 = 10
-	const chanSize = funding.MaxBtcFundingAmount
+	const chanSize = funding.MaxFlokicoinFundingAmount
 	fundingShim1, chanPoint1 := ht.DeriveFundingShim(
 		carol, dave, chanSize, thawHeight, false, commitmentType,
 	)
@@ -866,7 +866,7 @@ func runExternalFundingTaproot(ht *lntest.HarnessTest) {
 // testFundingPersistence mirrors testBasicChannelFunding, but adds restarts
 // and checks for the state of channels with unconfirmed funding transactions.
 func testChannelFundingPersistence(ht *lntest.HarnessTest) {
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlokicoinFundingAmount
 	pushAmt := chainutil.Amount(0)
 
 	// As we need to create a channel that requires more than 1

@@ -8,7 +8,7 @@ import (
 const (
 	// MaxFundingAmount is the protocol-level maximum channel size for
 	// non-wumbo channels.
-	MaxFundingAmount = chainutil.Amount(16777215)
+	MaxFundingAmount = chainutil.Amount(100000 * chainutil.LokiPerFlokicoin)
 
 	// minRequiredConfs is the minimum number of confirmations we'll require
 	// for a channel to be considered open.

@@ -173,17 +173,16 @@ func testChannelFundMaxWalletAmount(ht *lntest.HarnessTest) {
 				fundingFee(1, false),
 		},
 		{
-			name: "wallet amount > max chan size " +
-				"(20000000loki)",
-			initialWalletBalance: 20_000_000,
+			name: "wallet amount > max chan size",
+			initialWalletBalance: flnd.MaxFundingAmount + 3_000_000,
 			expectedBalanceAlice: flnd.MaxFundingAmount,
 		},
 		{
 			name: "wallet amount > max chan size, " +
-				"push amount 16766000",
-			initialWalletBalance: 20_000_000,
-			pushAmt:              16_766_000,
-			expectedBalanceAlice: flnd.MaxFundingAmount - 16_766_000,
+				"push amount max-11215",
+			initialWalletBalance: flnd.MaxFundingAmount + 3_000_000,
+			pushAmt:              flnd.MaxFundingAmount - 11215,
+			expectedBalanceAlice: 11215,
 		},
 	}
 

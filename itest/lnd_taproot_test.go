@@ -1976,7 +1976,7 @@ func testTaprootCoopClose(ht *lntest.HarnessTest) {
 	dave := ht.NewNode("Dave", nil)
 	ht.EnsureConnected(carol, dave)
 
-	chanAmt := funding.MaxBtcFundingAmount
+	chanAmt := funding.MaxFlokicoinFundingAmount
 	pushAmt := chainutil.Amount(100000)
 	satPerVbyte := chainutil.Amount(1)
 

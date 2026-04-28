@@ -75,29 +75,26 @@ func WriteOutpoint(w io.Writer, o *wire.OutPoint) error {
 }
 
 const (
-	// MinBtcRemoteDelay is the minimum CSV delay we will require the remote
+	// MinFlokicoinRemoteDelay is the minimum CSV delay we will require the remote
 	// to use for its commitment transaction.
-	MinBtcRemoteDelay uint16 = 144
+	MinFlokicoinRemoteDelay uint16 = 1440
 
-	// MaxBtcRemoteDelay is the maximum CSV delay we will require the remote
+	// MaxFlokicoinRemoteDelay is the maximum CSV delay we will require the remote
 	// to use for its commitment transaction.
-	MaxBtcRemoteDelay uint16 = 2016
+	MaxFlokicoinRemoteDelay uint16 = 10080
 
 	// MinChanFundingSize is the smallest channel that we'll allow to be
 	// created over the RPC interface.
 	MinChanFundingSize = chainutil.Amount(20000)
 
-	// MaxBtcFundingAmount is a soft-limit of the maximum channel size
+	// MaxFlokicoinFundingAmount is a soft-limit of the maximum channel size
 	// currently accepted on the Flokicoin chain within the Lightning
-	// Protocol. This limit is defined in BOLT-0002, and serves as an
-	// initial precautionary limit while implementations are battle tested
-	// in the real world.
-	MaxBtcFundingAmount = chainutil.Amount(1<<24) - 1
+	// Protocol.
+	MaxFlokicoinFundingAmount = chainutil.Amount(100000 * chainutil.LokiPerFlokicoin)
 
-	// MaxBtcFundingAmountWumbo is a soft-limit on the maximum size of wumbo
-	// channels. This limit is 10 FLC and is the only thing standing between
-	// you and limitless channel size (apart from 21 million cap).
-	MaxBtcFundingAmountWumbo = chainutil.Amount(1000000000)
+	// MaxFlokicoinFundingAmountWumbo is a soft-limit on the maximum size of wumbo
+	// channels.
+	MaxFlokicoinFundingAmountWumbo = chainutil.Amount(1000000 * chainutil.LokiPerFlokicoin)
 
 	msgBufferSize = 50
 
@@ -3359,7 +3356,7 @@ func (f *Manager) waitForTimeout(completeChan *channeldb.OpenChannel,
 }
 
 // makeLabelForTx updates the label for the confirmed funding transaction. If
-// we opened the channel, and lnd's wallet published our funding tx (which is
+// we opened the channel, and flnd's wallet published our funding tx (which is
 // not the case for some channels) then we update our transaction label with
 // our short channel ID, which is known now that our funding transaction has
 // confirmed. We do not label transactions we did not publish, because our
@@ -3543,7 +3540,7 @@ func (f *Manager) sendChannelReady(completeChan *channeldb.OpenChannel,
 	// of the previous messages in the funding flow just cancels the flow.
 	// But now the funding transaction is confirmed, the channel is open
 	// and we have to make sure the peer gets the channelReady message when
-	// it comes back online. This is also crucial during restart of lnd,
+	// it comes back online. This is also crucial during restart of flnd,
 	// where we might try to resend the channelReady message before the
 	// server has had the time to connect to the peer. We keep trying to
 	// send channelReady until we succeed, or the fundingManager is shut
@@ -4484,7 +4481,7 @@ func (f *Manager) ensureInitialForwardingPolicy(chanID lnwire.ChannelID,
 
 	// Before we can add the channel to the peer, we'll need to ensure that
 	// we have an initial forwarding policy set. This should always be the
-	// case except for a channel that was created with lnd <= 0.15.5 and
+	// case except for a channel that was created with flnd <= 0.15.5 and
 	// is still pending while updating to this version.
 	var needDBUpdate bool
 	forwardingPolicy, err := f.getInitialForwardingPolicy(chanID)
@@ -4710,11 +4707,11 @@ func (f *Manager) newChanAnnouncement(localPubKey,
 		return nil, fmt.Errorf("unable to generate node "+
 			"signature for channel announcement: %w", err)
 	}
-	bitcoinSig, err := f.cfg.SignMessage(
+	flokicoinSig, err := f.cfg.SignMessage(
 		localFundingKey.KeyLocator, chanAnnMsg, true,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("unable to generate bitcoin "+
+		return nil, fmt.Errorf("unable to generate flokicoin "+
 			"signature for node public key: %w", err)
 	}
 
@@ -4729,7 +4726,7 @@ func (f *Manager) newChanAnnouncement(localPubKey,
 	if err != nil {
 		return nil, err
 	}
-	proof.FlokicoinSignature, err = lnwire.NewSigFromSignature(bitcoinSig)
+	proof.FlokicoinSignature, err = lnwire.NewSigFromSignature(flokicoinSig)
 	if err != nil {
 		return nil, err
 	}

@@ -84,7 +84,7 @@ import (
 	flog "github.com/flokiorg/go-flokicoin/log/v2"
 	"github.com/flokiorg/go-flokicoin/txscript"
 	"github.com/flokiorg/go-flokicoin/wire"
-	sphinx "github.com/lightningnetwork/lightning-onion"
+	sphinx "github.com/flokiorg/lightning-onion"
 )
 
 const (
@@ -138,7 +138,7 @@ var (
 	// to the value under the Flokicoin chain as default.
 	//
 	// TODO(roasbeef): add command line param to modify.
-	MaxFundingAmount = funding.MaxBtcFundingAmount
+	MaxFundingAmount = funding.MaxFlokicoinFundingAmount
 
 	// ErrGossiperBan is one of the errors that can be returned when we
 	// attempt to finalize a connection to a remote peer.
@@ -1391,8 +1391,8 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 
 	// Select the configuration and funding parameters for Flokicoin.
 	chainCfg := cfg.Flokicoin
-	minRemoteDelay := funding.MinBtcRemoteDelay
-	maxRemoteDelay := funding.MaxBtcRemoteDelay
+	minRemoteDelay := funding.MinFlokicoinRemoteDelay
+	maxRemoteDelay := funding.MaxFlokicoinRemoteDelay
 
 	var chanIDSeed [32]byte
 	if _, err := rand.Read(chanIDSeed[:]); err != nil {
