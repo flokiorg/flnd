@@ -981,7 +981,7 @@ func TestHTLCReceiverSpendValidation(t *testing.T) {
 func TestSecondLevelHtlcSpends(t *testing.T) {
 	t.Parallel()
 
-	// We'll start be creating a creating a 2BTC HTLC.
+	// We'll start be creating a creating a 2FLC HTLC.
 	const htlcAmt = chainutil.Amount(2 * 10e8)
 
 	// In all of our scenarios, the CSV timeout to claim a self output will
@@ -1184,7 +1184,7 @@ func TestSecondLevelHtlcSpends(t *testing.T) {
 func TestLeaseSecondLevelHtlcSpends(t *testing.T) {
 	t.Parallel()
 
-	// We'll start be creating a creating a 2BTC HTLC.
+	// We'll start be creating a creating a 2FLC HTLC.
 	const htlcAmt = chainutil.Amount(2 * 10e8)
 
 	// In all of our scenarios, the CSV timeout to claim a self output will

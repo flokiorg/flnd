@@ -111,21 +111,21 @@ func test4of4MuSig2P2WSHChanAnnouncement(t *testing.T) {
 	// Generate the 4 nonces required for producing the signature.
 	var (
 		node1NodeNonce = genNonceForPubKey(t, node1.nodePub)
-		node1BtcNonce  = genNonceForPubKey(t, node1.btcPub)
+		node1FlcNonce  = genNonceForPubKey(t, node1.flcPub)
 		node2NodeNonce = genNonceForPubKey(t, node2.nodePub)
-		node2BtcNonce  = genNonceForPubKey(t, node2.btcPub)
+		node2FlcNonce  = genNonceForPubKey(t, node2.flcPub)
 	)
 
 	nonceAgg, err := musig2.AggregateNonces([][66]byte{
 		node1NodeNonce.PubNonce,
-		node1BtcNonce.PubNonce,
+		node1FlcNonce.PubNonce,
 		node2NodeNonce.PubNonce,
-		node2BtcNonce.PubNonce,
+		node2FlcNonce.PubNonce,
 	})
 	require.NoError(t, err)
 
 	pubKeys := []*crypto.PublicKey{
-		node1.nodePub, node2.nodePub, node1.btcPub, node2.btcPub,
+		node1.nodePub, node2.nodePub, node1.flcPub, node2.flcPub,
 	}
 
 	// Let Node1 sign the announcement message with its node key.
@@ -137,7 +137,7 @@ func test4of4MuSig2P2WSHChanAnnouncement(t *testing.T) {
 
 	// Let Node1 sign the announcement message with its bitcoin key.
 	psA2, err := musig2.Sign(
-		node1BtcNonce.SecNonce, node1.btcPriv, nonceAgg, pubKeys,
+		node1FlcNonce.SecNonce, node1.flcPriv, nonceAgg, pubKeys,
 		msgBytes, musig2.WithSortedKeys(),
 	)
 	require.NoError(t, err)
@@ -151,7 +151,7 @@ func test4of4MuSig2P2WSHChanAnnouncement(t *testing.T) {
 
 	// Let Node2 sign the announcement message with its bitcoin key.
 	psB2, err := musig2.Sign(
-		node2BtcNonce.SecNonce, node2.btcPriv, nonceAgg, pubKeys,
+		node2FlcNonce.SecNonce, node2.flcPriv, nonceAgg, pubKeys,
 		msgBytes, musig2.WithSortedKeys(),
 	)
 	require.NoError(t, err)
@@ -171,8 +171,8 @@ func test4of4MuSig2P2WSHChanAnnouncement(t *testing.T) {
 	// look like. For this case, it is only important that we get the
 	// correct script class.
 	multiSigScript, err := input.GenMultiSigScript(
-		node1.btcPub.SerializeCompressed(),
-		node2.btcPub.SerializeCompressed(),
+		node1.flcPub.SerializeCompressed(),
+		node2.flcPub.SerializeCompressed(),
 	)
 	require.NoError(t, err)
 
@@ -217,21 +217,21 @@ func test4of4MuSig2P2TRChanAnnouncement(t *testing.T) {
 	// Generate the 4 nonces required for producing the signature.
 	var (
 		node1NodeNonce = genNonceForPubKey(t, node1.nodePub)
-		node1BtcNonce  = genNonceForPubKey(t, node1.btcPub)
+		node1FlcNonce  = genNonceForPubKey(t, node1.flcPub)
 		node2NodeNonce = genNonceForPubKey(t, node2.nodePub)
-		node2BtcNonce  = genNonceForPubKey(t, node2.btcPub)
+		node2FlcNonce  = genNonceForPubKey(t, node2.flcPub)
 	)
 
 	nonceAgg, err := musig2.AggregateNonces([][66]byte{
 		node1NodeNonce.PubNonce,
-		node1BtcNonce.PubNonce,
+		node1FlcNonce.PubNonce,
 		node2NodeNonce.PubNonce,
-		node2BtcNonce.PubNonce,
+		node2FlcNonce.PubNonce,
 	})
 	require.NoError(t, err)
 
 	pubKeys := []*crypto.PublicKey{
-		node1.nodePub, node2.nodePub, node1.btcPub, node2.btcPub,
+		node1.nodePub, node2.nodePub, node1.flcPub, node2.flcPub,
 	}
 
 	// Let Node1 sign the announcement message with its node key.
@@ -243,7 +243,7 @@ func test4of4MuSig2P2TRChanAnnouncement(t *testing.T) {
 
 	// Let Node1 sign the announcement message with its bitcoin key.
 	psA2, err := musig2.Sign(
-		node1BtcNonce.SecNonce, node1.btcPriv, nonceAgg, pubKeys,
+		node1FlcNonce.SecNonce, node1.flcPriv, nonceAgg, pubKeys,
 		msgBytes, musig2.WithSortedKeys(),
 	)
 	require.NoError(t, err)
@@ -257,7 +257,7 @@ func test4of4MuSig2P2TRChanAnnouncement(t *testing.T) {
 
 	// Let Node2 sign the announcement message with its bitcoin key.
 	psB2, err := musig2.Sign(
-		node2BtcNonce.SecNonce, node2.btcPriv, nonceAgg, pubKeys,
+		node2FlcNonce.SecNonce, node2.flcPriv, nonceAgg, pubKeys,
 		msgBytes, musig2.WithSortedKeys(),
 	)
 	require.NoError(t, err)
@@ -277,7 +277,7 @@ func test4of4MuSig2P2TRChanAnnouncement(t *testing.T) {
 	// look like. For this case, it is only important that we get the
 	// correct script class.
 	combinedKey, _, _, err := musig2.AggregateKeys(
-		[]*crypto.PublicKey{node1.btcPub, node2.btcPub}, true,
+		[]*crypto.PublicKey{node1.flcPub, node2.flcPub}, true,
 	)
 	require.NoError(t, err)
 
@@ -412,8 +412,8 @@ func genNonceForPubKey(t *testing.T, pub *crypto.PublicKey) *musig2.Nonces {
 type keyRing struct {
 	nodePriv *crypto.PrivateKey
 	nodePub  *crypto.PublicKey
-	btcPriv  *crypto.PrivateKey
-	btcPub   *crypto.PublicKey
+	flcPriv  *crypto.PrivateKey
+	flcPub   *crypto.PublicKey
 }
 
 func genChanAnnKeys(t *testing.T) (*keyRing, *keyRing) {
@@ -423,7 +423,7 @@ func genChanAnnKeys(t *testing.T) (*keyRing, *keyRing) {
 
 	aliceNodeID := aliceNodePrivKey.PubKey()
 
-	aliceBtcPrivKey, err := crypto.NewPrivateKey()
+	aliceFlcPrivKey, err := crypto.NewPrivateKey()
 	require.NoError(t, err)
 
 	bobNodePrivKey, err := crypto.NewPrivateKey()
@@ -431,21 +431,21 @@ func genChanAnnKeys(t *testing.T) (*keyRing, *keyRing) {
 
 	bobNodeID := bobNodePrivKey.PubKey()
 
-	bobBtcPrivKey, err := crypto.NewPrivateKey()
+	bobFlcPrivKey, err := crypto.NewPrivateKey()
 	require.NoError(t, err)
 
 	alice := &keyRing{
 		nodePriv: aliceNodePrivKey,
 		nodePub:  aliceNodePrivKey.PubKey(),
-		btcPriv:  aliceBtcPrivKey,
-		btcPub:   aliceBtcPrivKey.PubKey(),
+		flcPriv:  aliceFlcPrivKey,
+		flcPub:   aliceFlcPrivKey.PubKey(),
 	}
 
 	bob := &keyRing{
 		nodePriv: bobNodePrivKey,
 		nodePub:  bobNodePrivKey.PubKey(),
-		btcPriv:  bobBtcPrivKey,
-		btcPub:   bobBtcPrivKey.PubKey(),
+		flcPriv:  bobFlcPrivKey,
+		flcPub:   bobFlcPrivKey.PubKey(),
 	}
 
 	if bytes.Compare(
@@ -460,7 +460,7 @@ func genChanAnnKeys(t *testing.T) (*keyRing, *keyRing) {
 }
 
 func buildUnsignedChanAnnouncement(node1, node2 *keyRing,
-	withBtcKeys bool) *lnwire.ChannelAnnouncement2 {
+	withFlcKeys bool) *lnwire.ChannelAnnouncement2 {
 
 	var ann lnwire.ChannelAnnouncement2
 	ann.ChainHash.Val = *chaincfg.MainNetParams.GenesisHash
@@ -476,18 +476,18 @@ func buildUnsignedChanAnnouncement(node1, node2 *keyRing,
 	copy(ann.NodeID1.Val[:], node1.nodePub.SerializeCompressed())
 	copy(ann.NodeID2.Val[:], node2.nodePub.SerializeCompressed())
 
-	if !withBtcKeys {
+	if !withFlcKeys {
 		return &ann
 	}
 
-	btcKey1Bytes := tlv.ZeroRecordT[tlv.TlvType12, [33]byte]()
-	btcKey2Bytes := tlv.ZeroRecordT[tlv.TlvType14, [33]byte]()
+	flcKey1Bytes := tlv.ZeroRecordT[tlv.TlvType12, [33]byte]()
+	flcKey2Bytes := tlv.ZeroRecordT[tlv.TlvType14, [33]byte]()
 
-	copy(btcKey1Bytes.Val[:], node1.btcPub.SerializeCompressed())
-	copy(btcKey2Bytes.Val[:], node2.btcPub.SerializeCompressed())
+	copy(flcKey1Bytes.Val[:], node1.flcPub.SerializeCompressed())
+	copy(flcKey2Bytes.Val[:], node2.flcPub.SerializeCompressed())
 
-	ann.FlokicoinKey1 = tlv.SomeRecordT(btcKey1Bytes)
-	ann.FlokicoinKey2 = tlv.SomeRecordT(btcKey2Bytes)
+	ann.FlokicoinKey1 = tlv.SomeRecordT(flcKey1Bytes)
+	ann.FlokicoinKey2 = tlv.SomeRecordT(flcKey2Bytes)
 
 	return &ann
 }
