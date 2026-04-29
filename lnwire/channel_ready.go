@@ -94,10 +94,10 @@ func (c *ChannelReady) Decode(r io.Reader, _ uint32) error {
 		aliasScid  ShortChannelID
 		localNonce = c.NextLocalNonce.Zero()
 		nodeNonce  = tlv.ZeroRecordT[tlv.TlvType0, Musig2Nonce]()
-		btcNonce   = tlv.ZeroRecordT[tlv.TlvType2, Musig2Nonce]()
+		flcNonce   = tlv.ZeroRecordT[tlv.TlvType2, Musig2Nonce]()
 	)
 	typeMap, err := tlvRecords.ExtractRecords(
-		&btcNonce, &aliasScid, &nodeNonce, &localNonce,
+		&flcNonce, &aliasScid, &nodeNonce, &localNonce,
 	)
 	if err != nil {
 		return err
@@ -113,7 +113,7 @@ func (c *ChannelReady) Decode(r io.Reader, _ uint32) error {
 	}
 	val, ok := typeMap[c.AnnouncementFlokicoinNonce.TlvType()]
 	if ok && val == nil {
-		c.AnnouncementFlokicoinNonce = tlv.SomeRecordT(btcNonce)
+		c.AnnouncementFlokicoinNonce = tlv.SomeRecordT(flcNonce)
 	}
 	val, ok = typeMap[c.AnnouncementNodeNonce.TlvType()]
 	if ok && val == nil {
