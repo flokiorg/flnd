@@ -160,6 +160,79 @@
 
 ## Performance Improvements
 
+* Let the [channel graph cache be populated
+  asynchronously](https://github.com/flokiorg/flnd/pull/10065) on
+  startup. While the cache is being populated, the graph is still available for
+  queries, but all read queries will be served from the database until the cache
+  is fully populated. This new behaviour can be opted out of via the new
+  `--db.sync-graph-cache-load` option.
+
+* [Invoice pagination queries no longer use
+  `OFFSET`](https://github.com/flokiorg/flnd/pull/10700). The five
+  invoice filter queries previously used `LIMIT+OFFSET` for internal batching,
+  which requires the database to scan and discard all preceding rows on every
+  page. All pagination is now cursor-based (`WHERE id >= cursor`), making every
+  page an efficient primary-key range scan regardless of how deep into the
+  result set the query is.
+
+* [Replace the catch-all `FilterInvoices` SQL query with five focused,
+  index-friendly queries](https://github.com/flokiorg/flnd/pull/10601)
+  (`FetchPendingInvoices`, `FilterInvoicesBySettleIndex`,
+  `FilterInvoicesByAddIndex`, `FilterInvoicesForward`,
+  `FilterInvoicesReverse`). The old query used `col >= $param OR $param IS
+  NULL` predicates and a `CASE`-based `ORDER BY` that prevented SQLite's query
+  planner from using indexes, causing full table scans. Each new query carries
+  only the parameters it actually needs and uses a direct `ORDER BY`, allowing
+  the planner to perform efficient index range scans on the invoice table.
+
+* [Fix full table scans on the HTLC settlement
+    hot path](https://github.com/flokiorg/flnd/pull/10619).
+    Replace the catch-all `GetInvoice` query (which used `OR $1 IS NULL`
+    predicates that forced full table scans) with three dedicated queries
+    targeting uniquely-constrained columns. Also drop four redundant indexes
+    that duplicated UNIQUE constraints or were never used as query filters.
+
+* [Optimize the v1 node horizon
+    query](https://github.com/flokiorg/flnd/pull/10692). Split the
+    `GetNodesByLastUpdateRange` query into separate all-nodes and public-only
+    variants, removing a dynamic `COALESCE`/`OR` branch that defeated the query
+    planner. The public-only `EXISTS` check is rewritten as two direct index
+    probes instead of `node_id_1 OR node_id_2`. Supporting indexes are upgraded
+    to composite keys matching the full query shapes. On SQLite, the hot
+    public-only path sees a ~42% speedup; on the previous code it could stall
+    for minutes.
+
+* [Tombstone closed channels on KV-over-SQL
+  backends](https://github.com/flokiorg/flnd/pull/10780). Closing a
+  long-lived channel previously issued a single `DeleteNestedBucket` inside
+  the close transaction. On the kvdb-on-SQL schema (sqlite, postgres) that
+  delete fans out into a row-by-row `ON DELETE CASCADE` over the channel's
+  revocation log and forwarding-package bucket, holding the database
+  write-lock for many seconds — long enough on channels with millions of
+  states to stall HTLC forwarding, time out htlcswitch retries, and trigger
+  force-close cycles. `CloseChannel` now skips the cascading delete on
+  these backends; the outpoint-index flip from `outpointOpen` to
+  `outpointClosed` (already performed by the existing close path) is the
+  authoritative closed-channel marker, and every reader of the open-channel
+  bucket consults it before treating a channel as open. The bulk historical
+  state — the chanBucket itself, the revocation log, and the per-channel
+  forwarding-package bucket — remains on disk for the channel's lifetime in
+  this database and is reclaimed wholesale by the upcoming native-SQL
+  channel-state migration. bbolt and etcd retain the synchronous one-shot
+  close path, where nested-bucket deletion is already cheap.
+
+  > ⚠️ **Downgrade warning.** On sqlite/postgres, once a channel is
+  > closed under this build the chanBucket and its nested state remain
+  > on disk; the close is signalled only by the `outpointClosed` flip
+  > in the outpoint index. Earlier `flnd` releases do not consult that
+  > flip when iterating `openChannelBucket`, so downgrading to a
+  > pre-0.21 binary after closing channels on these backends will
+  > resurrect those channels as open in `listchannels`,
+  > `pendingchannels`, and the chain-watch path. Operators who close
+  > channels on sqlite/postgres after upgrading should treat the
+  > upgrade as one-way for that database; bbolt and etcd users are unaffected 
+  > because the close path on those backends still deletes the chanBucket.
+
 ## Deprecations
 
 ### ⚠️ **Warning:** The deprecated fee rate option `--sat_per_byte` will be removed in release version **0.22**
