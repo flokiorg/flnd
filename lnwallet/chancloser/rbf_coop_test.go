@@ -486,11 +486,6 @@ func (r *rbfCloserTestHarness) expectCloseFinalized(
 	).Return(nil)
 }
 
-func (r *rbfCloserTestHarness) expectChanPendingClose() {
-	var nilTx *wire.MsgTx
-	r.chanObserver.On("MarkCoopBroadcasted", nilTx, true).Return(nil)
-}
-
 func (r *rbfCloserTestHarness) assertLocalClosePending() {
 	// We should then remain in the outer close negotiation state.
 	r.assertStateTransitions(&ClosingNegotiation{})
@@ -1281,12 +1276,6 @@ func TestRbfChannelFlushingTransitions(t *testing.T) {
 			// balance of the local party.
 			closeHarness.expectFeeEstimate(absoluteFee, 1)
 
-			// If this is a fresh flush, then we expect the state
-			// to be marked on disk.
-			if isFreshFlush {
-				closeHarness.expectChanPendingClose()
-			}
-
 			// We'll now send in the event which should trigger
 			// this code path.
 			closeHarness.chanCloser.SendEvent(
@@ -1329,12 +1318,6 @@ func TestRbfChannelFlushingTransitions(t *testing.T) {
 			localBalance := flushEvent.ShutdownBalances.LocalBalance
 			balanceAfterClose := localBalance.ToLokis() -
 				absoluteFee
-
-			// If this is a fresh flush, then we expect the state
-			// to be marked on disk.
-			if isFreshFlush {
-				closeHarness.expectChanPendingClose()
-			}
 
 			// From here, we expect the state transition to go
 			// back to closing negotiated, for a ClosingComplete
