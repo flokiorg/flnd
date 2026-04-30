@@ -194,7 +194,8 @@ func CreateWithBackend(backend kvdb.Backend, modifiers ...OptionModifier) (*DB,
 			linkNodeDB: &LinkNodeDB{
 				backend: backend,
 			},
-			backend: backend,
+			backend:                 backend,
+			tombstoneClosedChannels: opts.tombstoneClosedChannels,
 		},
 		clock:                     opts.clock,
 		dryRun:                    opts.dryRun,
@@ -324,6 +325,12 @@ type ChannelStateDB struct {
 	// backend points to the actual backend holding the channel state
 	// database. This may be a real backend or a cache middleware.
 	backend kvdb.Backend
+
+	// tombstoneClosedChannels is set by OptionTombstoneClosedChannels.
+	// When true, CloseChannel skips deleting nested per-channel state and
+	// relies on the outpointBucket flip to outpointClosed as the
+	// authoritative closed-channel signal.
+	tombstoneClosedChannels bool
 }
 
 // GetParentDB returns the "main" channeldb.DB object that is the owner of this
