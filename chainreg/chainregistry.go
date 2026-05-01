@@ -137,6 +137,10 @@ const (
 	// static estimators.
 	DefaultFlokicoinStaticMinRelayFeeRate = chainfee.FeePerKwFloor
 
+	// DefaultFlokicoinFeeURL is the default URL used for fee estimation
+	// when running neutrino on mainnet if no other URL is provided.
+	DefaultFlokicoinFeeURL = "https://lokichain.info/api/v1/fees/recommended"
+
 	// DefaultMinOutboundPeers is the min number of connected
 	// outbound peers the chain backend should have to maintain a
 	// healthy connection to the network.
@@ -704,13 +708,14 @@ func NewPartialChainControl(cfg *Config) (*PartialChainControl, func(), error) {
 
 	switch {
 	// If the fee URL isn't set, and the user is running mainnet, then
-	// we'll return an error to instruct them to set a proper fee
-	// estimator.
+	// we'll use the default fee URL.
 	case cfg.Fee.URL == "" && cfg.Flokicoin.MainNet &&
 		cfg.Flokicoin.Node == "neutrino":
 
-		return nil, nil, fmt.Errorf("--fee.url parameter required " +
-			"when running neutrino on mainnet")
+		cfg.Fee.URL = DefaultFlokicoinFeeURL
+		log.Infof("No fee URL provided, using default: %v",
+			cfg.Fee.URL)
+		fallthrough
 
 	// Override default fee estimator if an external service is specified.
 	case cfg.Fee.URL != "":
