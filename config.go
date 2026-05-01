@@ -381,7 +381,7 @@ type Config struct {
 
 	NoBackupArchive bool `long:"no-backup-archive" description:"If set to true, channel backups will be deleted or replaced rather than being archived to a separate location."`
 
-	FeeURL string `long:"feeurl" description:"DEPRECATED: Use 'fee.url' option. Optional URL for external fee estimation. If no URL is specified, the method for fee estimation will depend on the chosen backend and network. Must be set for neutrino on mainnet." hidden:"true"`
+	FeeURL string `long:"feeurl" description:"DEPRECATED: Use 'fee.url' option. Optional URL for external fee estimation. If no URL is specified, the method for fee estimation will depend on the chosen backend and network. For neutrino on mainnet, a default URL will be used if none is specified." hidden:"true"`
 
 	Flokicoin      *lncfg.Chain      `group:"Flokicoin" namespace:"flokicoin"`
 	BtcdMode       *lncfg.Btcd       `group:"btcd" namespace:"btcd"`
