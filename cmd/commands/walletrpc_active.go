@@ -2048,9 +2048,9 @@ func verifyMessageWithAddr(ctx *cli.Context) error {
 	resp, err := walletClient.VerifyMessageWithAddr(
 		ctxc,
 		&walletrpc.VerifyMessageWithAddrRequest{
-			Msg:  msg,
-			Sig:  sig,
-			Addr: addr,
+			Msg:       msg,
+			Signature: sig,
+			Addr:      addr,
 		},
 	)
 	if err != nil {
@@ -2059,5 +2059,152 @@ func verifyMessageWithAddr(ctx *cli.Context) error {
 
 	printRespJSON(resp)
 
+	return nil
+}
+
+var importAccountCommand = cli.Command{
+	Name: "import",
+	Usage: "Import an on-chain account into the wallet through its " +
+		"extended public key.",
+	ArgsUsage: "extended_public_key name",
+	Description: `
+	Imports an account backed by an account extended public key. The master
+	key fingerprint denotes the fingerprint of the root key corresponding to
+	the account public key (also known as the key with derivation path m/).
+	This may be required by some hardware wallets for proper identification
+	and signing.
+
+	The address type can usually be inferred from the key's version, but may
+	be required for certain keys to map them into the proper scope.
+
+	If an account with the same name already exists (even with a different
+	key scope), an error will be returned.
+
+	For BIP-0044 keys, an address type must be specified as we intend to not
+	support importing BIP-0044 keys into the wallet using the legacy
+	pay-to-pubkey-hash (P2PKH) scheme. A nested witness address type will
+	force the standard BIP-0049 derivation scheme, while a witness address
+	type will force the standard BIP-0084 derivation scheme.
+
+	For BIP-0049 keys, an address type must also be specified to make a
+	distinction between the standard BIP-0049 address schema (nested witness
+	pubkeys everywhere) and our own BIP-0049Plus address schema (nested
+	pubkeys externally, witness pubkeys internally).
+
+	NOTE: Events (deposits/spends) for keys derived from an account will
+	only be detected by flnd if they happen after the import. Rescans to
+	detect past events will be supported later on.
+	`,
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name: "address_type",
+			Usage: "(optional) specify the type of addresses the " +
+				"imported account should generate",
+		},
+		cli.StringFlag{
+			Name: "master_key_fingerprint",
+			Usage: "(optional) the fingerprint of the root key " +
+				"(derivation path m/) corresponding to the " +
+				"account public key",
+		},
+		cli.BoolFlag{
+			Name:  "dry_run",
+			Usage: "(optional) perform a dry run",
+		},
+	},
+	Action: actionDecorator(importAccount),
+}
+
+func importAccount(ctx *cli.Context) error {
+	ctxc := getContext()
+
+	// Display the command's help message if we do not have the expected
+	// number of arguments/flags.
+	if ctx.NArg() != 2 || ctx.NumFlags() > 3 {
+		return cli.ShowCommandHelp(ctx, "import")
+	}
+
+	addrType, err := parseAddrType(ctx.String("address_type"))
+	if err != nil {
+		return err
+	}
+
+	var mkfpBytes []byte
+	if ctx.IsSet("master_key_fingerprint") {
+		mkfpBytes, err = hex.DecodeString(
+			ctx.String("master_key_fingerprint"),
+		)
+		if err != nil {
+			return fmt.Errorf("invalid master key fingerprint: %w",
+				err)
+		}
+	}
+
+	walletClient, cleanUp := getWalletClient(ctx)
+	defer cleanUp()
+
+	dryRun := ctx.Bool("dry_run")
+	req := &walletrpc.ImportAccountRequest{
+		Name:                 ctx.Args().Get(1),
+		ExtendedPublicKey:    ctx.Args().Get(0),
+		MasterKeyFingerprint: mkfpBytes,
+		AddressType:          addrType,
+		DryRun:               dryRun,
+	}
+	resp, err := walletClient.ImportAccount(ctxc, req)
+	if err != nil {
+		return err
+	}
+
+	printRespJSON(resp)
+	return nil
+}
+
+var importPubKeyCommand = cli.Command{
+	Name:      "import-pubkey",
+	Usage:     "Import a public key as watch-only into the wallet.",
+	ArgsUsage: "public_key address_type",
+	Description: `
+	Imports a public key represented in hex as watch-only into the wallet.
+	The address type must be one of the following: np2wkh, p2wkh.
+
+	NOTE: Events (deposits/spends) for a key will only be detected by flnd if
+	they happen after the import. Rescans to detect past events will be
+	supported later on.
+	`,
+	Action: actionDecorator(importPubKey),
+}
+
+func importPubKey(ctx *cli.Context) error {
+	ctxc := getContext()
+
+	// Display the command's help message if we do not have the expected
+	// number of arguments/flags.
+	if ctx.NArg() != 2 || ctx.NumFlags() > 0 {
+		return cli.ShowCommandHelp(ctx, "import-pubkey")
+	}
+
+	pubKeyBytes, err := hex.DecodeString(ctx.Args().Get(0))
+	if err != nil {
+		return err
+	}
+	addrType, err := parseAddrType(ctx.Args().Get(1))
+	if err != nil {
+		return err
+	}
+
+	walletClient, cleanUp := getWalletClient(ctx)
+	defer cleanUp()
+
+	req := &walletrpc.ImportPublicKeyRequest{
+		PublicKey:   pubKeyBytes,
+		AddressType: addrType,
+	}
+	resp, err := walletClient.ImportPublicKey(ctxc, req)
+	if err != nil {
+		return err
+	}
+
+	printRespJSON(resp)
 	return nil
 }
