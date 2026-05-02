@@ -44,17 +44,18 @@ func FuzzHopPayload(f *testing.F) {
 
 		r := bytes.NewReader(data)
 
-		var hopPayload1, hopPayload2 sphinx.HopPayload
-
-		if err := hopPayload1.Decode(r); err != nil {
+		hopPayload1, err := sphinx.DecodeHopPayload(r, true)
+		if err != nil {
 			return
 		}
 
 		var b bytes.Buffer
 		require.NoError(t, hopPayload1.Encode(&b))
-		require.NoError(t, hopPayload2.Decode(&b))
 
-		require.Equal(t, hopPayload1, hopPayload2)
+		hopPayload2, err := sphinx.DecodeHopPayload(&b, true)
+		require.NoError(t, err)
+
+		require.Equal(t, *hopPayload1, *hopPayload2)
 	})
 }
 

@@ -17,6 +17,10 @@ var (
 func TestWriteFile(t *testing.T) {
 	t.Parallel()
 
+	if os.Getuid() == 0 {
+		t.Skip("Skipping test because it is running as root")
+	}
+
 	f, deferred := ensureTempfile(t)
 	filename := f.Name()
 	defer deferred()
@@ -46,6 +50,10 @@ func TestWriteFile(t *testing.T) {
 
 func TestWriteFileRemove(t *testing.T) {
 	t.Parallel()
+
+	if os.Getuid() == 0 {
+		t.Skip("Skipping test because it is running as root")
+	}
 
 	f, deferred := ensureTempfile(t)
 	filename := f.Name()
