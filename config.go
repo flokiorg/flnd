@@ -381,7 +381,7 @@ type Config struct {
 
 	NoBackupArchive bool `long:"no-backup-archive" description:"If set to true, channel backups will be deleted or replaced rather than being archived to a separate location."`
 
-	FeeURL string `long:"feeurl" description:"DEPRECATED: Use 'fee.url' option. Optional URL for external fee estimation. If no URL is specified, the method for fee estimation will depend on the chosen backend and network. Must be set for neutrino on mainnet." hidden:"true"`
+	FeeURL string `long:"feeurl" description:"DEPRECATED: Use 'fee.url' option. Optional URL for external fee estimation. If no URL is specified, the method for fee estimation will depend on the chosen backend and network. For neutrino on mainnet, a default URL will be used if none is specified." hidden:"true"`
 
 	Flokicoin      *lncfg.Chain      `group:"Flokicoin" namespace:"flokicoin"`
 	BtcdMode       *lncfg.Btcd       `group:"Btcd" namespace:"btcd"`
@@ -1093,15 +1093,15 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	}
 
 	// Ensure that --maxchansize is properly handled when set by user.
-	// For non-Wumbo channels this limit remains 500,000,000 loki (5 FLC) by default
-	// as specified in BOLT-02. For wumbo channels this limit is 21,000,000,000.
-	// loki (210 FLC). Always enforce --maxchansize explicitly set by user.
+	// For non-Wumbo channels this limit is 100,000 FLC by default.
+	// For wumbo channels this limit is 1,000,000 FLC.
+	// Always enforce --maxchansize explicitly set by user.
 	// If unset (marked by 0 value), then enforce proper default.
 	if cfg.MaxChanSize == 0 {
 		if cfg.ProtocolOptions.Wumbo() {
-			cfg.MaxChanSize = int64(funding.MaxFlcFundingAmountWumbo)
+			cfg.MaxChanSize = int64(funding.MaxFlokicoinFundingAmountWumbo)
 		} else {
-			cfg.MaxChanSize = int64(funding.MaxFlcFundingAmount)
+			cfg.MaxChanSize = int64(funding.MaxFlokicoinFundingAmount)
 		}
 	}
 
@@ -1337,7 +1337,7 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 		cfg.Fee.URL = "https://lokichain.info/api/v1/fees/recommended"
 	}
 
-	err = cfg.Flokicoin.Validate(minTimeLockDelta, funding.MinFlcRemoteDelay)
+	err = cfg.Flokicoin.Validate(minTimeLockDelta, funding.MinFlokicoinRemoteDelay)
 	if err != nil {
 		return nil, mkErr("error validating bitcoin params: %v", err)
 	}
@@ -1843,6 +1843,15 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	_, err = lncfg.ParseHexColor(cfg.Color)
 	if err != nil {
 		return nil, mkErr("unable to parse node color: %v", err)
+	}
+
+	// Validate TrickleDelay and default to 1ms if non-positive to ensure
+	// the trickle timer can still function.
+	if cfg.TrickleDelay <= 0 {
+		srvrLog.Infof("TrickleDelay is non-positive (%v ms), "+
+			"setting to 1ms", cfg.TrickleDelay)
+
+		cfg.TrickleDelay = 1
 	}
 
 	// All good, return the sanitized result.

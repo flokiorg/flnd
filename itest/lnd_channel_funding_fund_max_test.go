@@ -4,7 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	lnd "github.com/flokiorg/flnd"
+	"github.com/flokiorg/flnd"
+	"github.com/flokiorg/flnd/funding"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/lnrpc"
 	"github.com/flokiorg/flnd/lnrpc/walletrpc"
@@ -26,7 +27,7 @@ type chanFundMaxTestCase struct {
 	// pushAmt is the amount to be pushed to Bob.
 	pushAmt chainutil.Amount
 
-	// feeRate is an optional fee in satoshi/bytes used when opening a
+	// feeRate is an optional fee in loki/bytes used when opening a
 	// channel.
 	feeRate chainutil.Amount
 
@@ -82,9 +83,9 @@ func testChannelFundMaxError(ht *lntest.HarnessTest) {
 		},
 		{
 			name: "wallet amount < min chan size " +
-				"(~18000sat)",
+				"(~18000loki)",
 			initialWalletBalance: 18_000,
-			// Using a feeRate of 1 sat/vByte ensures that we test
+			// Using a feeRate of 1 loki/vByte ensures that we test
 			// for min chan size and not excessive fees.
 			feeRate:            1,
 			chanOpenShouldFail: true,
@@ -99,7 +100,7 @@ func testChannelFundMaxError(ht *lntest.HarnessTest) {
 			name: "wallet amount > max chan size, " +
 				"push amount == max-chan-size",
 			initialWalletBalance: 20_000_000,
-			pushAmt:              lnd.MaxFundingAmount,
+			pushAmt:              flnd.MaxFundingAmount,
 			chanOpenShouldFail:   true,
 			expectedErrStr: "amount pushed to remote peer for " +
 				"initial state must be below the local " +
@@ -115,10 +116,10 @@ func testChannelFundMaxError(ht *lntest.HarnessTest) {
 			name: "wallet amount > max chan size, " +
 				"push amount == max-chan-size - 1_000",
 			initialWalletBalance: 20_000_000,
-			pushAmt:              lnd.MaxFundingAmount - 1_000,
+			pushAmt:              flnd.MaxFundingAmount - 1_000,
 			chanOpenShouldFail:   true,
 			expectedErrStr: "funder balance too small (-8050000) " +
-				"with fee=9050 sat, minimum=708 sat required",
+				"with fee=9050 loki, minimum=708 loki required",
 		},
 	}
 
@@ -163,7 +164,7 @@ func testChannelFundMaxWalletAmount(ht *lntest.HarnessTest) {
 	var testCases = []*chanFundMaxTestCase{
 		{
 			name: "wallet amount > min chan " +
-				"size (37000sat)",
+				"size (37000loki)",
 			initialWalletBalance: 37_000,
 			// The transaction fee to open the channel must be
 			// subtracted from Alice's balance.
@@ -172,17 +173,16 @@ func testChannelFundMaxWalletAmount(ht *lntest.HarnessTest) {
 				fundingFee(1, false),
 		},
 		{
-			name: "wallet amount > max chan size " +
-				"(20000000sat)",
-			initialWalletBalance: 20_000_000,
-			expectedBalanceAlice: lnd.MaxFundingAmount,
+			name: "wallet amount > max chan size",
+			initialWalletBalance: flnd.MaxFundingAmount + 3_000_000,
+			expectedBalanceAlice: flnd.MaxFundingAmount,
 		},
 		{
 			name: "wallet amount > max chan size, " +
-				"push amount 16766000",
-			initialWalletBalance: 20_000_000,
-			pushAmt:              16_766_000,
-			expectedBalanceAlice: lnd.MaxFundingAmount - 16_766_000,
+				"push amount max-11215",
+			initialWalletBalance: flnd.MaxFundingAmount + 3_000_000,
+			pushAmt:              flnd.MaxFundingAmount - 11215,
+			expectedBalanceAlice: 11215,
 		},
 	}
 
@@ -407,4 +407,80 @@ func sweepNodeWalletAndAssert(ht *lntest.HarnessTest, node *node.HarnessNode) {
 
 	// Ensure that the node's balance is 0
 	checkChannelBalance(ht, node, 0, 0)
+}
+
+// testChannelFundMaxMaxChanSize verifies that fundMax uses the protocol-level
+// maximum channel size, not the user-configured maxChanSize. The maxChanSize
+// config option is intended only for limiting incoming channel requests, not
+// outgoing ones.
+func testChannelFundMaxMaxChanSize(ht *lntest.HarnessTest) {
+	testCases := []struct {
+		name        string
+		wumbo       bool
+		expectedMax chainutil.Amount
+	}{
+		{
+			name:        "non-wumbo",
+			wumbo:       false,
+			expectedMax: funding.MaxFLCFundingAmount,
+		},
+		{
+			name:        "wumbo",
+			wumbo:       true,
+			expectedMax: funding.MaxFLCFundingAmountWumbo,
+		},
+	}
+
+	for _, tc := range testCases {
+		success := ht.Run(tc.name, func(t *testing.T) {
+			st := ht.Subtest(t)
+
+			// Configure Alice with a restrictive maxChanSize (5M
+			// loki), which is below both protocol maximums.
+			aliceArgs := []string{
+				"--maxchansize=5000000",
+			}
+			if tc.wumbo {
+				aliceArgs = append(
+					aliceArgs, "--protocol.wumbo-channels",
+				)
+			}
+
+			alice := st.NewNode("Alice", aliceArgs)
+
+			// Bob needs wumbo enabled to accept large channels.
+			var bobArgs []string
+			if tc.wumbo {
+				bobArgs = []string{"--protocol.wumbo-channels"}
+			}
+			bob := st.NewNode("Bob", bobArgs)
+
+			st.EnsureConnected(alice, bob)
+
+			// Fund Alice with more than the protocol maximum.
+			fundAmt := tc.expectedMax + chainutil.SatoshiPerBitcoin
+			st.FundCoins(fundAmt, alice)
+
+			// Open channel with fundMax. This should use the
+			// protocol maximum, not the configured maxChanSize.
+			chanPoint := st.OpenChannel(
+				alice, bob, lntest.OpenChannelParams{
+					FundMax: true,
+				},
+			)
+
+			cType := st.GetChannelCommitType(alice, chanPoint)
+
+			// The expected balance is the protocol maximum minus
+			// the commitment fee.
+			expectedBalance := tc.expectedMax -
+				lntest.CalcStaticFee(cType, 0)
+
+			checkChannelBalance(st, alice, expectedBalance, 0)
+			checkChannelBalance(st, bob, 0, expectedBalance)
+		})
+		if !success {
+			break
+		}
+	}
 }

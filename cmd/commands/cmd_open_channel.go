@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/flokiorg/flnd"
 	"github.com/flokiorg/flnd/lnrpc"
 	"github.com/flokiorg/flnd/lnwallet/chanfunding"
 	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
@@ -23,21 +24,21 @@ import (
 
 const (
 	userMsgFund = `PSBT funding initiated with peer %x.
-Please create a PSBT that sends %v (%d satoshi) to the funding address %s.
+Please create a PSBT that sends %v (%d loki) to the funding address %s.
 
 Note: The whole process should be completed within 10 minutes, otherwise there
 is a risk of the remote node timing out and canceling the funding process.
 
-Example with bitcoind:
-	bitcoin-cli walletcreatefundedpsbt [] '[{"%s":%.8f}]'
+Example with flokicoind:
+	flokicoin-cli walletcreatefundedpsbt [] '[{"%s":%.8f}]'
 
 If you are using a wallet that can fund a PSBT directly (currently not possible
-with bitcoind), you can use this PSBT that contains the same address and amount:
+with flokicoind), you can use this PSBT that contains the same address and amount:
 %s
 
 !!! WARNING !!!
 DO NOT PUBLISH the finished transaction by yourself or with another tool.
-lnd MUST publish it in the proper funding flow order OR THE FUNDS CAN BE LOST!
+flnd MUST publish it in the proper funding flow order OR THE FUNDS CAN BE LOST!
 
 Paste the funded PSBT here to continue the funding flow.
 If your PSBT is very long (specifically, more than 4096 characters), please save
@@ -46,7 +47,7 @@ truncate the pasted text if it's too long.
 Base64 encoded PSBT (or path to file): `
 
 	userMsgSign = `
-PSBT verified by lnd, please continue the funding flow by signing the PSBT by
+PSBT verified by flnd, please continue the funding flow by signing the PSBT by
 all required parties/devices. Once the transaction is fully signed, paste it
 again here either in base64 PSBT or hex encoded raw wire TX format.
 
@@ -58,9 +59,10 @@ Signed base64 encoded PSBT or hex encoded raw wire TX (or path to file): `
 	// of memory issues or other weird errors.
 	psbtMaxFileSize = 1024 * 1024
 
-	channelTypeTweakless     = "tweakless"
-	channelTypeAnchors       = "anchors"
-	channelTypeSimpleTaproot = "taproot"
+	channelTypeTweakless         = "tweakless"
+	channelTypeAnchors           = "anchors"
+	channelTypeSimpleTaproot     = "taproot"
+	channelTypeSimpleTaprootFinal = "taproot-final"
 )
 
 // TODO(roasbeef): change default number of confirmations.
@@ -223,7 +225,7 @@ var openChannelCommand = cli.Command{
 		cli.BoolFlag{
 			Name: "psbt",
 			Usage: "start an interactive mode that initiates " +
-				"funding through a partially signed bitcoin " +
+				"funding through a partially signed flokicoin " +
 				"transaction (PSBT), allowing the channel " +
 				"funds to be added and signed from a " +
 				"hardware or other offline device.",
@@ -239,7 +241,7 @@ var openChannelCommand = cli.Command{
 			Name: "no_publish",
 			Usage: "when using the interactive PSBT mode to open " +
 				"multiple channels in a batch, this flag " +
-				"instructs lnd to not publish the full batch " +
+				"instructs flnd to not publish the full batch " +
 				"transaction just yet. For safety reasons " +
 				"this flag should be set for each of the " +
 				"batch's transactions except the very last",
@@ -253,9 +255,9 @@ var openChannelCommand = cli.Command{
 		cli.StringFlag{
 			Name: "channel_type",
 			Usage: fmt.Sprintf("(optional) the type of channel to "+
-				"propose to the remote peer (%q, %q, %q)",
+				"propose to the remote peer (%q, %q, %q, %q)",
 				channelTypeTweakless, channelTypeAnchors,
-				channelTypeSimpleTaproot),
+				channelTypeSimpleTaproot, channelTypeSimpleTaprootFinal),
 		},
 		cli.BoolFlag{
 			Name: "zero_conf",
@@ -406,7 +408,7 @@ func openChannel(ctx *cli.Context) error {
 	if ctx.IsSet("utxo") {
 		utxos := ctx.StringSlice("utxo")
 
-		outpoints, err := UtxosToOutpoints(utxos)
+		outpoints, err := flnd.UtxosToOutpoints(utxos)
 		if err != nil {
 			return fmt.Errorf("unable to decode utxos: %w", err)
 		}
@@ -446,6 +448,8 @@ func openChannel(ctx *cli.Context) error {
 		req.CommitmentType = lnrpc.CommitmentType_ANCHORS
 	case channelTypeSimpleTaproot:
 		req.CommitmentType = lnrpc.CommitmentType_SIMPLE_TAPROOT
+	case channelTypeSimpleTaprootFinal:
+		req.CommitmentType = lnrpc.CommitmentType_SIMPLE_TAPROOT_FINAL
 	default:
 		return fmt.Errorf("unsupported channel type %v", channelType)
 	}
@@ -491,8 +495,9 @@ func openChannel(ctx *cli.Context) error {
 }
 
 // openChannelPsbt starts an interactive channel open protocol that uses a
-// partially signed bitcoin transaction (PSBT) to fund the channel output. The
-// protocol involves several steps between the RPC server and the CLI client:
+// partially signed flokicoin transaction (PSBT) to fund the channel output.
+// The protocol involves several steps between the RPC server and the CLI
+// client:
 //
 // RPC server                           CLI client
 //
@@ -601,7 +606,7 @@ func openChannelPsbt(rpcCtx context.Context, ctx *cli.Context,
 			// Recv blocks until a message or error arrives.
 			resp, err := stream.Recv()
 			if err == io.EOF {
-				srvErr <- fmt.Errorf("lnd shutting down: %w",
+				srvErr <- fmt.Errorf("flnd shutting down: %w",
 					err)
 				return
 			} else if err != nil {
@@ -664,7 +669,7 @@ func openChannelPsbt(rpcCtx context.Context, ctx *cli.Context,
 			amt := chainutil.Amount(update.PsbtFund.FundingAmount)
 			addr := update.PsbtFund.FundingAddress
 			fmt.Printf(
-				userMsgFund, req.NodePubkey, amt, amt, addr,
+				userMsgFund, req.NodePubkey, amt, int64(amt), addr,
 				addr, amt.ToFLC(),
 				base64.StdEncoding.EncodeToString(
 					update.PsbtFund.Psbt,
@@ -697,7 +702,7 @@ func openChannelPsbt(rpcCtx context.Context, ctx *cli.Context,
 			}
 			err = sendFundingState(ctxc, ctx, verifyMsg)
 			if err != nil {
-				return fmt.Errorf("verifying PSBT by lnd "+
+				return fmt.Errorf("verifying PSBT by flnd "+
 					"failed: %v", err)
 			}
 
@@ -705,7 +710,7 @@ func openChannelPsbt(rpcCtx context.Context, ctx *cli.Context,
 			// be signed by the user.
 			fmt.Print(userMsgSign)
 
-			// Read the signed PSBT and send it to lnd.
+			// Read the signed PSBT and send it to flnd.
 			finalTxStr, err := readTerminalOrFile(quit)
 			if err == io.EOF {
 				return nil
@@ -760,11 +765,11 @@ var batchOpenChannelCommand = cli.Command{
 	given node-keys.
 
 	Example:
-	lncli batchopenchannel --sat_per_vbyte=5 '[{
+	flncli batchopenchannel --sat_per_vbyte=5 '[{
 		"node_pubkey": "02abcdef...",
 		"local_funding_amount": 500000,
 		"private": true,
-		"close_address": "bc1qxxx..."
+		"close_address": "flc1qxxx..."
 	}, {
 		"node_pubkey": "03fedcba...",
 		"local_funding_amount": 200000,

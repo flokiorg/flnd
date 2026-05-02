@@ -1,4 +1,4 @@
-package commands
+package flnd
 
 import (
 	"encoding/hex"

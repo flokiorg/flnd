@@ -50,14 +50,14 @@ const (
 	// invalid due to their timelock not meeting the required delta.
 	//
 	// We skirt this by always setting an explicit CLTV delta when creating
-	// invoices. This allows LND nodes to freely update the minimum without
+	// invoices. This allows flnd nodes to freely update the minimum without
 	// creating incompatibilities during the upgrade process. For some time
-	// LND has used an explicit default final CLTV delta of 40 blocks for
-	// bitcoin, though we now clamp the lower end of this
-	// range for user-chosen deltas to 18 blocks to be conservative.
-	MinCLTVDelta = 18
+	// flnd has used an explicit default final CLTV delta of 40 blocks for
+	// flokicoin, though we now clamp the lower end of this
+	// range for user-chosen deltas to 24 blocks to be conservative.
+	MinCLTVDelta = 24
 
-	// MaxCLTVDelta is the maximum CLTV value accepted by LND for all
+	// MaxCLTVDelta is the maximum CLTV value accepted by flnd for all
 	// timelock deltas.
 	MaxCLTVDelta = math.MaxUint16
 )
@@ -69,7 +69,7 @@ var (
 
 	// ErrSelfIntro is a failure returned when the source node of a
 	// route request is also the introduction node. This is not yet
-	// supported because LND does not support blinded forwardingg.
+	// supported because flnd does not support blinded forwardingg.
 	ErrSelfIntro = errors.New("introduction point as own node not " +
 		"supported")
 

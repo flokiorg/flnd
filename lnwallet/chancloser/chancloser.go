@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/flokiorg/go-flokicoin/crypto"
-
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/htlcswitch"
@@ -15,9 +13,11 @@ import (
 	"github.com/flokiorg/flnd/lnutils"
 	"github.com/flokiorg/flnd/lnwallet"
 	"github.com/flokiorg/flnd/lnwallet/chainfee"
+	"github.com/flokiorg/flnd/lnwallet/types"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/go-flokicoin/chaincfg"
 	"github.com/flokiorg/go-flokicoin/chainutil"
+	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/flokiorg/go-flokicoin/crypto/schnorr/musig2"
 	"github.com/flokiorg/go-flokicoin/txscript"
 	"github.com/flokiorg/go-flokicoin/wire"
@@ -240,12 +240,12 @@ type ChanCloser struct {
 	// localCloseOutput is the local output on the closing transaction that
 	// the local party should be paid to. This will only be populated if the
 	// local balance isn't dust.
-	localCloseOutput fn.Option[CloseOutput]
+	localCloseOutput fn.Option[types.CloseOutput]
 
 	// remoteCloseOutput is the remote output on the closing transaction
 	// that the remote party should be paid to. This will only be populated
 	// if the remote balance isn't dust.
-	remoteCloseOutput fn.Option[CloseOutput]
+	remoteCloseOutput fn.Option[types.CloseOutput]
 
 	// auxOutputs are the optional additional outputs that might be added to
 	// the closing transaction.
@@ -364,7 +364,7 @@ func (c *ChanCloser) initFeeBaseline() {
 	// Either error out or cap the ideal fee at the max fee.
 
 	chancloserLog.Infof("Ideal fee for closure of ChannelPoint(%v) "+
-		"is: %v sat (max_fee=%v sat)", c.cfg.Channel.ChannelPoint(),
+		"is: %v loki (max_fee=%v loki)", c.cfg.Channel.ChannelPoint(),
 		int64(c.idealFeeSat), int64(c.maxFee))
 }
 
@@ -379,14 +379,17 @@ func (c *ChanCloser) initChanShutdown() (*lnwire.Shutdown, error) {
 	// At this point, we'll check to see if we have any custom records to
 	// add to the shutdown message.
 	err := fn.MapOptionZ(c.cfg.AuxCloser, func(a AuxChanCloser) error {
-		shutdownCustomRecords, err := a.ShutdownBlob(AuxShutdownReq{
-			ChanPoint:   c.chanPoint,
-			ShortChanID: c.cfg.Channel.ShortChanID(),
-			Initiator:   c.cfg.Channel.IsInitiator(),
-			InternalKey: c.localInternalKey,
-			CommitBlob:  c.cfg.Channel.LocalCommitmentBlob(),
-			FundingBlob: c.cfg.Channel.FundingBlob(),
-		})
+		channel := c.cfg.Channel
+		shutdownCustomRecords, err := a.ShutdownBlob(
+			types.AuxShutdownReq{
+				ChanPoint:   c.chanPoint,
+				ShortChanID: channel.ShortChanID(),
+				Initiator:   channel.IsInitiator(),
+				InternalKey: c.localInternalKey,
+				CommitBlob:  channel.LocalCommitmentBlob(),
+				FundingBlob: channel.FundingBlob(),
+			},
+		)
 		if err != nil {
 			return err
 		}
@@ -439,11 +442,11 @@ func (c *ChanCloser) initChanShutdown() (*lnwire.Shutdown, error) {
 		return nil, err
 	}
 
-	// We'll track our local close output, even if it's dust in FLC terms,
+	// We'll track our local close output, even if it's dust in BTC terms,
 	// it might still carry value in custom channel terms.
 	_, dustAmt := c.cfg.Channel.LocalBalanceDust()
 	localBalance, _ := c.cfg.Channel.CommitBalances()
-	c.localCloseOutput = fn.Some(CloseOutput{
+	c.localCloseOutput = fn.Some(types.CloseOutput{
 		Amt:             localBalance,
 		DustLimit:       dustAmt,
 		PkScript:        c.localDeliveryScript,
@@ -520,12 +523,12 @@ func (c *ChanCloser) NegotiationHeight() uint32 {
 }
 
 // LocalCloseOutput returns the local close output.
-func (c *ChanCloser) LocalCloseOutput() fn.Option[CloseOutput] {
+func (c *ChanCloser) LocalCloseOutput() fn.Option[types.CloseOutput] {
 	return c.localCloseOutput
 }
 
 // RemoteCloseOutput returns the remote close output.
-func (c *ChanCloser) RemoteCloseOutput() fn.Option[CloseOutput] {
+func (c *ChanCloser) RemoteCloseOutput() fn.Option[types.CloseOutput] {
 	return c.remoteCloseOutput
 }
 
@@ -587,11 +590,11 @@ func (c *ChanCloser) ReceiveShutdown(msg lnwire.Shutdown) (
 
 	noShutdown := fn.None[lnwire.Shutdown]()
 
-	// We'll track their remote close output, even if it's dust in FLC
+	// We'll track their remote close output, even if it's dust in BTC
 	// terms, it might still carry value in custom channel terms.
 	_, dustAmt := c.cfg.Channel.RemoteBalanceDust()
 	_, remoteBalance := c.cfg.Channel.CommitBalances()
-	c.remoteCloseOutput = fn.Some(CloseOutput{
+	c.remoteCloseOutput = fn.Some(types.CloseOutput{
 		Amt:             remoteBalance,
 		DustLimit:       dustAmt,
 		PkScript:        msg.Address,
@@ -971,33 +974,6 @@ func (c *ChanCloser) ReceiveClosingSigned( //nolint:funlen
 		}
 		c.closingTx = closeTx
 
-		// If there's an aux chan closer, then we'll finalize with it
-		// before we write to disk.
-		err = fn.MapOptionZ(
-			c.cfg.AuxCloser, func(aux AuxChanCloser) error {
-				channel := c.cfg.Channel
-				//nolint:ll
-				req := AuxShutdownReq{
-					ChanPoint:   c.chanPoint,
-					ShortChanID: c.cfg.Channel.ShortChanID(),
-					InternalKey: c.localInternalKey,
-					Initiator:   channel.IsInitiator(),
-					CommitBlob:  channel.LocalCommitmentBlob(),
-					FundingBlob: channel.FundingBlob(),
-				}
-				desc := AuxCloseDesc{
-					AuxShutdownReq:    req,
-					LocalCloseOutput:  c.localCloseOutput,
-					RemoteCloseOutput: c.remoteCloseOutput,
-				}
-
-				return aux.FinalizeClose(desc, closeTx)
-			},
-		)
-		if err != nil {
-			return noClosing, err
-		}
-
 		// Before publishing the closing tx, we persist it to the
 		// database, such that it can be republished if something goes
 		// wrong.
@@ -1054,7 +1030,7 @@ func (c *ChanCloser) auxCloseOutputs(
 
 	var closeOuts fn.Option[AuxCloseOutputs]
 	err := fn.MapOptionZ(c.cfg.AuxCloser, func(aux AuxChanCloser) error {
-		req := AuxShutdownReq{
+		req := types.AuxShutdownReq{
 			ChanPoint:   c.chanPoint,
 			ShortChanID: c.cfg.Channel.ShortChanID(),
 			InternalKey: c.localInternalKey,
@@ -1062,7 +1038,7 @@ func (c *ChanCloser) auxCloseOutputs(
 			CommitBlob:  c.cfg.Channel.LocalCommitmentBlob(),
 			FundingBlob: c.cfg.Channel.FundingBlob(),
 		}
-		outs, err := aux.AuxCloseOutputs(AuxCloseDesc{
+		outs, err := aux.AuxCloseOutputs(types.AuxCloseDesc{
 			AuxShutdownReq:    req,
 			CloseFee:          closeFee,
 			CommitFee:         c.cfg.Channel.CommitFee(),
@@ -1156,7 +1132,7 @@ func (c *ChanCloser) proposeCloseSigned(fee chainutil.Amount) (
 
 	c.lastFeeProposal = fee
 
-	chancloserLog.Infof("ChannelPoint(%v): proposing fee of %v sat to "+
+	chancloserLog.Infof("ChannelPoint(%v): proposing fee of %v loki to "+
 		"close chan", c.chanPoint, int64(fee))
 
 	// We'll assemble a ClosingSigned message using this information and

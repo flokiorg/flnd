@@ -40,6 +40,7 @@ import (
 	"github.com/flokiorg/flnd/lnwallet"
 	"github.com/flokiorg/flnd/lnwallet/chainfee"
 	"github.com/flokiorg/flnd/lnwallet/chancloser"
+	"github.com/flokiorg/flnd/lnwallet/types"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/msgmux"
 	"github.com/flokiorg/flnd/netann"
@@ -47,6 +48,7 @@ import (
 	"github.com/flokiorg/flnd/pool"
 	"github.com/flokiorg/flnd/protofsm"
 	"github.com/flokiorg/flnd/queue"
+	"github.com/flokiorg/flnd/routing/route"
 	"github.com/flokiorg/flnd/subscribe"
 	"github.com/flokiorg/flnd/ticker"
 	"github.com/flokiorg/flnd/tlv"
@@ -170,12 +172,12 @@ type ChannelCloseUpdate struct {
 	// LocalCloseOutput is an optional, additional output on the closing
 	// transaction that the local party should be paid to. This will only be
 	// populated if the local balance isn't dust.
-	LocalCloseOutput fn.Option[chancloser.CloseOutput]
+	LocalCloseOutput fn.Option[types.CloseOutput]
 
 	// RemoteCloseOutput is an optional, additional output on the closing
 	// transaction that the remote party should be paid to. This will only
 	// be populated if the remote balance isn't dust.
-	RemoteCloseOutput fn.Option[chancloser.CloseOutput]
+	RemoteCloseOutput fn.Option[types.CloseOutput]
 
 	// AuxOutputs is an optional set of additional outputs that might be
 	// included in the closing transaction. These are used for custom
@@ -372,6 +374,12 @@ type Config struct {
 	// closure initiated by the remote peer.
 	CoopCloseTargetConfs uint32
 
+	// ChannelCloseConfs is an optional override for the number of
+	// confirmations required for channel closes. When set, this overrides
+	// the normal capacity-based scaling. This is only available in
+	// dev/integration builds for testing purposes.
+	ChannelCloseConfs fn.Option[uint32]
+
 	// ServerPubKey is the serialized, compressed public key of our lnd node.
 	// It is used to determine which policy (channel edge) to pass to the
 	// ChannelLink.
@@ -469,9 +477,9 @@ type Config struct {
 	// onion messages to subscribers.
 	OnionMessageServer *subscribe.Server
 
-	// ShouldFwdExpEndorsement is a closure that indicates whether
-	// experimental endorsement signals should be set.
-	ShouldFwdExpEndorsement func() bool
+	// ShouldFwdExpAccountability is a closure that indicates whether
+	// experimental accountability signals should be set.
+	ShouldFwdExpAccountability func() bool
 
 	// NoDisconnectOnPongFailure indicates whether the peer should *not* be
 	// disconnected if a pong is not received in time or is mismatched.
@@ -1461,25 +1469,25 @@ func (p *Brontide) addLink(chanPoint *wire.OutPoint,
 		PendingCommitTicker: ticker.New(
 			p.cfg.PendingCommitInterval,
 		),
-		BatchSize:               p.cfg.ChannelCommitBatchSize,
-		UnsafeReplay:            p.cfg.UnsafeReplay,
-		MinUpdateTimeout:        htlcswitch.DefaultMinLinkFeeUpdateTimeout,
-		MaxUpdateTimeout:        htlcswitch.DefaultMaxLinkFeeUpdateTimeout,
-		OutgoingCltvRejectDelta: p.cfg.OutgoingCltvRejectDelta,
-		TowerClient:             p.cfg.TowerClient,
-		MaxOutgoingCltvExpiry:   p.cfg.MaxOutgoingCltvExpiry,
-		MaxFeeAllocation:        p.cfg.MaxChannelFeeAllocation,
-		MaxAnchorsCommitFeeRate: p.cfg.MaxAnchorsCommitFeeRate,
-		NotifyActiveLink:        p.cfg.ChannelNotifier.NotifyActiveLinkEvent,
-		NotifyActiveChannel:     p.cfg.ChannelNotifier.NotifyActiveChannelEvent,
-		NotifyInactiveChannel:   p.cfg.ChannelNotifier.NotifyInactiveChannelEvent,
-		NotifyInactiveLinkEvent: p.cfg.ChannelNotifier.NotifyInactiveLinkEvent,
-		HtlcNotifier:            p.cfg.HtlcNotifier,
-		GetAliases:              p.cfg.GetAliases,
-		PreviouslySentShutdown:  shutdownMsg,
-		DisallowRouteBlinding:   p.cfg.DisallowRouteBlinding,
-		MaxFeeExposure:          p.cfg.MaxFeeExposure,
-		ShouldFwdExpEndorsement: p.cfg.ShouldFwdExpEndorsement,
+		BatchSize:                  p.cfg.ChannelCommitBatchSize,
+		UnsafeReplay:               p.cfg.UnsafeReplay,
+		MinUpdateTimeout:           htlcswitch.DefaultMinLinkFeeUpdateTimeout,
+		MaxUpdateTimeout:           htlcswitch.DefaultMaxLinkFeeUpdateTimeout,
+		OutgoingCltvRejectDelta:    p.cfg.OutgoingCltvRejectDelta,
+		TowerClient:                p.cfg.TowerClient,
+		MaxOutgoingCltvExpiry:      p.cfg.MaxOutgoingCltvExpiry,
+		MaxFeeAllocation:           p.cfg.MaxChannelFeeAllocation,
+		MaxAnchorsCommitFeeRate:    p.cfg.MaxAnchorsCommitFeeRate,
+		NotifyActiveLink:           p.cfg.ChannelNotifier.NotifyActiveLinkEvent,
+		NotifyActiveChannel:        p.cfg.ChannelNotifier.NotifyActiveChannelEvent,
+		NotifyInactiveChannel:      p.cfg.ChannelNotifier.NotifyInactiveChannelEvent,
+		NotifyInactiveLinkEvent:    p.cfg.ChannelNotifier.NotifyInactiveLinkEvent,
+		HtlcNotifier:               p.cfg.HtlcNotifier,
+		GetAliases:                 p.cfg.GetAliases,
+		PreviouslySentShutdown:     shutdownMsg,
+		DisallowRouteBlinding:      p.cfg.DisallowRouteBlinding,
+		MaxFeeExposure:             p.cfg.MaxFeeExposure,
+		ShouldFwdExpAccountability: p.cfg.ShouldFwdExpAccountability,
 		DisallowQuiescence: p.cfg.DisallowQuiescence ||
 			!p.remoteFeatures.HasFeature(lnwire.QuiescenceOptional),
 		AuxTrafficShaper:     p.cfg.AuxTrafficShaper,
@@ -1572,22 +1580,22 @@ func (p *Brontide) maybeSendChannelUpdates() {
 		if err != nil {
 			p.log.Debugf("Unable to fetch channel update for "+
 				"ChannelPoint(%v), scid=%v: %v",
-				dbChan.FundingOutpoint, dbChan.ShortChanID, err)
+				dbChan.FundingOutpoint, dbChan.ShortChanID(), err)
 
 			return nil
 		}
 
 		p.log.Debugf("Sending channel update for ChannelPoint(%v), "+
-			"scid=%v", dbChan.FundingOutpoint, dbChan.ShortChanID)
+			"scid=%v", dbChan.FundingOutpoint, dbChan.ShortChanID())
 
 		// We'll send it as a normal message instead of using the lazy
 		// queue to prioritize transmission of the fresh update.
 		if err := p.SendMessage(false, chanUpd); err != nil {
 			err := fmt.Errorf("unable to send channel update for "+
-				"ChannelPoint(%v), scid=%v: %w",
+				"ChannelPoint(%v), scid=%v: %v",
 				dbChan.FundingOutpoint, dbChan.ShortChanID(),
 				err)
-			p.log.Errorf(err.Error())
+			p.log.Errorf("%v", err)
 
 			return err
 		}
@@ -1642,20 +1650,30 @@ func (p *Brontide) Disconnect(reason error) {
 	// started, otherwise we will skip reading it as this chan won't be
 	// closed, hence blocks forever.
 	if atomic.LoadInt32(&p.started) == 1 {
-		p.log.Debugf("Peer hasn't finished starting up yet, waiting " +
-			"on startReady signal before closing connection")
-
+		// First check if startup has already completed (non-blocking).
 		select {
 		case <-p.startReady:
-		case <-p.cg.Done():
-			return
+			// Startup already completed, no need to wait.
+
+		default:
+			// Still starting up, need to wait.
+			p.log.Debugf("Peer hasn't finished starting up yet, " +
+				"waiting on startReady signal before " +
+				"closing connection")
+
+			select {
+			case <-p.startReady:
+
+			case <-p.cg.Done():
+				return
+			}
 		}
 	}
 
 	err := fmt.Errorf("disconnecting %s, reason: %v", p, reason)
 	p.storeError(err)
 
-	p.log.Infof(err.Error())
+	p.log.Infof("%v", err)
 
 	// Stop PingManager before closing TCP connection.
 	p.pingManager.Stop()
@@ -1828,10 +1846,10 @@ func (ms *msgStream) Stop() {
 // readHandler directly to the target channel.
 func (ms *msgStream) msgConsumer() {
 	defer ms.wg.Done()
-	defer peerLog.Tracef(ms.stopMsg)
+	defer peerLog.Tracef("%s", ms.stopMsg)
 	defer atomic.StoreInt32(&ms.streamShutdown, 1)
 
-	peerLog.Tracef(ms.startMsg)
+	peerLog.Tracef("%s", ms.startMsg)
 
 	for {
 		// First, we'll check our condition. If the queue of messages
@@ -3090,7 +3108,8 @@ func (p *Brontide) reenableActiveChannels() {
 			}
 
 			p.log.Warnf("Channel(%v) cannot be enabled as " +
-				"ChanStatusManager reported inactive, retrying")
+				"ChanStatusManager reported inactive, retrying",
+				chanPoint)
 
 			// Add the channel to the retry map.
 			retryChans[chanPoint] = struct{}{}
@@ -3913,7 +3932,18 @@ func (p *Brontide) initRbfChanCloser(
 	peerPub := *p.IdentityKey()
 
 	msgMapper := chancloser.NewRbfMsgMapper(
-		uint32(startingHeight), chanID, peerPub,
+		func() uint32 {
+			_, height, err := p.cfg.ChainIO.GetBestBlock()
+			if err != nil {
+				peerLog.Errorf("Unable to get best block "+
+					"height: %v", err)
+
+				return uint32(startingHeight)
+			}
+
+			return uint32(height)
+		},
+		chanID, peerPub,
 	)
 
 	initialState := chancloser.ChannelActive{}
@@ -4253,7 +4283,7 @@ func (p *Brontide) handleLocalCloseReq(req *htlcswitch.ChanClose) {
 	if !ok || channel == nil {
 		err := fmt.Errorf("unable to close channel, ChannelID(%v) is "+
 			"unknown", chanID)
-		p.log.Errorf(err.Error())
+		p.log.Errorf("%v", err)
 		req.Err <- err
 		return
 	}
@@ -4283,7 +4313,7 @@ func (p *Brontide) handleLocalCloseReq(req *htlcswitch.ChanClose) {
 		}
 
 		if err != nil {
-			p.log.Errorf(err.Error())
+			p.log.Errorf("%v", err)
 			req.Err <- err
 		}
 
@@ -4465,9 +4495,22 @@ func (p *Brontide) finalizeChanClosure(chanCloser *chancloser.ChanCloser) {
 	localOut := chanCloser.LocalCloseOutput()
 	remoteOut := chanCloser.RemoteCloseOutput()
 	auxOut := chanCloser.AuxOutputs()
+
+	// Determine the number of confirmations to wait before signaling a
+	// successful cooperative close, scaled by channel capacity (see
+	// CloseConfsForCapacity). Check if we have a config override for
+	// testing purposes.
+	chanCapacity := chanCloser.Channel().Capacity
+	numConfs := p.cfg.ChannelCloseConfs.UnwrapOrFunc(func() uint32 {
+		// No override, use normal capacity-based scaling.
+		return lnwallet.CloseConfsForCapacity(chanCapacity)
+	})
+
+	// Register for full confirmation to send the final update.
+	closeScript := closingTx.TxOut[0].PkScript
 	go WaitForChanToClose(
 		chanCloser.NegotiationHeight(), notifier, errChan,
-		&chanPoint, &closingTxid, closingTx.TxOut[0].PkScript, func() {
+		&chanPoint, &closingTxid, closeScript, numConfs, func() {
 			// Respond to the local subsystem which requested the
 			// channel closure.
 			if closeReq != nil {
@@ -4490,14 +4533,14 @@ func (p *Brontide) finalizeChanClosure(chanCloser *chancloser.ChanCloser) {
 // the function, then it will be sent over the errChan.
 func WaitForChanToClose(bestHeight uint32, notifier chainntnfs.ChainNotifier,
 	errChan chan error, chanPoint *wire.OutPoint,
-	closingTxID *chainhash.Hash, closeScript []byte, cb func()) {
+	closingTxID *chainhash.Hash, closeScript []byte, numConfs uint32,
+	cb func()) {
 
 	peerLog.Infof("Waiting for confirmation of close of ChannelPoint(%v) "+
 		"with txid: %v", chanPoint, closingTxID)
 
-	// TODO(roasbeef): add param for num needed confs
 	confNtfn, err := notifier.RegisterConfirmationsNtfn(
-		closingTxID, closeScript, 1, bestHeight,
+		closingTxID, closeScript, numConfs, bestHeight,
 	)
 	if err != nil {
 		if errChan != nil {
@@ -5229,6 +5272,15 @@ func (p *Brontide) addActiveChannel(c *lnpeer.NewChannel) error {
 		chanOpts = append(chanOpts, lnwallet.WithAuxResolver(s))
 	})
 
+	p.cfg.AuxTrafficShaper.WhenSome(
+		func(ts htlcswitch.AuxTrafficShaper) {
+			val := p.createHtlcValidator(c.OpenChannel, ts)
+			chanOpts = append(
+				chanOpts,
+				lnwallet.WithAuxHtlcValidator(val),
+			)
+		},
+	)
 	// If not already active, we'll add this channel to the set of active
 	// channels, so we can look it up later easily according to its channel
 	// ID.
@@ -5316,7 +5368,7 @@ func (p *Brontide) handleNewActiveChannel(req *newChannelMsg) {
 		// Update the next revocation point.
 		err := p.updateNextRevocation(newChan.OpenChannel)
 		if err != nil {
-			p.log.Errorf(err.Error())
+			p.log.Errorf("%v", err)
 		}
 
 		return
@@ -5325,7 +5377,7 @@ func (p *Brontide) handleNewActiveChannel(req *newChannelMsg) {
 	// This is a new channel, we now add it to the map.
 	if err := p.addActiveChannel(req.channel); err != nil {
 		// Log and send back the error to the request.
-		p.log.Errorf(err.Error())
+		p.log.Errorf("%v", err)
 		req.err <- err
 
 		return
@@ -5492,4 +5544,90 @@ func (p *Brontide) TriggerCoopCloseRbfBump(ctx context.Context,
 	}
 
 	return closeUpdates, nil
+}
+
+type auxHtlcValidator struct {
+	peer   *Brontide
+	dbChan *channeldb.OpenChannel
+	ts     htlcswitch.AuxTrafficShaper
+}
+
+// ValidateHtlc performs final aux balance validation before an HTLC is added
+// to the channel state. It calls into the traffic shaper's PaymentBandwidth
+// method to check external balance against the most up-to-date channel state,
+// preventing race conditions where multiple HTLCs could be approved based on
+// stale bandwidth.
+func (v *auxHtlcValidator) ValidateHtlc(amount,
+	linkBandwidth lnwire.MilliLoki,
+	customRecords lnwire.CustomRecords,
+	view lnwallet.AuxHtlcView) error {
+
+	// Get the short channel ID for logging.
+	scid := v.dbChan.ShortChannelID
+
+	// Extract the HTLC custom records to pass to the traffic shaper.
+	var htlcBlob fn.Option[tlv.Blob]
+	if len(customRecords) > 0 {
+		blob, err := customRecords.Serialize()
+		if err != nil {
+			return fmt.Errorf("unable to serialize "+
+				"custom records: %v", err)
+		}
+		htlcBlob = fn.Some(blob)
+	}
+
+	// Get the funding and commitment blobs for this channel.
+	fundingBlob := v.dbChan.CustomBlob
+	commitmentBlob := v.dbChan.LocalCommitment.CustomBlob
+
+	// Check if this channel should be handled by the traffic shaper. If
+	// not, we skip the aux validation entirely and allow the HTLC to
+	// proceed through normal validation.
+	shouldHandle, err := v.ts.ShouldHandleTraffic(
+		scid, fundingBlob, htlcBlob,
+	)
+	if err != nil {
+		return fmt.Errorf("traffic shaper failed to decide "+
+			"whether to handle traffic: %v", err)
+	}
+	if !shouldHandle {
+		return nil
+	}
+
+	peer := route.NewVertex(v.peer.IdentityKey())
+
+	// Call the traffic shaper's PaymentBandwidth method with the current
+	// state. This performs the same bandwidth checks as during
+	// pathfinding/forwarding, but against the absolute latest channel
+	// state.
+	//
+	// The linkBandwidth is provided by the channel and represents the
+	// current available balance, which is used by the traffic shaper to
+	// ensure we don't dip below channel reserves.
+	bandwidth, err := v.ts.PaymentBandwidth(
+		fundingBlob, htlcBlob, commitmentBlob,
+		linkBandwidth, amount, view, peer,
+	)
+	if err != nil {
+		return fmt.Errorf("traffic shaper bandwidth check "+
+			"failed: %v", err)
+	}
+
+	if amount > bandwidth {
+		return fmt.Errorf("insufficient aux bandwidth: "+
+			"need %v, have %v (scid=%v)", amount,
+			bandwidth, scid)
+	}
+
+	return nil
+}
+
+func (p *Brontide) createHtlcValidator(dbChan *channeldb.OpenChannel,
+	ts htlcswitch.AuxTrafficShaper) lnwallet.AuxHtlcValidator {
+
+	return &auxHtlcValidator{
+		peer:   p,
+		dbChan: dbChan,
+		ts:     ts,
+	}
 }

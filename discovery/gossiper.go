@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -878,7 +880,14 @@ func (d *AuthenticatedGossiper) stop() {
 func (d *AuthenticatedGossiper) ProcessRemoteAnnouncement(ctx context.Context,
 	msg lnwire.Message, peer lnpeer.Peer) chan error {
 
-	errChan := make(chan error, 1)
+	// Buffer up to two messages on errChan since up to two messages may be
+	// written and not all callers of this function actually read from
+	// errChan. Without this buffer goroutines end up blocking on writes to
+	// errChan, which prevents the gossiper from shutting down cleanly.
+	//
+	// TODO(ziggie): Redesign this once the actor model pattern becomes
+	// available. See https://github.com/lightningnetwork/lnd/pull/9820.
+	errChan := make(chan error, 2)
 
 	// For messages in the known set of channel series queries, we'll
 	// dispatch the message directly to the GossipSyncer, and skip the main
@@ -1519,19 +1528,33 @@ func (d *AuthenticatedGossiper) networkHandler(ctx context.Context) {
 			// Channel announcement signatures are amongst the only
 			// messages that we'll process serially.
 			case *lnwire.AnnounceSignatures1:
-				emittedAnnouncements, _ := d.processNetworkAnnouncement(
-					ctx, announcement,
-				)
-				log.Debugf("Processed network message %s, "+
-					"returned len(announcements)=%v",
-					announcement.msg.MsgType(),
-					len(emittedAnnouncements))
-
-				if emittedAnnouncements != nil {
-					announcements.AddMsgs(
-						emittedAnnouncements...,
+				// Process in an anonymous function so we can
+				// recover from any panics without crashing the
+				// main networkHandler goroutine. We pass nil
+				// for jobID since AnnounceSignatures bypass the
+				// validation barrier.
+				func() {
+					defer d.finalizeGossipProcessing(
+						ctx, "processing",
+						announcement, nil,
 					)
-				}
+
+					//nolint:ll
+					emittedAnnouncements, _ := d.processNetworkAnnouncement(
+						ctx, announcement,
+					)
+					log.Debugf("Processed network "+
+						"message %s, returned "+
+						"len(announcements)=%v",
+						announcement.msg.MsgType(),
+						len(emittedAnnouncements))
+
+					if emittedAnnouncements != nil {
+						announcements.AddMsgs(
+							emittedAnnouncements...,
+						)
+					}
+				}()
 				continue
 			}
 
@@ -1614,7 +1637,7 @@ func (d *AuthenticatedGossiper) handleNetworkMessages(ctx context.Context,
 	nMsg *networkMsg, deDuped *deDupedAnnouncements, jobID JobID) {
 
 	defer d.wg.Done()
-	defer d.vb.CompleteJob()
+	defer d.finalizeGossipProcessing(ctx, "processing", nMsg, &jobID)
 
 	// We should only broadcast this message forward if it originated from
 	// us or it wasn't received as part of our initial historical sync.
@@ -1667,6 +1690,83 @@ func (d *AuthenticatedGossiper) handleNetworkMessages(ctx context.Context,
 	} else if newAnns != nil {
 		log.Trace("Skipping broadcast of announcements received " +
 			"during initial graph sync")
+	}
+}
+
+// finalizeGossipProcessing handles cleanup for gossip message processing,
+// including job completion and panic recovery. It guards gossip goroutines
+// against panics to keep the daemon alive. On panic, it logs the error,
+// signals dependents, and reports back to the caller if possible.
+//
+// NOTE: This function MUST be called via defer to recover from panics.
+func (d *AuthenticatedGossiper) finalizeGossipProcessing(logCtx context.Context,
+	ctxStr string, nMsg *networkMsg, jobID *JobID) {
+
+	// Always complete the job when provided, regardless of panic state.
+	// This ensures job slots are returned even if callers forget or
+	// misordering occurs.
+	if jobID != nil {
+		d.vb.CompleteJob()
+	}
+
+	r := recover()
+	if r == nil {
+		return
+	}
+
+	msgType := "unknown"
+	if nMsg != nil && nMsg.msg != nil {
+		msgType = nMsg.msg.MsgType().String()
+	}
+
+	var peerPub string
+	if nMsg != nil && nMsg.peer != nil {
+		peerPub = route.NewVertex(nMsg.peer.IdentityKey()).String()
+	} else {
+		peerPub = "unknown"
+	}
+
+	log.ErrorS(logCtx, "Panic during gossip message processing",
+		fmt.Errorf("%v", r),
+		slog.String("context", ctxStr),
+		slog.String("msg_type", msgType),
+		slog.String("peer", peerPub),
+	)
+	// Truncate the stack trace to avoid filling up disk space if an
+	// attacker repeatedly triggers panics.
+	const maxStackSize = 8192
+	stack := debug.Stack()
+	if len(stack) > maxStackSize {
+		stack = stack[:maxStackSize]
+	}
+	log.DebugS(logCtx, "Panic stack trace",
+		slog.String("stack", string(stack)),
+	)
+
+	// Signal any dependents waiting on this message so they don't block
+	// forever.
+	if nMsg != nil && nMsg.msg != nil && jobID != nil {
+		if err := d.vb.SignalDependents(
+			nMsg.msg, *jobID,
+		); err != nil {
+			log.ErrorS(logCtx, "SignalDependents after panic failed",
+				err,
+				slog.String("msg_type", nMsg.msg.MsgType().String()),
+			)
+		}
+	}
+
+	// Send an error back to the caller if possible.
+	if nMsg != nil && nMsg.err != nil {
+		select {
+		case nMsg.err <- fmt.Errorf("panic while %s gossip "+
+			"message %s: %v", ctxStr, msgType, r):
+		default:
+			log.WarnS(logCtx, "Unable to send panic error, "+
+				"error channel blocked", nil,
+				slog.String("msg_type", msgType),
+			)
+		}
 	}
 }
 
@@ -2240,7 +2340,7 @@ func (d *AuthenticatedGossiper) processZombieUpdate(_ context.Context,
 	switch {
 	case errors.Is(err, graphdb.ErrZombieEdgeNotFound):
 		log.Errorf("edge with chan_id=%v was not found in the "+
-			"zombie index: %v", err)
+			"zombie index: %v", scid, err)
 
 		return nil
 
@@ -2502,6 +2602,22 @@ func (d *AuthenticatedGossiper) handleNodeAnnouncement(ctx context.Context,
 		"node=%x, source=%x", nMsg.peer, timestamp, nodeAnn.NodeID,
 		nMsg.source.SerializeCompressed())
 
+	// Although not explicitly required by BOLT 7 for node announcements
+	// (unlike channel updates), we still enforce non-zero timestamps as a
+	// sanity check. A timestamp of zero is likely indicative of a bug or
+	// uninitialized message.
+	if nodeAnn.Timestamp == 0 {
+		err := fmt.Errorf("rejecting node announcement with zero "+
+			"timestamp for node %x", nodeAnn.NodeID)
+
+		log.Warnf("Rejecting node announcement from peer=%v: %v",
+			nMsg.peer, err)
+
+		nMsg.err <- err
+
+		return nil, false
+	}
+
 	// We'll quickly ask the router if it already has a newer update for
 	// this node so we can skip validating signatures if not required.
 	if d.cfg.Graph.IsStaleNode(ctx, nodeAnn.NodeID, timestamp) {
@@ -2582,7 +2698,7 @@ func (d *AuthenticatedGossiper) handleChanAnnouncement(ctx context.Context,
 	if !bytes.Equal(ann.ChainHash[:], chainHash[:]) {
 		err := fmt.Errorf("ignoring ChannelAnnouncement1 from chain=%v"+
 			", gossiper on chain=%v", ann.ChainHash, chainHash)
-		log.Errorf(err.Error())
+		log.Errorf("%v", err)
 
 		key := newRejectCacheKey(
 			ann.GossipVersion(),
@@ -2600,7 +2716,7 @@ func (d *AuthenticatedGossiper) handleChanAnnouncement(ctx context.Context,
 	// not erroring out would be a DoS vector.
 	if nMsg.isRemote && d.cfg.IsAlias(scid) {
 		err := fmt.Errorf("ignoring remote alias channel=%v", scid)
-		log.Errorf(err.Error())
+		log.Errorf("%v", err)
 
 		key := newRejectCacheKey(
 			ann.GossipVersion(),
@@ -3017,7 +3133,7 @@ func (d *AuthenticatedGossiper) handleChanUpdate(ctx context.Context,
 	if !bytes.Equal(upd.ChainHash[:], chainHash[:]) {
 		err := fmt.Errorf("ignoring ChannelUpdate from chain=%v, "+
 			"gossiper on chain=%v", upd.ChainHash, chainHash)
-		log.Errorf(err.Error())
+		log.Errorf("%v", err)
 
 		key := newRejectCacheKey(
 			upd.GossipVersion(),
@@ -3055,6 +3171,27 @@ func (d *AuthenticatedGossiper) handleChanUpdate(ctx context.Context,
 	// whether this update is stale or is for a zombie channel in order to
 	// quickly reject it.
 	timestamp := time.Unix(int64(upd.Timestamp), 0)
+
+	// Per BOLT 7, the timestamp MUST be greater than 0.
+	if upd.Timestamp == 0 {
+		err := fmt.Errorf("rejecting channel update with zero "+
+			"timestamp for short_chan_id(%v)", shortChanID)
+
+		// Only increase ban score for remote peers.
+		if nMsg.isRemote {
+			log.Warnf("Increasing ban score for peer=%v: %v",
+				nMsg.peer, err)
+
+			dcErr := d.handleBadPeer(nMsg.peer)
+			if dcErr != nil {
+				err = dcErr
+			}
+		}
+
+		nMsg.err <- err
+
+		return nil, false
+	}
 
 	// Fetch the SCID we should be using to lock the channelMtx and make
 	// graph queries with.

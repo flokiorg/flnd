@@ -15,13 +15,6 @@ const (
 	// here for convenience.
 	witnessScaleFactor = blockchain.WitnessScaleFactor
 
-	// The weight(weight), which is different from the !size! (see BIP-141),
-	// is calculated as:
-	// Weight = 4 * BaseSize + WitnessSize (weight).
-	// BaseSize - size of the transaction without witness data (bytes).
-	// WitnessSize - witness size (bytes).
-	// Weight - the metric for determining the weight of the transaction.
-
 	// P2WPKHSize 22 bytes
 	//	- OP_0: 1 byte
 	//	- OP_DATA: 1 byte (PublicKeyHASH160 length)
@@ -275,8 +268,14 @@ const (
 	HtlcTimeoutWeight = 663
 
 	// TaprootHtlcTimeoutWeight is the total weight of the taproot HTLC
-	// timeout transaction.
+	// timeout transaction (using staging scripts).
 	TaprootHtlcTimeoutWeight = 645
+
+	// TaprootHtlcTimeoutWeightFinal is the total weight of the taproot HTLC
+	// timeout transaction using production scripts (with OP_CHECKSIGVERIFY
+	// instead of OP_CHECKSIG + OP_DROP). This is not referenced at runtime
+	// because taproot channels use zero-fee HTLC transactions.
+	TaprootHtlcTimeoutWeightFinal = 641
 
 	// HtlcSuccessWeight 703 weight
 	// HtlcSuccessWeight is the weight of the HTLC success transaction
@@ -284,8 +283,14 @@ const (
 	HtlcSuccessWeight = 703
 
 	// TaprootHtlcSuccessWeight is the total weight of the taproot HTLC
-	// success transaction.
+	// success transaction (using staging scripts).
 	TaprootHtlcSuccessWeight = 705
+
+	// TaprootHtlcSuccessWeightFinal is the total weight of the taproot HTLC
+	// success transaction using production scripts (with OP_CHECKSIGVERIFY
+	// instead of OP_CHECKSIG + OP_DROP). This is not referenced at runtime
+	// because taproot channels use zero-fee HTLC transactions.
+	TaprootHtlcSuccessWeightFinal = 701
 
 	// HtlcConfirmedScriptOverhead 3 bytes
 	// HtlcConfirmedScriptOverhead is the extra length of an HTLC script
@@ -625,6 +630,16 @@ const (
 	TaprootToLocalWitnessSize = 1 + 1 + 65 + 1 + TaprootToLocalScriptSize +
 		1 + TaprootBaseControlBlockWitnessSize + 32
 
+	// TaprootToLocalScriptSizeFinal: 40 bytes (production scripts).
+	// Replaces OP_CHECKSIG + OP_CSV + OP_DROP with
+	// OP_CHECKSIGVERIFY + OP_CSV, saving 1 byte.
+	TaprootToLocalScriptSizeFinal = TaprootToLocalScriptSize - 1
+
+	// TaprootToLocalWitnessSizeFinal: 174 bytes (production scripts).
+	TaprootToLocalWitnessSizeFinal = 1 + 1 + 65 + 1 +
+		TaprootToLocalScriptSizeFinal +
+		1 + TaprootBaseControlBlockWitnessSize + 32
+
 	// TaprootToLocalRevokeScriptSize: 68 bytes
 	//	- OP_DATA: 1 byte
 	//	- local key: 32 bytes
@@ -667,6 +682,16 @@ const (
 		TaprootToRemoteScriptSize + 1 +
 		TaprootBaseControlBlockWitnessSize)
 
+	// TaprootToRemoteScriptSizeFinal: 36 bytes (production scripts).
+	// Replaces OP_CHECKSIG + OP_1 + OP_CSV + OP_DROP with
+	// OP_CHECKSIGVERIFY + OP_1 + OP_CSV, saving 1 byte.
+	TaprootToRemoteScriptSizeFinal = TaprootToRemoteScriptSize - 1
+
+	// TaprootToRemoteWitnessSizeFinal: 138 bytes (production scripts).
+	TaprootToRemoteWitnessSizeFinal = (1 + 1 + 65 + 1 +
+		TaprootToRemoteScriptSizeFinal + 1 +
+		TaprootBaseControlBlockWitnessSize)
+
 	// TaprootAnchorWitnessSize: 67 bytes
 	//
 	// In this case, we use the custom sighash size to give the most
@@ -693,6 +718,17 @@ const (
 	//      - base_control_block_size: 33 bytes
 	TaprootSecondLevelHtlcWitnessSize = 1 + 1 + 65 + 1 +
 		TaprootSecondLevelHtlcScriptSize + 1 +
+		TaprootBaseControlBlockWitnessSize
+
+	// TaprootSecondLevelHtlcScriptSizeFinal: 40 bytes (production
+	// scripts). Replaces OP_CHECKSIG + OP_DROP with OP_CHECKSIGVERIFY,
+	// saving 1 byte.
+	//nolint:ll
+	TaprootSecondLevelHtlcScriptSizeFinal = TaprootSecondLevelHtlcScriptSize - 1
+
+	// TaprootSecondLevelHtlcWitnessSizeFinal: production scripts.
+	TaprootSecondLevelHtlcWitnessSizeFinal = 1 + 1 + 65 + 1 +
+		TaprootSecondLevelHtlcScriptSizeFinal + 1 +
 		TaprootBaseControlBlockWitnessSize
 
 	// TaprootSecondLevelRevokeWitnessSize
@@ -729,6 +765,13 @@ const (
 	TaprootHtlcOfferedRemoteTimeoutScriptSize = (1 + 32 + 1 + 1 + 1 + 1 +
 		1 + 4 + 1 + 1)
 
+	// TaprootHtlcOfferedRemoteTimeoutScriptSizeFinal: 41 bytes
+	// (production scripts). Replaces OP_CHECKSIG with OP_CHECKSIGVERIFY
+	// (saves 1 byte by dropping the trailing OP_DROP), and
+	// OP_CHECKSEQUENCEVERIFY + OP_DROP becomes CSV + OP_VERIFY (same
+	// size). Net saving: 1 byte.
+	TaprootHtlcOfferedRemoteTimeoutScriptSizeFinal = TaprootHtlcOfferedRemoteTimeoutScriptSize - 1 //nolint:ll
+
 	// TaprootHtlcOfferedRemoteTimeoutwitSize: 176 bytes
 	//      - number_of_witness_elements: 1 byte
 	//      - sig_len: 1 byte
@@ -742,7 +785,13 @@ const (
 		TaprootHtlcOfferedRemoteTimeoutScriptSize + 1 +
 		TaprootBaseControlBlockWitnessSize + 32
 
-	// TaprootHtlcOfferedLocalTmeoutScriptSize:
+	// TaprootHtlcOfferedRemoteTimeoutWitnessSizeFinal: 174 bytes
+	// (production scripts).
+	TaprootHtlcOfferedRemoteTimeoutWitnessSizeFinal = 1 + 1 + 65 + 1 +
+		TaprootHtlcOfferedRemoteTimeoutScriptSizeFinal + 1 +
+		TaprootBaseControlBlockWitnessSize + 32
+
+	// TaprootHtlcOfferedLocalTimeoutScriptSize: 66 bytes
 	//	- OP_DATA: 1 byte (pub key len)
 	//	- local_key: 32 bytes
 	//	- OP_CHECKSIGVERIFY: 1 byte
@@ -751,14 +800,20 @@ const (
 	//	- OP_CHECKSIG: 1 byte
 	TaprootHtlcOfferedLocalTimeoutScriptSize = 1 + 32 + 1 + 1 + 32 + 1
 
-	// TaprootOfferedLocalTimeoutWitnessSize
+	// TaprootHtlcOfferedLocalTimeoutScriptSizeFinal is the same as the
+	// staging version since SenderHTLCTapLeafTimeout ignores script
+	// options (the script is already identical between staging and
+	// production).
+	TaprootHtlcOfferedLocalTimeoutScriptSizeFinal = TaprootHtlcOfferedLocalTimeoutScriptSize //nolint:ll
+
+	// TaprootOfferedLocalTimeoutWitnessSize: 237 bytes
 	//      - number_of_witness_elements: 1 byte
 	//      - sig_len: 1 byte
 	//      - sweep_sig: 65 bytes (worst case w/o sighash default)
 	//      - sig_len: 1 byte
 	//      - sweep_sig: 65 bytes (worst case w/o sighash default)
 	//      - script_len: 1 byte
-	//      - taproot_offered_htlc_script_timeout_size:
+	//      - taproot_offered_htlc_script_timeout_size: 66 bytes
 	//      - ctrl_block_len: 1 byte
 	//      - base_control_block_size: 33 bytes
 	//      - sibilng_merkle_proof: 32 bytes
@@ -766,7 +821,16 @@ const (
 		TaprootHtlcOfferedLocalTimeoutScriptSize + 1 +
 		TaprootBaseControlBlockWitnessSize + 32
 
-	// TaprootHtlcAcceptedRemoteSuccessScriptSize:
+	// TaprootOfferedLocalTimeoutWitnessSizeFinal: 235 bytes
+	// (production scripts). Not currently referenced because there is no
+	// dedicated Final witness type for this spending path — the script is
+	// identical between staging and final as SenderHTLCTapLeafTimeout
+	// ignores script options.
+	TaprootOfferedLocalTimeoutWitnessSizeFinal = 1 + 1 + 65 + 1 + 65 + 1 +
+		TaprootHtlcOfferedLocalTimeoutScriptSizeFinal + 1 +
+		TaprootBaseControlBlockWitnessSize + 32
+
+	// TaprootHtlcAcceptedRemoteSuccessScriptSize: 73 bytes
 	//      - OP_SIZE: 1 byte
 	//      - OP_DATA: 1 byte
 	//      - 32: 1 byte
@@ -784,14 +848,19 @@ const (
 	TaprootHtlcAcceptedRemoteSuccessScriptSize = 1 + 1 + 1 + 1 + 1 + 1 +
 		1 + 20 + 1 + 32 + 1 + 1 + 1 + 1
 
-	// TaprootHtlcAcceptedRemoteSuccessScriptSize:
+	// TaprootHtlcAcceptedRemoteSuccessScriptSizeFinal: 72 bytes
+	// (production scripts). Replaces OP_CHECKSIG + OP_CSV + OP_DROP with
+	// OP_CHECKSIGVERIFY + OP_CSV, saving 1 byte (the trailing OP_DROP).
+	TaprootHtlcAcceptedRemoteSuccessScriptSizeFinal = TaprootHtlcAcceptedRemoteSuccessScriptSize - 1 //nolint:ll
+
+	// TaprootHtlcAcceptedRemoteSuccessWitnessSize: 167 bytes
 	//      - number_of_witness_elements: 1 byte
 	//      - sig_len: 1 byte
 	//      - sweep_sig: 65 bytes (worst case w/o sighash default)
 	//      - payment_preimage_length: 1 byte
 	//      - payment_preimage: 32 bytes
 	//      - script_len: 1 byte
-	//      - taproot_offered_htlc_script_success_size:
+	//      - taproot_offered_htlc_script_success_size: 73 bytes
 	//      - ctrl_block_len: 1 byte
 	//      - base_control_block_size: 33 bytes
 	//      - sibilng_merkle_proof: 32 bytes
@@ -799,7 +868,14 @@ const (
 		TaprootHtlcAcceptedRemoteSuccessScriptSize + 1 +
 		TaprootBaseControlBlockWitnessSize + 32
 
-	// TaprootHtlcAcceptedLocalSuccessScriptSize:
+	// TaprootHtlcAcceptedRemoteSuccessWitnessSizeFinal: 166 bytes
+	// (production scripts).
+	TaprootHtlcAcceptedRemoteSuccessWitnessSizeFinal = 1 + 1 + 65 +
+		1 + 32 + 1 +
+		TaprootHtlcAcceptedRemoteSuccessScriptSizeFinal + 1 +
+		TaprootBaseControlBlockWitnessSize + 32
+
+	// TaprootHtlcAcceptedLocalSuccessScriptSize: 104 bytes
 	//      - OP_SIZE: 1 byte
 	//      - OP_DATA: 1 byte
 	//      - 32: 1 byte
@@ -817,7 +893,13 @@ const (
 	TaprootHtlcAcceptedLocalSuccessScriptSize = 1 + 1 + 1 + 1 + 1 + 1 +
 		20 + 1 + 1 + 32 + 1 + 1 + 32 + 1
 
-	// TaprootHtlcAcceptedLocalSuccessWitnessSize:
+	// TaprootHtlcAcceptedLocalSuccessScriptSizeFinal is the same as the
+	// staging version since ReceiverHtlcTapLeafSuccess ignores script
+	// options (the script is already identical between staging and
+	// production).
+	TaprootHtlcAcceptedLocalSuccessScriptSizeFinal = TaprootHtlcAcceptedLocalSuccessScriptSize //nolint:ll
+
+	// TaprootHtlcAcceptedLocalSuccessWitnessSize: 275 bytes
 	//      - number_of_witness_elements: 1 byte
 	//      - sig_len: 1 byte
 	//      - sweep_sig: 65 bytes (worst case w/o sighash default)
@@ -826,12 +908,22 @@ const (
 	//      - payment_preimage_length: 1 byte
 	//      - payment_preimage: 32 bytes
 	//      - script_len: 1 byte
-	//      - taproot_accepted_htlc_script_success_size:
+	//      - taproot_accepted_htlc_script_success_size: 104 bytes
 	//      - ctrl_block_len: 1 byte
 	//      - base_control_block_size: 33 bytes
 	//      - sibilng_merkle_proof: 32 bytes
 	TaprootHtlcAcceptedLocalSuccessWitnessSize = 1 + 1 + 65 + 1 + 65 + 1 +
 		32 + 1 + TaprootHtlcAcceptedLocalSuccessScriptSize + 1 +
+		TaprootBaseControlBlockWitnessSize + 32
+
+	// TaprootHtlcAcceptedLocalSuccessWitnessSizeFinal: 271
+	// bytes (production scripts). Not currently referenced because there
+	// is no dedicated Final witness type for this spending path — the
+	// script is identical between staging and final as
+	// ReceiverHtlcTapLeafSuccess ignores script options.
+	TaprootHtlcAcceptedLocalSuccessWitnessSizeFinal = 1 + 1 +
+		65 + 1 + 65 + 1 + 32 + 1 +
+		TaprootHtlcAcceptedLocalSuccessScriptSizeFinal + 1 +
 		TaprootBaseControlBlockWitnessSize + 32
 )
 

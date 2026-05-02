@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"slices"
 	"sync"
 
@@ -834,6 +835,18 @@ type LightningChannel struct {
 type ChannelOpt func(*channelOpts)
 
 // channelOpts is the set of options used to create a new channel.
+// AuxHtlcValidator is an interface that allows external components (like an
+// aux traffic shaper) to perform final validation checks against the most
+// up-to-date channel state before the HTLC is committed.
+type AuxHtlcValidator interface {
+	// ValidateHtlc checks whether the given HTLC can be added to the
+	// channel given the current link bandwidth, custom records, and HTLC
+	// view.
+	ValidateHtlc(amount, linkBandwidth lnwire.MilliLoki,
+		customRecords lnwire.CustomRecords,
+		view AuxHtlcView) error
+}
+
 type channelOpts struct {
 	localNonce  *musig2.Nonces
 	remoteNonce *musig2.Nonces
@@ -841,6 +854,14 @@ type channelOpts struct {
 	leafStore   fn.Option[AuxLeafStore]
 	auxSigner   fn.Option[AuxSigner]
 	auxResolver fn.Option[AuxContractResolver]
+
+	// auxHtlcValidator is an optional validator that performs custom
+	// validation on HTLCs before they are added to the channel state.
+	auxHtlcValidator fn.Option[AuxHtlcValidator]
+
+	// customSigningRand is an optional random source for generating
+	// deterministic JIT signing nonces in MuSig2 sessions.
+	customSigningRand fn.Option[io.Reader]
 
 	skipNonceInit bool
 }
@@ -891,6 +912,27 @@ func WithAuxSigner(signer AuxSigner) ChannelOpt {
 func WithAuxResolver(resolver AuxContractResolver) ChannelOpt {
 	return func(o *channelOpts) {
 		o.auxResolver = fn.Some[AuxContractResolver](resolver)
+	}
+}
+
+// WithCustomSigningRand is used to provide a custom random source for
+// generating deterministic JIT signing nonces in MuSig2 sessions.
+//
+// WARNING: This MUST only be used for test vector generation. Setting this in
+// production will produce deterministic nonces, enabling private key extraction
+// via nonce reuse.
+func WithCustomSigningRand(rand io.Reader) ChannelOpt {
+	return func(o *channelOpts) {
+		o.customSigningRand = fn.Some[io.Reader](rand)
+	}
+}
+
+// WithAuxHtlcValidator is used to specify a custom HTLC validator for the
+// channel. This allows external components to perform additional validation on
+// HTLCs before they are added to the channel state.
+func WithAuxHtlcValidator(validator AuxHtlcValidator) ChannelOpt {
+	return func(o *channelOpts) {
+		o.auxHtlcValidator = fn.Some(validator)
 	}
 }
 
@@ -2036,6 +2078,11 @@ type BreachRetribution struct {
 	// RemoteResolutionBlob is a blob used for aux channels that permits an
 	// honest party to sweep the remote commitment output.
 	RemoteResolutionBlob fn.Option[tlv.Blob]
+
+	// ChanType is the channel type of the breached channel, used to
+	// determine whether production taproot scripts should be used when
+	// constructing justice transactions.
+	ChanType channeldb.ChannelType
 }
 
 // NewBreachRetribution creates a new fully populated BreachRetribution for the
@@ -2581,6 +2628,7 @@ func createBreachRetribution(revokedLog *channeldb.RevocationLog,
 		RemoteOutpoint:   theirOutpoint,
 		HtlcRetributions: htlcRetributions,
 		KeyRing:          keyRing,
+		ChanType:         chanState.ChanType,
 	}, ourAmt, theirAmt, nil
 }
 
@@ -2656,6 +2704,7 @@ func createBreachRetributionLegacy(revokedLog *channeldb.ChannelCommitment,
 		RemoteOutpoint:   theirOutpoint,
 		HtlcRetributions: htlcRetributions,
 		KeyRing:          keyRing,
+		ChanType:         chanState.ChanType,
 	}, ourAmt, theirAmt, nil
 }
 
@@ -6703,7 +6752,7 @@ func GetSignedCommitTx(inputs SignedCommitTxInputs,
 		musigSession := NewPartialMusigSession(
 			*localNonce, inputs.OurKey, inputs.TheirKey, signer,
 			inputs.SignDesc.Output, LocalMusigCommit,
-			tapscriptTweak,
+			tapscriptTweak, fn.None[io.Reader](),
 		)
 
 		var remoteSig lnwire.PartialSigWithNonce
@@ -10051,13 +10100,14 @@ func (lc *LightningChannel) InitRemoteMusigNonces(remoteNonce *musig2.Nonces,
 	// TODO(roasbeef): propagate rename of signing and verification nonces
 
 	sessionCfg := &MusigSessionCfg{
-		LocalKey:       localChanCfg.MultiSigKey,
-		RemoteKey:      remoteChanCfg.MultiSigKey,
-		LocalNonce:     *localNonce,
-		RemoteNonce:    *remoteNonce,
-		Signer:         lc.Signer,
-		InputTxOut:     &lc.fundingOutput,
-		TapscriptTweak: lc.channelState.TapscriptRoot,
+		LocalKey:        localChanCfg.MultiSigKey,
+		RemoteKey:       remoteChanCfg.MultiSigKey,
+		LocalNonce:      *localNonce,
+		RemoteNonce:     *remoteNonce,
+		Signer:          lc.Signer,
+		InputTxOut:      &lc.fundingOutput,
+		TapscriptTweak:  lc.channelState.TapscriptRoot,
+		CustomNonceRand: lc.opts.customSigningRand,
 	}
 	lc.musigSessions = NewMusigPairSession(
 		sessionCfg,

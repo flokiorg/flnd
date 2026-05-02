@@ -53,7 +53,7 @@ import (
 	"github.com/flokiorg/flnd/lnutils"
 	"github.com/flokiorg/flnd/lnwallet"
 	"github.com/flokiorg/flnd/lnwallet/chainfee"
-	"github.com/flokiorg/flnd/lnwallet/chancloser"
+	chcl "github.com/flokiorg/flnd/lnwallet/chancloser"
 	"github.com/flokiorg/flnd/lnwallet/chanfunding"
 	"github.com/flokiorg/flnd/lnwallet/rpcwallet"
 	"github.com/flokiorg/flnd/lnwire"
@@ -138,7 +138,7 @@ var (
 	// to the value under the Flokicoin chain as default.
 	//
 	// TODO(roasbeef): add command line param to modify.
-	MaxFundingAmount = funding.MaxFlcFundingAmount
+	MaxFundingAmount = funding.MaxFlokicoinFundingAmount
 
 	// EndorsementExperimentEnd is the time after which nodes should stop
 	// propagating experimental endorsement signals.
@@ -640,24 +640,40 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 			"in a standalone lnd build")
 	}
 
+	// If taproot channels are enabled, we also enable the RBF cooperative
+	// close protocol, as it is required for taproot channel
+	// interoperability.
+	//
+	// Exception: when taproot-overlay channels are enabled we do NOT
+	// auto-enable RBF, because the RBF coop close state machine does not
+	// yet thread through the AuxCloser hook that overlay channels rely on
+	// to build the aux-aware close transaction. Forcing RBF on for a
+	// node that holds overlay channels would silently break their coop
+	// closes.
+	if cfg.ProtocolOptions.TaprootChans &&
+		!cfg.ProtocolOptions.TaprootOverlayChans {
+
+		cfg.ProtocolOptions.RbfCoopClose = true
+	}
+
 	//nolint:ll
 	featureMgr, err := feature.NewManager(feature.Config{
-		NoTLVOnion:                cfg.ProtocolOptions.LegacyOnion(),
-		NoStaticRemoteKey:         cfg.ProtocolOptions.NoStaticRemoteKey(),
-		NoAnchors:                 cfg.ProtocolOptions.NoAnchorCommitments(),
-		NoWumbo:                   !cfg.ProtocolOptions.Wumbo(),
-		NoScriptEnforcementLease:  cfg.ProtocolOptions.NoScriptEnforcementLease(),
-		NoKeysend:                 !cfg.AcceptKeySend,
-		NoOptionScidAlias:         !cfg.ProtocolOptions.ScidAlias(),
-		NoZeroConf:                !cfg.ProtocolOptions.ZeroConf(),
-		NoAnySegwit:               cfg.ProtocolOptions.NoAnySegwit(),
-		CustomFeatures:            cfg.ProtocolOptions.CustomFeatures(),
-		NoTaprootChans:            !cfg.ProtocolOptions.TaprootChans,
-		NoTaprootOverlay:          !cfg.ProtocolOptions.TaprootOverlayChans,
-		NoRouteBlinding:           cfg.ProtocolOptions.NoRouteBlinding(),
-		NoExperimentalEndorsement: cfg.ProtocolOptions.NoExperimentalEndorsement(),
-		NoQuiescence:              cfg.ProtocolOptions.NoQuiescence(),
-		NoRbfCoopClose:            !cfg.ProtocolOptions.RbfCoopClose,
+		NoTLVOnion:                   cfg.ProtocolOptions.LegacyOnion(),
+		NoStaticRemoteKey:            cfg.ProtocolOptions.NoStaticRemoteKey(),
+		NoAnchors:                    cfg.ProtocolOptions.NoAnchorCommitments(),
+		NoWumbo:                      !cfg.ProtocolOptions.Wumbo(),
+		NoScriptEnforcementLease:     cfg.ProtocolOptions.NoScriptEnforcementLease(),
+		NoKeysend:                    !cfg.AcceptKeySend,
+		NoOptionScidAlias:            !cfg.ProtocolOptions.ScidAlias(),
+		NoZeroConf:                   !cfg.ProtocolOptions.ZeroConf(),
+		NoAnySegwit:                  cfg.ProtocolOptions.NoAnySegwit(),
+		CustomFeatures:               cfg.ProtocolOptions.CustomFeatures(),
+		NoTaprootChans:               !cfg.ProtocolOptions.TaprootChans,
+		NoTaprootOverlay:             !cfg.ProtocolOptions.TaprootOverlayChans,
+		NoRouteBlinding:              cfg.ProtocolOptions.NoRouteBlinding(),
+		NoExperimentalAccountability: cfg.ProtocolOptions.NoExpAccountability(),
+		NoQuiescence:                 cfg.ProtocolOptions.NoQuiescence(),
+		NoRbfCoopClose:               !cfg.ProtocolOptions.RbfCoopClose,
 	})
 	if err != nil {
 		return nil, err
@@ -1368,15 +1384,21 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 
 			return &pc.Incoming
 		},
-		AuxLeafStore: implCfg.AuxLeafStore,
-		AuxSigner:    implCfg.AuxSigner,
-		AuxResolver:  implCfg.AuxContractResolver,
+		AuxLeafStore: s.implCfg.AuxLeafStore,
+		AuxSigner:    s.implCfg.AuxSigner,
+		AuxResolver:  s.implCfg.AuxContractResolver,
+		AuxCloser: fn.MapOption(
+			func(c chcl.AuxChanCloser) contractcourt.AuxChanCloser {
+				return c
+			},
+		)(s.implCfg.AuxChanCloser),
+		ChannelCloseConfs: cfg.Dev.ChannelCloseConfs(),
 	}, dbs.ChanStateDB)
 
 	// Select the configuration and funding parameters for Flokicoin.
 	chainCfg := cfg.Flokicoin
-	minRemoteDelay := funding.MinFlcRemoteDelay
-	maxRemoteDelay := funding.MaxFlcRemoteDelay
+	minRemoteDelay := funding.MinFlokicoinRemoteDelay
+	maxRemoteDelay := funding.MaxFlokicoinRemoteDelay
 
 	var chanIDSeed [32]byte
 	if _, err := rand.Read(chanIDSeed[:]); err != nil {
@@ -1448,7 +1470,7 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 	}
 
 	// Attempt to parse the provided upfront-shutdown address (if any).
-	script, err := chancloser.ParseUpfrontShutdownAddress(
+	script, err := chcl.ParseUpfrontShutdownAddress(
 		cfg.UpfrontShutdownAddr, cfg.ActiveNetParams.Params,
 	)
 	if err != nil {
@@ -1484,47 +1506,10 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 		DefaultMinHtlcIn:     cc.MinHtlcIn,
 		NumRequiredConfs: func(chanAmt chainutil.Amount,
 			pushAmt lnwire.MilliLoki) uint16 {
-			// For large channels we increase the number
-			// of confirmations we require for the
-			// channel to be considered open. As it is
-			// always the responder that gets to choose
-			// value, the pushAmt is value being pushed
-			// to us. This means we have more to lose
-			// in the case this gets re-orged out, and
-			// we will require more confirmations before
-			// we consider it open.
 
-			// In case the user has explicitly specified
-			// a default value for the number of
-			// confirmations, we use it.
-			defaultConf := uint16(chainCfg.DefaultNumChanConfs)
-			if defaultConf != 0 {
-				return defaultConf
-			}
-
-			minConf := uint64(3)
-			maxConf := uint64(6)
-
-			// If this is a wumbo channel, then we'll require the
-			// max amount of confirmations.
-			if chanAmt > MaxFundingAmount {
-				return uint16(maxConf)
-			}
-
-			// If not we return a value scaled linearly
-			// between 3 and 6, depending on channel size.
-			// TODO(halseth): Use 1 as minimum?
-			maxChannelSize := uint64(
-				lnwire.NewMSatFromLokis(MaxFundingAmount))
-			stake := lnwire.NewMSatFromLokis(chanAmt) + pushAmt
-			conf := maxConf * uint64(stake) / maxChannelSize
-			if conf < minConf {
-				conf = minConf
-			}
-			if conf > maxConf {
-				conf = maxConf
-			}
-			return uint16(conf)
+			return lnwallet.FundingConfsForAmounts(
+				chanAmt, pushAmt,
+			)
 		},
 		RequiredRemoteDelay: func(chanAmt chainutil.Amount) uint16 {
 			// We scale the remote CSV delay (the time the
@@ -1748,6 +1733,13 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 			blob.FlagTaprootChannel,
 		)
 
+		// Copy the policy for legacy channels and set the blob flags
+		// signalling support for production taproot channels.
+		taprootFinalPolicy := policy
+		taprootFinalPolicy.TxPolicy.BlobType |= blob.Type(
+			blob.FlagTaprootChannel | blob.FlagTaprootFinalChannel,
+		)
+
 		s.towerClientMgr, err = wtclient.NewManager(&wtclient.Config{
 			FetchClosedChannel:     fetchClosedChannel,
 			BuildBreachRetribution: buildBreachRetribution,
@@ -1778,7 +1770,7 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 			MinBackoff:         10 * time.Second,
 			MaxBackoff:         5 * time.Minute,
 			MaxTasksInMemQueue: cfg.WtClient.MaxTasksInMemQueue,
-		}, policy, anchorPolicy, taprootPolicy)
+		}, policy, anchorPolicy, taprootPolicy, taprootFinalPolicy)
 		if err != nil {
 			return nil, err
 		}
@@ -2145,6 +2137,21 @@ func (s *server) Start(ctx context.Context) error {
 	cleanup := cleaner{}
 
 	s.start.Do(func() {
+		// Before starting any subsystems, repair any link nodes that
+		// may have been incorrectly pruned due to the race condition
+		// that was fixed in the link node pruning logic. This must
+		// happen before the chain arbitrator and other subsystems load
+		// channels, to ensure the invariant "link node exists iff
+		// channels exist" is maintained.
+		err := s.chanStateDB.RepairLinkNodes(s.cfg.ActiveNetParams.Net)
+		if err != nil {
+			srvrLog.Errorf("Failed to repair link nodes: %v", err)
+
+			startErr = err
+
+			return
+		}
+
 		cleanup = cleanup.add(s.customMessageServer.Stop)
 		if err := s.customMessageServer.Start(); err != nil {
 			startErr = err
@@ -2474,9 +2481,8 @@ func (s *server) Start(ctx context.Context) error {
 		// With all the relevant sub-systems started, we'll now attempt
 		// to establish persistent connections to our direct channel
 		// collaborators within the network. Before doing so however,
-		// we'll prune our set of link nodes found within the database
-		// to ensure we don't reconnect to any nodes we no longer have
-		// open channels with.
+		// we'll prune our set of link nodes to ensure we don't
+		// reconnect to any nodes we no longer have open channels with.
 		if err := s.chanStateDB.PruneLinkNodes(); err != nil {
 			srvrLog.Errorf("Failed to prune link nodes: %v", err)
 
@@ -3973,9 +3979,9 @@ func (s *server) InboundPeerConnected(conn net.Conn) {
 	// If we already have a valid connection that is scheduled to take
 	// precedence once the prior peer has finished disconnecting, we'll
 	// ignore this connection.
-	if p, ok := s.scheduledPeerConnection[pubStr]; ok {
-		srvrLog.Debugf("Ignoring connection from %v, peer %v already "+
-			"scheduled", conn.RemoteAddr(), p)
+	if _, ok := s.scheduledPeerConnection[pubStr]; ok {
+		srvrLog.Debugf("Ignoring connection from %v, peer already "+
+			"scheduled", conn.RemoteAddr())
 		conn.Close()
 		return
 	}
@@ -4444,14 +4450,8 @@ func (s *server) peerConnected(conn net.Conn, connReq *connmgr.ConnReq,
 		AuxResolver:            s.implCfg.AuxContractResolver,
 		AuxTrafficShaper:       s.implCfg.TrafficShaper,
 		AuxChannelNegotiator:   s.implCfg.AuxChannelNegotiator,
-		ShouldFwdExpEndorsement: func() bool {
-			if s.cfg.ProtocolOptions.NoExperimentalEndorsement() {
-				return false
-			}
-
-			return clock.NewDefaultClock().Now().Before(
-				EndorsementExperimentEnd,
-			)
+		ShouldFwdExpAccountability: func() bool {
+			return !s.cfg.ProtocolOptions.NoExpAccountability()
 		},
 		NoDisconnectOnPongFailure: s.cfg.NoDisconnectOnPongFailure,
 	}

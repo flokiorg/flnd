@@ -2,6 +2,8 @@ package funding
 
 import (
 	"bytes"
+	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -11,6 +13,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -560,7 +563,7 @@ func createTestFundingManager(t *testing.T, privKey *crypto.PrivateKey,
 		},
 		ZombieSweeperInterval:         1 * time.Hour,
 		ReservationTimeout:            1 * time.Nanosecond,
-		MaxChanSize:                   MaxFlcFundingAmount,
+		MaxChanSize:                   MaxFlokicoinFundingAmount,
 		MaxLocalCSVDelay:              defaultMaxLocalCSVDelay,
 		MaxPendingChannels:            lncfg.DefaultMaxPendingChannels,
 		NotifyOpenChannelEvent:        evt.NotifyOpenChannelEvent,
@@ -4082,9 +4085,15 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// We will spend all the funds in the wallet, and expect
 			// no change output due to the dust limit.
 			coins: constructTestUtxos(
+<<<<<<< HEAD
 				MaxFlcFundingAmount + 1,
 			),
 			fundUpToMaxAmt: MaxFlcFundingAmount,
+=======
+				MaxFlokicoinFundingAmount + 1,
+			),
+			fundUpToMaxAmt: MaxFlokicoinFundingAmount,
+>>>>>>> develop
 			minFundAmt:     MinChanFundingSize,
 			pushAmt:        0,
 			change:         false,
@@ -4093,9 +4102,15 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// We spend less than the funds in the wallet, so a
 			// change output should be created.
 			coins: constructTestUtxos(
+<<<<<<< HEAD
 				2 * MaxFlcFundingAmount,
 			),
 			fundUpToMaxAmt: MaxFlcFundingAmount,
+=======
+				2 * MaxFlokicoinFundingAmount,
+			),
+			fundUpToMaxAmt: MaxFlokicoinFundingAmount,
+>>>>>>> develop
 			minFundAmt:     MinChanFundingSize,
 			pushAmt:        0,
 			change:         true,
@@ -4105,9 +4120,15 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// setting a smaller channel size, so a change output
 			// should be created.
 			coins: constructTestUtxos(
+<<<<<<< HEAD
 				MaxFlcFundingAmount,
 			),
 			fundUpToMaxAmt: MaxFlcFundingAmount / 2,
+=======
+				MaxFlokicoinFundingAmount,
+			),
+			fundUpToMaxAmt: MaxFlokicoinFundingAmount / 2,
+>>>>>>> develop
 			minFundAmt:     MinChanFundingSize,
 			pushAmt:        0,
 			change:         true,
@@ -4116,9 +4137,15 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// We are using the entirety of two inputs for the
 			// funding of a channel, hence expect no change output.
 			coins: constructTestUtxos(
+<<<<<<< HEAD
 				MaxFlcFundingAmount/2, MaxFlcFundingAmount/2,
 			),
 			fundUpToMaxAmt: MaxFlcFundingAmount,
+=======
+				MaxFlokicoinFundingAmount/2, MaxFlokicoinFundingAmount/2,
+			),
+			fundUpToMaxAmt: MaxFlokicoinFundingAmount,
+>>>>>>> develop
 			minFundAmt:     MinChanFundingSize,
 			pushAmt:        0,
 			change:         false,
@@ -4127,9 +4154,15 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// We are using a fraction of two inputs for the funding
 			// of our channel, hence expect a change output.
 			coins: constructTestUtxos(
+<<<<<<< HEAD
 				MaxFlcFundingAmount/2, MaxFlcFundingAmount/2,
 			),
 			fundUpToMaxAmt: MaxFlcFundingAmount / 2,
+=======
+				MaxFlokicoinFundingAmount/2, MaxFlokicoinFundingAmount/2,
+			),
+			fundUpToMaxAmt: MaxFlokicoinFundingAmount / 2,
+>>>>>>> develop
 			minFundAmt:     MinChanFundingSize,
 			pushAmt:        0,
 			change:         true,
@@ -4139,10 +4172,17 @@ func TestFundingManagerFundMax(t *testing.T) {
 			// our wallet hence expect a change output. Furthermore
 			// we push half of the funding amount to the remote end
 			// which we expect to succeed.
+<<<<<<< HEAD
 			coins:          constructTestUtxos(MaxFlcFundingAmount),
 			fundUpToMaxAmt: MaxFlcFundingAmount / 2,
 			minFundAmt:     MinChanFundingSize / 4,
 			pushAmt:        MaxFlcFundingAmount / 4,
+=======
+			coins:          constructTestUtxos(MaxFlokicoinFundingAmount),
+			fundUpToMaxAmt: MaxFlokicoinFundingAmount / 2,
+			minFundAmt:     MinChanFundingSize / 4,
+			pushAmt:        MaxFlokicoinFundingAmount / 4,
+>>>>>>> develop
 			change:         true,
 		},
 	}
@@ -4318,10 +4358,17 @@ func TestMaxChannelSizeConfig(t *testing.T) {
 	// Create a set of funding managers that will reject wumbo
 	// channels but set --maxchansize explicitly lower than soft-limit.
 	// Verify that wumbo rejecting funding managers will respect
+<<<<<<< HEAD
 	// --maxchansize below 16777215 satoshi (MaxFlcFundingAmount) limit.
 	alice, bob := setupFundingManagers(t, func(cfg *Config) {
 		cfg.NoWumboChans = true
 		cfg.MaxChanSize = MaxFlcFundingAmount - 1
+=======
+	// --maxchansize below 16777215 satoshi (MaxFlokicoinFundingAmount) limit.
+	alice, bob := setupFundingManagers(t, func(cfg *Config) {
+		cfg.NoWumboChans = true
+		cfg.MaxChanSize = MaxFlokicoinFundingAmount - 1
+>>>>>>> develop
 	})
 
 	// Attempt to create a channel above the limit
@@ -4332,7 +4379,11 @@ func TestMaxChannelSizeConfig(t *testing.T) {
 		Peer:            bob,
 		TargetPubkey:    bob.privKey.PubKey(),
 		ChainHash:       *fundingNetParams.GenesisHash,
+<<<<<<< HEAD
 		LocalFundingAmt: MaxFlcFundingAmount,
+=======
+		LocalFundingAmt: MaxFlokicoinFundingAmount,
+>>>>>>> develop
 		PushAmt:         lnwire.NewMSatFromLokis(0),
 		Private:         false,
 		Updates:         updateChan,
@@ -4352,7 +4403,11 @@ func TestMaxChannelSizeConfig(t *testing.T) {
 	tearDownFundingManagers(t, alice, bob)
 	alice, bob = setupFundingManagers(t, func(cfg *Config) {
 		cfg.NoWumboChans = true
+<<<<<<< HEAD
 		cfg.MaxChanSize = MaxFlcFundingAmount + 1
+=======
+		cfg.MaxChanSize = MaxFlokicoinFundingAmount + 1
+>>>>>>> develop
 	})
 
 	// Reset the Peer to the newly created one.
@@ -4408,7 +4463,11 @@ func TestWumboChannelConfig(t *testing.T) {
 		Peer:            bob,
 		TargetPubkey:    bob.privKey.PubKey(),
 		ChainHash:       *fundingNetParams.GenesisHash,
+<<<<<<< HEAD
 		LocalFundingAmt: MaxFlcFundingAmount,
+=======
+		LocalFundingAmt: MaxFlokicoinFundingAmount,
+>>>>>>> develop
 		PushAmt:         lnwire.NewMSatFromLokis(0),
 		Private:         false,
 		Updates:         updateChan,
@@ -4437,7 +4496,11 @@ func TestWumboChannelConfig(t *testing.T) {
 	tearDownFundingManagers(t, alice, bob)
 	alice, bob = setupFundingManagers(t, func(cfg *Config) {
 		cfg.NoWumboChans = false
+<<<<<<< HEAD
 		cfg.MaxChanSize = MaxFlcFundingAmountWumbo
+=======
+		cfg.MaxChanSize = MaxFlokicoinFundingAmountWumbo
+>>>>>>> develop
 	})
 
 	// Reset the Peer to the newly created one.
@@ -5102,4 +5165,133 @@ func TestFundingManagerCoinbase(t *testing.T) {
 	// Check that they notify the breach arbiter and peer about the new
 	// channel.
 	assertHandleChannelReady(t, alice, bob)
+}
+
+// TestMapGossipError verifies that mapGossipError correctly translates gossip
+// result errors into funding manager errors.
+func TestMapGossipError(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		inErr   error
+		wantErr error
+	}{
+		{
+			name:    "nil error",
+			inErr:   nil,
+			wantErr: nil,
+		},
+		{
+			name:    "context canceled maps to shutdown",
+			inErr:   context.Canceled,
+			wantErr: ErrFundingManagerShuttingDown,
+		},
+		{
+			name:    "gossiper shutting down maps to shutdown",
+			inErr:   discovery.ErrGossiperShuttingDown,
+			wantErr: ErrFundingManagerShuttingDown,
+		},
+		{
+			name:    "graph outdated treated as non-fatal",
+			inErr:   graph.NewErrf(graph.ErrOutdated, "outdated"),
+			wantErr: nil,
+		},
+		{
+			name:    "graph ignored treated as non-fatal",
+			inErr:   graph.NewErrf(graph.ErrIgnored, "ignored"),
+			wantErr: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := mapGossipError(tc.inErr, "TestMsg")
+
+			if tc.wantErr == nil {
+				require.NoError(t, got)
+				return
+			}
+
+			require.Error(t, got)
+			require.ErrorIs(t, got, tc.wantErr)
+		})
+	}
+
+	// Verify that unrecognized errors pass through unchanged.
+	t.Run("other errors passed through", func(t *testing.T) {
+		t.Parallel()
+
+		sentinel := errors.New("unexpected failure")
+		got := mapGossipError(sentinel, "TestMsg")
+		require.ErrorIs(t, got, sentinel)
+	})
+}
+
+// TestChannelReadyUnknownChannelID verifies that channel_ready messages
+// referencing ChannelIDs unknown to the funding manager are consumed without
+// stalling the coordinator. After a batch of such messages drains through,
+// the manager must still be able to process a legitimate channel-open flow.
+func TestChannelReadyUnknownChannelID(t *testing.T) {
+	t.Parallel()
+
+	// Count FindChannel invocations so we can wait for every message to
+	// actually reach the coordinator's handler (ProcessFundingMsg is
+	// buffered and returns before processing).
+	var findChannelCalls atomic.Uint64
+
+	alice, bob := setupFundingManagers(
+		t, func(cfg *Config) {
+			origFindChannel := cfg.FindChannel
+			cfg.FindChannel = func(
+				node *btcec.PublicKey,
+				chanID lnwire.ChannelID,
+			) (*channeldb.OpenChannel, error) {
+
+				findChannelCalls.Add(1)
+
+				return origFindChannel(node, chanID)
+			}
+		},
+	)
+	t.Cleanup(func() {
+		tearDownFundingManagers(t, alice, bob)
+	})
+
+	// Send a batch of channel_ready messages with random (unknown)
+	// ChannelIDs to Alice from Bob.
+	const numUnknownMessages = 100
+	for i := 0; i < numUnknownMessages; i++ {
+		var randomChanID lnwire.ChannelID
+		_, err := rand.Read(randomChanID[:])
+		require.NoError(t, err)
+
+		unknownMsg := &lnwire.ChannelReady{
+			ChanID:                 randomChanID,
+			NextPerCommitmentPoint: bobAddr.IdentityKey,
+		}
+		alice.fundingMgr.ProcessFundingMsg(unknownMsg, bob)
+	}
+
+	// Wait for every message to flow through the coordinator's handler.
+	err := wait.NoError(func() error {
+		calls := findChannelCalls.Load()
+		if calls < numUnknownMessages {
+			return fmt.Errorf("FindChannel called %d times, "+
+				"want %d", calls, numUnknownMessages)
+		}
+
+		return nil
+	}, time.Second*15)
+	require.NoError(t, err)
+
+	// Confirm the coordinator is still able to drive a real funding
+	// flow. If any of the earlier messages had wedged the coordinator,
+	// this call would hang.
+	updateChan := make(chan *lnrpc.OpenStatusUpdate)
+	openChannel(
+		t, alice, bob, 500000, 0, 1, updateChan, true, nil,
+	)
 }

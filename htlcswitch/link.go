@@ -41,13 +41,10 @@ const (
 	// the node accepts for forwarded payments. The value is relative to the
 	// current block height.
 	//
-	// The value 10080 corresponds to one week of blocks (at 1 minute/block).
-	// This value was chosen to balance routing capability with griefing risk:
-	// 1. Standard Case: With a default CLTV delta of 400 (equivalent to Bitcoin's
-	//    40 blocks in time), a 20-hop route requires 8000 blocks. 10080 covers
-	//    this with a sufficient safety margin (~2000 blocks).
-	// 2. Griefing Risk: Reduces the max funds lockup time to 1 week (down from
-	//    Bitcoin's default of 2 weeks), improving capital efficiency.
+	// The value 10080 corresponds to on average one week worth of blocks
+	// and is based on the maximum number of hops (20), the default CLTV
+	// delta (800), and some extra margin to account for the other lightning
+	// implementations and past lnd versions.
 	DefaultMaxOutgoingCltvExpiry = 10080
 
 	// DefaultMinLinkFeeUpdateTimeout represents the minimum interval in
@@ -289,9 +286,9 @@ type ChannelLinkConfig struct {
 	// restrict the flow of HTLCs and fee updates.
 	MaxFeeExposure lnwire.MilliLoki
 
-	// ShouldFwdExpEndorsement is a closure that indicates whether the link
-	// should forward experimental endorsement signals.
-	ShouldFwdExpEndorsement func() bool
+	// ShouldFwdExpAccountability is a closure that indicates whether the
+	// link should forward experimental accountability signals.
+	ShouldFwdExpAccountability func() bool
 
 	// AuxTrafficShaper is an optional auxiliary traffic shaper that can be
 	// used to manage the bandwidth of the link.
@@ -3162,11 +3159,11 @@ func (l *channelLink) processRemoteAdds(fwdPkg *channeldb.FwdPkg) {
 				continue
 			}
 
-			endorseValue := l.experimentalEndorsement(
+			accountableValue := l.experimentalAccountability(
 				record.CustomSet(add.CustomRecords),
 			)
-			endorseType := uint64(
-				lnwire.ExperimentalEndorsementType,
+			accountableType := uint64(
+				lnwire.ExperimentalAccountableType,
 			)
 
 			switch fwdPkg.State {
@@ -3190,9 +3187,9 @@ func (l *channelLink) processRemoteAdds(fwdPkg *channeldb.FwdPkg) {
 					BlindingPoint: fwdInfo.NextBlinding,
 				}
 
-				endorseValue.WhenSome(func(e byte) {
+				accountableValue.WhenSome(func(e byte) {
 					custRecords := map[uint64][]byte{
-						endorseType: {e},
+						accountableType: {e},
 					}
 
 					outgoingAdd.CustomRecords = custRecords
@@ -3248,9 +3245,9 @@ func (l *channelLink) processRemoteAdds(fwdPkg *channeldb.FwdPkg) {
 				BlindingPoint: fwdInfo.NextBlinding,
 			}
 
-			endorseValue.WhenSome(func(e byte) {
+			accountableValue.WhenSome(func(e byte) {
 				addMsg.CustomRecords = map[uint64][]byte{
-					endorseType: {e},
+					accountableType: {e},
 				}
 			})
 
@@ -3339,44 +3336,42 @@ func (l *channelLink) processRemoteAdds(fwdPkg *channeldb.FwdPkg) {
 	l.forwardBatch(reforward, switchPackets...)
 }
 
-// experimentalEndorsement returns the value to set for our outgoing
-// experimental endorsement field, and a boolean indicating whether it should
-// be populated on the outgoing htlc.
-func (l *channelLink) experimentalEndorsement(
+// experimentalAccountability returns the value to set for our outgoing
+// experimental accountable field. It only considers the accountability bit,
+// other custom records present are not considered for forwarding.
+func (l *channelLink) experimentalAccountability(
 	customUpdateAdd record.CustomSet) fn.Option[byte] {
 
-	// Only relay experimental signal if we are within the experiment
-	// period.
-	if !l.cfg.ShouldFwdExpEndorsement() {
+	if !l.cfg.ShouldFwdExpAccountability() {
 		return fn.None[byte]()
 	}
 
 	// If we don't have any custom records or the experimental field is
 	// not set, just forward a zero value.
 	if len(customUpdateAdd) == 0 {
-		return fn.Some[byte](lnwire.ExperimentalUnendorsed)
+		return fn.Some[byte](lnwire.ExperimentalUnaccountable)
 	}
 
-	t := uint64(lnwire.ExperimentalEndorsementType)
+	t := uint64(lnwire.ExperimentalAccountableType)
 	value, set := customUpdateAdd[t]
 	if !set {
-		return fn.Some[byte](lnwire.ExperimentalUnendorsed)
+		return fn.Some[byte](lnwire.ExperimentalUnaccountable)
 	}
 
 	// We expect at least one byte for this field, consider it invalid if
 	// it has no data and just forward a zero value.
 	if len(value) == 0 {
-		return fn.Some[byte](lnwire.ExperimentalUnendorsed)
+		return fn.Some[byte](lnwire.ExperimentalUnaccountable)
 	}
 
-	// Only forward endorsed if the incoming link is endorsed.
-	if value[0] == lnwire.ExperimentalEndorsed {
-		return fn.Some[byte](lnwire.ExperimentalEndorsed)
+	// Only forward accountable if the incoming link is accountable.
+	if value[0] == lnwire.ExperimentalAccountable {
+		return fn.Some[byte](lnwire.ExperimentalAccountable)
 	}
 
-	// Forward as unendorsed otherwise, including cases where we've
+	// Forward as unaccountable otherwise, including cases where we've
 	// received an invalid value that uses more than 3 bits of information.
-	return fn.Some[byte](lnwire.ExperimentalUnendorsed)
+	return fn.Some[byte](lnwire.ExperimentalUnaccountable)
 }
 
 // processExitHop handles an htlc for which this link is the exit hop. It

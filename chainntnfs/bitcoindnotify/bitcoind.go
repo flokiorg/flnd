@@ -21,13 +21,13 @@ import (
 
 const (
 	// notifierType uniquely identifies a concrete implementation of the
-	// ChainNotifier interface that makes use of the bitcoind ZMQ interface.
-	notifierTypeZMQ = "bitcoind"
+	// ChainNotifier interface that makes use of the flokicoind ZMQ interface.
+	notifierTypeZMQ = "flokicoind"
 
 	// notifierTypeRPCPolling uniquely identifies a concrete implementation
-	// of the ChainNotifier interface that makes use of the bitcoind RPC
+	// of the ChainNotifier interface that makes use of the flokicoind RPC
 	// interface.
-	notifierTypeRPCPolling = "bitcoind-rpc-polling"
+	notifierTypeRPCPolling = "flokicoind-rpc-polling"
 )
 
 // TODO(roasbeef): generalize struct below:
@@ -35,7 +35,7 @@ const (
 //  * extract common code
 //  * allow outside callers to handle send conditions
 
-// FlokicoindNotifier implements the ChainNotifier interface using a bitcoind
+// FlokicoindNotifier implements the ChainNotifier interface using a flokicoind
 // chain client. Multiple concurrent clients are supported. All notifications
 // are achieved via non-blocking sends on client channels.
 type FlokicoindNotifier struct {
@@ -86,7 +86,7 @@ var _ chainntnfs.ChainNotifier = (*FlokicoindNotifier)(nil)
 var _ chainntnfs.MempoolWatcher = (*FlokicoindNotifier)(nil)
 
 // New returns a new FlokicoindNotifier instance. This function assumes the
-// bitcoind node detailed in the passed configuration is already running, and
+// flokicoind node detailed in the passed configuration is already running, and
 // willing to accept RPC requests and new zmq clients.
 func New(chainConn *chain.LokidConn, chainParams *chaincfg.Params,
 	spendHintCache chainntnfs.SpendHintCache,
@@ -115,7 +115,7 @@ func New(chainConn *chain.LokidConn, chainParams *chaincfg.Params,
 	return notifier
 }
 
-// Start connects to the running bitcoind node over websockets, registers for
+// Start connects to the running flokicoind node over websockets, registers for
 // block notifications, and finally launches all related helper goroutines.
 func (b *FlokicoindNotifier) Start() error {
 	var startErr error
@@ -133,10 +133,10 @@ func (b *FlokicoindNotifier) Stop() error {
 		return nil
 	}
 
-	chainntnfs.Log.Info("bitcoind notifier shutting down...")
-	defer chainntnfs.Log.Debug("bitcoind notifier shutdown complete")
+	chainntnfs.Log.Info("flokicoind notifier shutting down...")
+	defer chainntnfs.Log.Debug("flokicoind notifier shutdown complete")
 
-	// Shutdown the rpc client, this gracefully disconnects from bitcoind,
+	// Shutdown the rpc client, this gracefully disconnects from flokicoind,
 	// and cleans up all related resources.
 	b.chainConn.Stop()
 	b.chainConn.WaitForShutdown()
@@ -171,9 +171,9 @@ func (b *FlokicoindNotifier) Started() bool {
 }
 
 func (b *FlokicoindNotifier) startNotifier() error {
-	chainntnfs.Log.Infof("bitcoind notifier starting...")
+	chainntnfs.Log.Infof("flokicoind notifier starting...")
 
-	// Connect to bitcoind, and register for notifications on connected,
+	// Connect to flokicoind, and register for notifications on connected,
 	// and disconnected blocks.
 	if err := b.chainConn.Start(); err != nil {
 		return err
@@ -209,7 +209,7 @@ func (b *FlokicoindNotifier) startNotifier() error {
 	// startup.
 	atomic.StoreInt32(&b.active, 1)
 
-	chainntnfs.Log.Debugf("bitcoind notifier started")
+	chainntnfs.Log.Debugf("flokicoind notifier started")
 
 	return nil
 }

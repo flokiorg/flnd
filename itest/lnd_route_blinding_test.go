@@ -352,17 +352,15 @@ func (b *blindedForwardTest) setupNetwork(ctx context.Context,
 	withInterceptor bool) {
 
 	carolArgs := []string{
-		"--flokicoin.timelockdelta=18",
-		fmt.Sprintf("--flokicoin.defaultremotedelay=%v", toLocalCSV),
-	}
+"--flokicoin.timelockdelta=24",
+fmt.Sprintf("--flokicoin.defaultremotedelay=%v", toLocalCSV),	}
 	if withInterceptor {
 		carolArgs = append(carolArgs, "--requireinterceptor")
 	}
 
 	daveArgs := []string{
-		"--flokicoin.timelockdelta=18",
-		fmt.Sprintf("--flokicoin.defaultremotedelay=%v", toLocalCSV),
-	}
+"--flokicoin.timelockdelta=24",
+fmt.Sprintf("--flokicoin.defaultremotedelay=%v", toLocalCSV),	}
 	cfgs := [][]string{nil, nil, carolArgs, daveArgs}
 	param := lntest.OpenChannelParams{
 		Amt: chanAmt,
@@ -703,6 +701,13 @@ func testIntroductionNodeError(ht *lntest.HarnessTest) {
 	// so that she can't receive the forward from Bob, causing a failure
 	// at the introduction node.
 	testCase.drainCarolLiquidity(true)
+
+	// NOTE: The drain above causes Bob to originate a payment, producing
+	// SEND-type HTLC events that may still be in-flight when we subscribe.
+	// Wait for the commitment dance to finish so those events are flushed
+	// before we subscribe, preventing them from corrupting the assertion
+	// below.
+	flakePaymentStreamReturnEarly()
 
 	// Subscribe to Bob's HTLC events so that we can observe the payment
 	// coming in.
