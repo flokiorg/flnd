@@ -4,14 +4,13 @@ require (
 	github.com/NebulousLabs/go-upnp v0.0.0-20180202185039-29b680b06c82
 	github.com/Yawning/aez v0.0.0-20211027044916-e49e68abd344
 	github.com/andybalholm/brotli v1.0.4
-	github.com/btcsuite/btclog v0.0.0-20241003133417-09c4e92e319c
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
 	github.com/fergusstrange/embedded-postgres v1.33.0
-	github.com/flokiorg/flokicoin-neutrino v0.16.4-beta
+	github.com/flokiorg/flokicoin-neutrino v0.16.6-beta
 	github.com/flokiorg/go-flokicoin v0.25.13-alpha
-	github.com/flokiorg/walletd v0.1.6-beta
+	github.com/flokiorg/walletd v0.1.8-beta
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/golangci/plugin-module-register v0.1.2
 	github.com/google/btree v1.1.3
@@ -51,13 +50,15 @@ require (
 	golang.org/x/term v0.37.0
 	golang.org/x/time v0.12.0
 	golang.org/x/tools v0.38.0
-	google.golang.org/grpc v1.74.2
+	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.7
 	gopkg.in/macaroon-bakery.v2 v2.0.1
 	gopkg.in/macaroon.v2 v2.0.0
 	modernc.org/sqlite v1.42.2
 	pgregory.net/rapid v1.2.0
 )
+
+require github.com/btcsuite/btclog v0.0.0-20241003133417-09c4e92e319c // indirect
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -154,7 +155,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.34.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.36.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
