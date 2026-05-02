@@ -70,7 +70,7 @@ require (
 	github.com/aead/siphash v1.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btcsuite/btcd v0.24.3-0.20250318170759-4f4ea81776d6 // indirect
-	github.com/btcsuite/btcd/btcec/v2 v2.3.4 // indirect
+	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/btcsuite/btclog v0.0.0-20241003133417-09c4e92e319c // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect

@@ -39,13 +39,12 @@ func FuzzHopData(f *testing.F) {
 
 func FuzzHopPayload(f *testing.F) {
 	f.Fuzz(func(t *testing.T, data []byte) {
-		if len(data) > sphinx.MaxRoutingPayloadSize {
-			return
+		if len(data) > sphinx.MaxRoutingPayloadSize {			return
 		}
 
 		r := bytes.NewReader(data)
 
-		hopPayload1, err := sphinx.DecodeHopPayload(r, false)
+		hopPayload1, err := sphinx.DecodeHopPayload(r, true)
 		if err != nil {
 			return
 		}
@@ -53,10 +52,10 @@ func FuzzHopPayload(f *testing.F) {
 		var b bytes.Buffer
 		require.NoError(t, hopPayload1.Encode(&b))
 
-		hopPayload2, err := sphinx.DecodeHopPayload(&b, false)
+		hopPayload2, err := sphinx.DecodeHopPayload(&b, true)
 		require.NoError(t, err)
 
-		require.Equal(t, hopPayload1, hopPayload2)
+		require.Equal(t, *hopPayload1, *hopPayload2)
 	})
 }
 
@@ -130,8 +129,7 @@ func FuzzPayloadIntermediateNoBlinding(f *testing.F) {
 
 func fuzzPayload(f *testing.F, finalPayload, updateAddBlinded bool) {
 	f.Fuzz(func(t *testing.T, data []byte) {
-		if len(data) > sphinx.MaxRoutingPayloadSize {
-			return
+		if len(data) > sphinx.MaxRoutingPayloadSize {			return
 		}
 
 		r := bytes.NewReader(data)

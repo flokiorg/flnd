@@ -162,14 +162,21 @@ func runBasicFundingTest(ht *lntest.HarnessTest, carolCommitType,
 		privateChan = true
 	}
 
-	// If carol wants taproot, but dave wants something else, then we'll
-	// assert that the channel negotiation attempt fails.
-	if carolCommitType == lnrpc.CommitmentType_SIMPLE_TAPROOT &&
-		daveCommitType != lnrpc.CommitmentType_SIMPLE_TAPROOT {
+	// If carol wants taproot (staging or final), but dave wants something
+	// that doesn't enable taproot support, then we'll assert that the
+	// channel negotiation attempt fails. Cross-type negotiation between
+	// SIMPLE_TAPROOT and SIMPLE_TAPROOT_FINAL succeeds because both
+	// staging and final feature bits are advertised when taproot is
+	// enabled.
+	carolWantsTaproot := carolCommitType == lnrpc.CommitmentType_SIMPLE_TAPROOT || //nolint:ll
+		carolCommitType == lnrpc.CommitmentType_SIMPLE_TAPROOT_FINAL
+	daveHasTaproot := daveCommitType == lnrpc.CommitmentType_SIMPLE_TAPROOT || //nolint:ll
+		daveCommitType == lnrpc.CommitmentType_SIMPLE_TAPROOT_FINAL
 
+	if carolWantsTaproot && !daveHasTaproot {
 		expectedErr := fmt.Errorf("requested channel type " +
 			"not supported")
-		amt := funding.MaxFlcFundingAmount
+		amt := funding.MaxFlokicoinFundingAmount
 		ht.OpenChannelAssertErr(
 			carol, dave, lntest.OpenChannelParams{
 				Private:        privateChan,
@@ -255,7 +262,7 @@ func basicChannelFundingTest(ht *lntest.HarnessTest,
 	privateChan bool, commitType *lnrpc.CommitmentType) (*lnrpc.Channel,
 	*lnrpc.Channel) {
 
-	chanAmt := funding.MaxFlcFundingAmount
+	chanAmt := funding.MaxFlokicoinFundingAmount
 	pushAmt := chainutil.Amount(100000)
 	satPerVbyte := chainutil.Amount(1)
 
@@ -332,7 +339,7 @@ func basicChannelFundingTest(ht *lntest.HarnessTest,
 // be used to fund channels.
 func testUnconfirmedChannelFunding(ht *lntest.HarnessTest) {
 	const (
-		chanAmt = funding.MaxFlcFundingAmount
+		chanAmt = funding.MaxFlokicoinFundingAmount
 		pushAmt = chainutil.Amount(100000)
 	)
 
@@ -462,7 +469,7 @@ func runChannelFundingInputTypes(ht *lntest.HarnessTest, alice,
 	carol *node.HarnessNode) {
 
 	const (
-		chanAmt  = funding.MaxFlcFundingAmount
+		chanAmt  = funding.MaxFlokicoinFundingAmount
 		burnAddr = "bcrt1qxsnqpdc842lu8c0xlllgvejt6rhy49u6fmpgyz"
 	)
 
@@ -619,7 +626,7 @@ func runExternalFundingScriptEnforced(ht *lntest.HarnessTest) {
 	// flow. To start with, we'll create a pending channel with a shim for
 	// a transaction that will never be published.
 	const thawHeight uint32 = 10
-	const chanSize = funding.MaxFlcFundingAmount
+	const chanSize = funding.MaxFlokicoinFundingAmount
 	fundingShim1, chanPoint1 := ht.DeriveFundingShim(
 		carol, dave, chanSize, thawHeight, false, commitmentType,
 	)
@@ -730,7 +737,7 @@ func runExternalFundingTaproot(ht *lntest.HarnessTest) {
 	// flow. To start with, we'll create a pending channel with a shim for
 	// a transaction that will never be published.
 	const thawHeight uint32 = 10
-	const chanSize = funding.MaxFlcFundingAmount
+	const chanSize = funding.MaxFlokicoinFundingAmount
 	fundingShim1, chanPoint1 := ht.DeriveFundingShim(
 		carol, dave, chanSize, thawHeight, false, commitmentType,
 	)
@@ -859,7 +866,7 @@ func runExternalFundingTaproot(ht *lntest.HarnessTest) {
 // testFundingPersistence mirrors testBasicChannelFunding, but adds restarts
 // and checks for the state of channels with unconfirmed funding transactions.
 func testChannelFundingPersistence(ht *lntest.HarnessTest) {
-	chanAmt := funding.MaxFlcFundingAmount
+	chanAmt := funding.MaxFlokicoinFundingAmount
 	pushAmt := chainutil.Amount(0)
 
 	// As we need to create a channel that requires more than 1
@@ -1272,8 +1279,17 @@ func testChannelFundingWithUnstableUtxos(ht *lntest.HarnessTest) {
 	// Make sure Carol sees her to_remote output from the force close tx.
 	ht.AssertNumPendingSweeps(carol, 1)
 
-	// We need to wait for carol initiating the sweep of the to_remote
-	// output of chanPoint2.
+	// Wait for Carol's sweep transaction to appear in the mempool. Due to
+	// async confirmation notifications, there's a race between when the
+	// sweep is registered and when the sweeper processes the next block.
+	// The sweeper uses immediate=false, so it broadcasts on the next block
+	// after registration. Mine an empty block to trigger the broadcast.
+	ht.MineEmptyBlocks(1)
+
+	// Now the sweep should be in the mempool.
+	ht.AssertNumTxsInMempool(1)
+
+	// Now we should see the unconfirmed UTXO from the sweep.
 	utxo := ht.AssertNumUTXOsUnconfirmed(carol, 1)[0]
 
 	// We now try to open channel using the unconfirmed utxo.
@@ -1328,6 +1344,11 @@ func testChannelFundingWithUnstableUtxos(ht *lntest.HarnessTest) {
 
 	// Make sure Carol sees her to_remote output from the force close tx.
 	ht.AssertNumPendingSweeps(carol, 1)
+
+	// Mine an empty block to trigger the sweep broadcast (same fix as
+	// above).
+	ht.MineEmptyBlocks(1)
+	ht.AssertNumTxsInMempool(1)
 
 	// Wait for the to_remote sweep tx to show up in carol's wallet.
 	ht.AssertNumUTXOsUnconfirmed(carol, 1)

@@ -1123,7 +1123,7 @@ func (c *ChannelArbitrator) stateStep(
 			// case, we'll not force close, but terminate the state
 			// machine here to wait to see what confirms on chain.
 			if errors.Is(err, lnwallet.ErrForceCloseLocalDataLoss) {
-				log.Error("ChannelArbitrator(%v): broadcast "+
+				log.Errorf("ChannelArbitrator(%v): broadcast "+
 					"failed due to local data loss, "+
 					"waiting for on chain confimation...",
 					c.cfg.ChanPoint)

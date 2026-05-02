@@ -75,28 +75,26 @@ func WriteOutpoint(w io.Writer, o *wire.OutPoint) error {
 }
 
 const (
-	// MinFlcRemoteDelay is the minimum CSV delay we will require the remote
+	// MinFlokicoinRemoteDelay is the minimum CSV delay we will require the remote
 	// to use for its commitment transaction.
-	MinFlcRemoteDelay uint16 = 1440
+	MinFlokicoinRemoteDelay uint16 = 1440
 
-	// MaxFlcRemoteDelay is the maximum CSV delay we will require the remote
+	// MaxFlokicoinRemoteDelay is the maximum CSV delay we will require the remote
 	// to use for its commitment transaction.
-	MaxFlcRemoteDelay uint16 = 10080
+	MaxFlokicoinRemoteDelay uint16 = 10080
 
 	// MinChanFundingSize is the smallest channel that we'll allow to be
 	// created over the RPC interface.
 	MinChanFundingSize = chainutil.Amount(20000)
 
-	// MaxFlcFundingAmount is a soft-limit of the maximum channel size
+	// MaxFlokicoinFundingAmount is a soft-limit of the maximum channel size
 	// currently accepted on the Flokicoin chain within the Lightning
-	// Protocol. This limit is defined in BOLT-0002, however for Flokicoin
-	// we have increased this default to 5 FLC to support larger standard usage.
-	MaxFlcFundingAmount = chainutil.Amount(500000000)
+	// Protocol.
+	MaxFlokicoinFundingAmount = chainutil.Amount(100000 * chainutil.LokiPerFlokicoin)
 
-	// MaxFlcFundingAmountWumbo is a soft-limit on the maximum size of wumbo
-	// channels. This limit is 210 FLC and is the only thing standing between
-	// you and limitless channel size (apart from 21 million cap).
-	MaxFlcFundingAmountWumbo = chainutil.Amount(21000000000)
+	// MaxFlokicoinFundingAmountWumbo is a soft-limit on the maximum size of wumbo
+	// channels.
+	MaxFlokicoinFundingAmountWumbo = chainutil.Amount(1000000 * chainutil.LokiPerFlokicoin)
 
 	msgBufferSize = 50
 
@@ -1056,8 +1054,7 @@ func (f *Manager) reservationCoordinator() {
 				f.funderProcessFundingSigned(fmsg.peer, msg)
 
 			case *lnwire.ChannelReady:
-				f.wg.Add(1)
-				go f.handleChannelReady(fmsg.peer, msg)
+				f.handleChannelReady(fmsg.peer, msg)
 
 			case *lnwire.Warning:
 				f.handleWarningMsg(fmsg.peer, msg)
@@ -3359,7 +3356,7 @@ func (f *Manager) waitForTimeout(completeChan *channeldb.OpenChannel,
 }
 
 // makeLabelForTx updates the label for the confirmed funding transaction. If
-// we opened the channel, and lnd's wallet published our funding tx (which is
+// we opened the channel, and flnd's wallet published our funding tx (which is
 // not the case for some channels) then we update our transaction label with
 // our short channel ID, which is known now that our funding transaction has
 // confirmed. We do not label transactions we did not publish, because our
@@ -3543,7 +3540,7 @@ func (f *Manager) sendChannelReady(completeChan *channeldb.OpenChannel,
 	// of the previous messages in the funding flow just cancels the flow.
 	// But now the funding transaction is confirmed, the channel is open
 	// and we have to make sure the peer gets the channelReady message when
-	// it comes back online. This is also crucial during restart of lnd,
+	// it comes back online. This is also crucial during restart of flnd,
 	// where we might try to resend the channelReady message before the
 	// server has had the time to connect to the peer. We keep trying to
 	// send channelReady until we succeed, or the fundingManager is shut
@@ -3649,7 +3646,7 @@ func (f *Manager) receivedChannelReady(node *crypto.PublicKey,
 	}
 
 	// Finally, the barrier signal is removed once we finish
-	// `handleChannelReady`. If we can still find the signal, we haven't
+	// `processChannelReady`. If we can still find the signal, we haven't
 	// finished processing it yet.
 	_, loaded := f.handleChannelReadyBarriers.Load(chanID)
 
@@ -4037,10 +4034,8 @@ func genFirstStateMusigNonce(channel *channeldb.OpenChannel,
 
 // handleChannelReady finalizes the channel funding process and enables the
 // channel to enter normal operating mode.
-func (f *Manager) handleChannelReady(peer lnpeer.Peer, //nolint:funlen
+func (f *Manager) handleChannelReady(peer lnpeer.Peer,
 	msg *lnwire.ChannelReady) {
-
-	defer f.wg.Done()
 
 	// Notify the aux hook that the specified peer just established a
 	// channel with us, identified by the given channel ID.
@@ -4049,6 +4044,118 @@ func (f *Manager) handleChannelReady(peer lnpeer.Peer, //nolint:funlen
 			acn.ProcessChannelReady(msg.ChanID, peer.PubKey())
 		},
 	)
+
+	log.Debugf("Received ChannelReady for ChannelID(%v) from "+
+		"peer %x", msg.ChanID,
+		peer.IdentityKey().SerializeCompressed())
+
+	// We now load or create a new channel barrier for this channel. If
+	// we are currently in the process of handling a channel_ready message
+	// for this channel, ignore the duplicate.
+	_, loaded := f.handleChannelReadyBarriers.LoadOrStore(
+		msg.ChanID, struct{}{},
+	)
+	if loaded {
+		log.Infof("Already handling channelReady for "+
+			"ChannelID(%v), ignoring.", msg.ChanID)
+		return
+	}
+
+	// Check whether we need to wait for the local funding confirmation flow
+	// to finish before we can proceed with this message. The
+	// localDiscoverySignal is only present for channels that we are
+	// actively funding and is bounded by the maximum number of pending
+	// channels.
+	localDiscoverySignal, ok := f.localDiscoverySignals.Load(msg.ChanID)
+	if ok {
+		f.wg.Add(1)
+		go func() {
+			defer f.wg.Done()
+			defer f.handleChannelReadyBarriers.Delete(
+				msg.ChanID,
+			)
+
+			// Wait for the local waitForFundingConfirmation
+			// goroutine to signal that it has the necessary state
+			// in place. Otherwise, we may be missing critical
+			// information required to handle forwarded HTLC's.
+			select {
+			case <-localDiscoverySignal:
+			case <-f.quit:
+				return
+			}
+
+			f.localDiscoverySignals.Delete(msg.ChanID)
+			f.processChannelReady(peer, msg)
+		}()
+
+		return
+	}
+
+	// No signal wait needed. Perform a lightweight channel lookup inline
+	// to short-circuit bogus or already-established channels without
+	// blocking the coordinator on heavier processing.
+	chanID := msg.ChanID
+	channel, err := f.cfg.FindChannel(peer.IdentityKey(), chanID)
+	if err != nil {
+		f.handleChannelReadyBarriers.Delete(msg.ChanID)
+
+		log.Errorf("Unable to locate ChannelID(%v), cannot "+
+			"complete funding", chanID)
+
+		return
+	}
+
+	// If the RemoteNextRevocation is non-nil, then the channel has
+	// already been fully established and we've processed channel_ready
+	// for it at least once. We short-circuit inline to avoid redoing the
+	// heavy work in processChannelReady (DB writes, nonce generation,
+	// AddNewChannel) on every duplicate channel_ready the peer sends.
+	// Note that the happy path where the channel is actively being
+	// funded goes through the localDiscoverySignal branch above.
+	if channel.RemoteNextRevocation != nil {
+		// Even though we're ignoring the rest of the message, we
+		// still need to refresh the peer's alias if they negotiated
+		// the option_scid_alias feature and sent a (possibly updated)
+		// AliasScid. The peer may resend channel_ready to rotate or
+		// update their alias for invoice route hints.
+		if channel.NegotiatedAliasFeature() && msg.AliasScid != nil {
+			err := f.cfg.AliasManager.PutPeerAlias(
+				chanID, *msg.AliasScid,
+			)
+			if err != nil {
+				log.Errorf("unable to store peer's alias: "+
+					"%v", err)
+			}
+		}
+
+		f.handleChannelReadyBarriers.Delete(msg.ChanID)
+
+		log.Infof("Received duplicate channelReady for "+
+			"ChannelID(%v), ignoring.", chanID)
+
+		return
+	}
+
+	// Channel exists and hasn't been fully established yet — this is a
+	// legitimate first channel_ready. Dispatch the remaining work (DB
+	// writes, nonce generation, AddNewChannel) in a goroutine to avoid
+	// blocking the coordinator.
+	f.wg.Add(1)
+	go func() {
+		defer f.wg.Done()
+		defer f.handleChannelReadyBarriers.Delete(msg.ChanID)
+
+		f.processChannelReady(peer, msg)
+	}()
+}
+
+// processChannelReady completes the channel_ready handling after any required
+// signal waits. It looks up the channel in the database and finalizes the
+// funding flow by inserting the remote party's next revocation point and
+// handing the channel off to the peer for normal operation.
+func (f *Manager) processChannelReady(peer lnpeer.Peer,
+	msg *lnwire.ChannelReady) {
 
 	// If we are in development mode, we'll wait for specified duration
 	// before processing the channel ready message.
@@ -4067,51 +4174,10 @@ func (f *Manager) handleChannelReady(peer lnpeer.Peer, //nolint:funlen
 		}
 	}
 
-	log.Debugf("Received ChannelReady for ChannelID(%v) from "+
-		"peer %x", msg.ChanID,
-		peer.IdentityKey().SerializeCompressed())
-
-	// We now load or create a new channel barrier for this channel.
-	_, loaded := f.handleChannelReadyBarriers.LoadOrStore(
-		msg.ChanID, struct{}{},
-	)
-
-	// If we are currently in the process of handling a channel_ready
-	// message for this channel, ignore.
-	if loaded {
-		log.Infof("Already handling channelReady for "+
-			"ChannelID(%v), ignoring.", msg.ChanID)
-		return
-	}
-
-	// If not already handling channelReady for this channel, then the
-	// `LoadOrStore` has set up a barrier, and it will be removed once this
-	// function exits.
-	defer f.handleChannelReadyBarriers.Delete(msg.ChanID)
-
-	localDiscoverySignal, ok := f.localDiscoverySignals.Load(msg.ChanID)
-	if ok {
-		// Before we proceed with processing the channel_ready
-		// message, we'll wait for the local waitForFundingConfirmation
-		// goroutine to signal that it has the necessary state in
-		// place. Otherwise, we may be missing critical information
-		// required to handle forwarded HTLC's.
-		select {
-		case <-localDiscoverySignal:
-			// Fallthrough
-		case <-f.quit:
-			return
-		}
-
-		// With the signal received, we can now safely delete the entry
-		// from the map.
-		f.localDiscoverySignals.Delete(msg.ChanID)
-	}
-
-	// First, we'll attempt to locate the channel whose funding workflow is
-	// being finalized by this message. We go to the database rather than
-	// our reservation map as we may have restarted, mid funding flow. Also
-	// provide the node's public key to make the search faster.
+	// We'll attempt to locate the channel whose funding workflow is being
+	// finalized by this message. We go to the database rather than our
+	// reservation map as we may have restarted mid funding flow. The
+	// node's public key is provided to scope the search.
 	chanID := msg.ChanID
 	channel, err := f.cfg.FindChannel(peer.IdentityKey(), chanID)
 	if err != nil {
@@ -4136,7 +4202,7 @@ func (f *Manager) handleChannelReady(peer lnpeer.Peer, //nolint:funlen
 	// during invoice creation. In the zero-conf case, it is also used to
 	// provide a ChannelUpdate to the remote peer. This is done before the
 	// call to InsertNextRevocation in case the call to PutPeerAlias fails.
-	// If it were to fail on the first call to handleChannelReady, we
+	// If it were to fail on the first call to processChannelReady, we
 	// wouldn't want the channel to be usable yet.
 	if channel.NegotiatedAliasFeature() {
 		// If the AliasScid field is nil, we must fail out. We will
@@ -4415,7 +4481,7 @@ func (f *Manager) ensureInitialForwardingPolicy(chanID lnwire.ChannelID,
 
 	// Before we can add the channel to the peer, we'll need to ensure that
 	// we have an initial forwarding policy set. This should always be the
-	// case except for a channel that was created with lnd <= 0.15.5 and
+	// case except for a channel that was created with flnd <= 0.15.5 and
 	// is still pending while updating to this version.
 	var needDBUpdate bool
 	forwardingPolicy, err := f.getInitialForwardingPolicy(chanID)
@@ -4641,11 +4707,11 @@ func (f *Manager) newChanAnnouncement(localPubKey,
 		return nil, fmt.Errorf("unable to generate node "+
 			"signature for channel announcement: %w", err)
 	}
-	bitcoinSig, err := f.cfg.SignMessage(
+	flokicoinSig, err := f.cfg.SignMessage(
 		localFundingKey.KeyLocator, chanAnnMsg, true,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("unable to generate bitcoin "+
+		return nil, fmt.Errorf("unable to generate flokicoin "+
 			"signature for node public key: %w", err)
 	}
 
@@ -4660,7 +4726,7 @@ func (f *Manager) newChanAnnouncement(localPubKey,
 	if err != nil {
 		return nil, err
 	}
-	proof.FlokicoinSignature, err = lnwire.NewSigFromSignature(bitcoinSig)
+	proof.FlokicoinSignature, err = lnwire.NewSigFromSignature(flokicoinSig)
 	if err != nil {
 		return nil, err
 	}

@@ -12,6 +12,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2/schnorr"
+	"github.com/flokiorg/go-flokicoin/chainutil"
+	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
+	"github.com/flokiorg/go-flokicoin/txscript"
+	"github.com/flokiorg/go-flokicoin/wire"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/lnrpc"
 	"github.com/flokiorg/flnd/lnrpc/invoicesrpc"
@@ -23,12 +30,6 @@ import (
 	"github.com/flokiorg/flnd/lntest/wait"
 	"github.com/flokiorg/flnd/lntypes"
 	"github.com/flokiorg/flnd/lnutils"
-	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
-	"github.com/flokiorg/go-flokicoin/chainutil"
-	"github.com/flokiorg/go-flokicoin/crypto"
-	"github.com/flokiorg/go-flokicoin/crypto/schnorr"
-	"github.com/flokiorg/go-flokicoin/txscript"
-	"github.com/flokiorg/go-flokicoin/wire"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 )
@@ -424,6 +425,20 @@ func (h *HarnessTest) assertChannelStatus(hn *node.HarnessNode,
 	return channel
 }
 
+// AssertChannelEventType consumes one event from a client and asserts the event
+// type is matched.
+func (h *HarnessTest) AssertChannelEventType(sub rpc.ChannelEventsClient,
+	updateType lnrpc.ChannelEventUpdate_UpdateType,
+) *lnrpc.ChannelEventUpdate {
+
+	update := h.ReceiveChannelEvent(sub)
+
+	require.Equalf(h, updateType, update.Type, "wrong event type, "+
+		"want %v got %v", updateType, update.Type)
+
+	return update
+}
+
 // AssertOutputScriptClass checks that the specified transaction output has the
 // expected script class.
 func (h *HarnessTest) AssertOutputScriptClass(tx *chainutil.Tx,
@@ -552,8 +567,10 @@ func (h HarnessTest) WaitForChannelCloseEvent(
 	require.NoError(h, err)
 
 	resp, ok := event.Update.(*lnrpc.CloseStatusUpdate_ChanClose)
-	require.Truef(h, ok, "expected channel close update, instead got %v",
-		event.Update)
+	require.Truef(
+		h, ok, "expected channel close update, instead got %T: %v",
+		event.Update, spew.Sdump(event.Update),
+	)
 
 	txid, err := chainhash.NewHash(resp.ChanClose.ClosingTxid)
 	require.NoErrorf(h, err, "wrong format found in closing txid: %v",
@@ -2166,7 +2183,7 @@ func (h *HarnessTest) AssertNumChannelUpdates(hn *node.HarnessNode,
 func (h *HarnessTest) CreateBurnAddr(addrType lnrpc.AddressType) ([]byte,
 	chainutil.Address) {
 
-	randomPrivKey, err := crypto.NewPrivateKey()
+	randomPrivKey, err := btcec.NewPrivateKey()
 	require.NoError(h, err)
 
 	randomKeyBytes := randomPrivKey.PubKey().SerializeCompressed()
@@ -3021,4 +3038,77 @@ func (h HarnessTest) AssertPeerOfflineEvent(stream rpc.PeerEventsClient) {
 func (h HarnessTest) AssertPeerReconnected(stream rpc.PeerEventsClient) {
 	h.AssertPeerOfflineEvent(stream)
 	h.AssertPeerOnlineEvent(stream)
+}
+
+// AssertTxInBlock asserts that the given transaction is found in the block.
+func (h *HarnessTest) AssertTxInBlock(block *wire.MsgBlock,
+	txid chainhash.Hash) {
+
+	for _, tx := range block.Transactions {
+		if tx.TxHash() == txid {
+			return
+		}
+	}
+
+	require.Failf(h, "", "tx %v not found in block %v", txid,
+		block.BlockHash())
+}
+
+// AssertTxInMempool asserts that the given transaction is found in the mempool.
+// The transaction found is returned once succeeded.
+func (h *HarnessTest) AssertTxInMempool(txid chainhash.Hash) *wire.MsgTx {
+	return h.miner.AssertTxInMempool(txid)
+}
+
+// AssertTxNotInMempool asserts that the given transaction is NOT found in the
+// mempool.
+func (h *HarnessTest) AssertTxNotInMempool(txid chainhash.Hash) {
+	h.miner.AssertTxNotInMempool(txid)
+}
+
+// WaitUntilConfirmed waits until the given transaction is confirmed.
+func (h *HarnessTest) WaitUntilConfirmed(txid chainhash.Hash) {
+	err := wait.NoError(func() error {
+		resp, err := h.miner.Client.GetRawTransactionVerbose(&txid)
+		if err != nil {
+			return err
+		}
+
+		if resp.Confirmations == 0 {
+			return fmt.Errorf("tx %v not confirmed", txid)
+		}
+
+		return nil
+	}, DefaultTimeout)
+
+	require.NoError(h, err, "timeout waiting for tx confirmation")
+}
+
+// WaitUntilSpend waits until the given outpoint is spent. Returns the spend
+// transaction.
+func (h *HarnessTest) WaitUntilSpend(outpoint wire.OutPoint) *wire.MsgTx {
+	var spendTx *wire.MsgTx
+
+	err := wait.NoError(func() error {
+		mempool := h.miner.GetRawMempool()
+		for _, txid := range mempool {
+			tx, err := h.miner.Client.GetRawTransaction(&txid)
+			if err != nil {
+				continue
+			}
+
+			for _, txIn := range tx.MsgTx().TxIn {
+				if txIn.PreviousOutPoint == outpoint {
+					spendTx = tx.MsgTx()
+					return nil
+				}
+			}
+		}
+
+		return fmt.Errorf("outpoint %v not spent", outpoint)
+	}, DefaultTimeout)
+
+	require.NoError(h, err, "timeout waiting for outpoint spend")
+
+	return spendTx
 }

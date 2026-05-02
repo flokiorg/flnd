@@ -60,7 +60,7 @@ var defaultSetDesc = setDesc{
 	lnwire.AMPRequired: {
 		SetInvoiceAmp: {}, // 9A
 	},
-	lnwire.ExplicitChannelTypeOptional: {
+	lnwire.ExplicitChannelTypeRequired: {
 		SetInit:    {}, // I
 		SetNodeAnn: {}, // N
 	},
@@ -100,7 +100,7 @@ var defaultSetDesc = setDesc{
 		SetInit:    {}, // I
 		SetNodeAnn: {}, // N
 	},
-	lnwire.ExperimentalEndorsementOptional: {
+	lnwire.ExperimentalAccountabilityOptional: {
 		SetNodeAnn: {}, // N
 	},
 	lnwire.RbfCoopCloseOptionalStaging: {

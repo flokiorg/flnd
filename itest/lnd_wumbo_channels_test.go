@@ -29,12 +29,12 @@ func testWumboChannels(ht *lntest.HarnessTest) {
 	// should fail as the node isn't advertising wumbo channels.
 	ht.EnsureConnected(wumboNode, miniNode)
 
-	chanAmt := funding.MaxFlcFundingAmount + 1
+	chanAmt := funding.MaxFlokicoinFundingAmount + 1
 	// The test should indicate a failure due to the channel being too
 	// large.
 	ht.OpenChannelAssertErr(
 		wumboNode, miniNode, lntest.OpenChannelParams{Amt: chanAmt},
-		lnwallet.ErrChanTooLarge(chanAmt, funding.MaxFlcFundingAmount),
+		lnwallet.ErrChanTooLarge(chanAmt, funding.MaxFlokicoinFundingAmount),
 	)
 
 	// We'll now make another wumbo node to accept our wumbo channel

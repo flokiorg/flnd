@@ -5,6 +5,7 @@ package lncfg
 import (
 	"time"
 
+	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/lnwallet/chanfunding"
 )
 
@@ -57,4 +58,10 @@ func (d *DevConfig) GetMaxWaitNumBlocksFundingConf() uint32 {
 // false for production build.
 func (d *DevConfig) GetUnsafeConnect() bool {
 	return false
+}
+
+// ChannelCloseConfs returns the config value for channel close confirmations
+// override, which is always None for production build.
+func (d *DevConfig) ChannelCloseConfs() fn.Option[uint32] {
+	return fn.None[uint32]()
 }
