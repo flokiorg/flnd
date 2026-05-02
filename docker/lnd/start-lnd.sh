@@ -53,7 +53,7 @@ RPCHOST=$(set_default "$RPCHOST" "blockchain")
 RPCUSER=$(set_default "$RPCUSER" "devuser")
 RPCPASS=$(set_default "$RPCPASS" "devpass")
 DEBUG=$(set_default "$LND_DEBUG" "debug")
-CHAIN=$(set_default "$CHAIN" "flokicoin")
+CHAIN=$(set_default "$CHAIN" "bitcoin")
 HOSTNAME=$(hostname)
 
 # CAUTION: DO NOT use the --noseedback for production/mainnet setups, ever!
@@ -61,37 +61,31 @@ HOSTNAME=$(hostname)
 # address that is reachable on the internal network. If you do this outside of
 # docker, this might be a security concern!
 
-if [ "$BACKEND" == "flokicoind" ] || [ "$BACKEND" == "bitcoind" ]; then
-    # Standardize BACKEND name for flags
-    REAL_BACKEND="flokicoind"
-
-    exec flnd \
+if [ "$BACKEND" == "bitcoind" ]; then
+    exec lnd \
         --noseedbackup \
         "--$CHAIN.active" \
         "--$CHAIN.$NETWORK" \
-        "--$CHAIN.node"="$REAL_BACKEND" \
-        "--$REAL_BACKEND.rpchost"="$RPCHOST" \
-        "--$REAL_BACKEND.rpcuser"="$RPCUSER" \
-        "--$REAL_BACKEND.rpcpass"="$RPCPASS" \
-        "--$REAL_BACKEND.zmqpubrawblock"="tcp://$RPCHOST:28332" \
-        "--$REAL_BACKEND.zmqpubrawtx"="tcp://$RPCHOST:28333" \
+        "--$CHAIN.node"="$BACKEND" \
+        "--$BACKEND.rpchost"="$RPCHOST" \
+        "--$BACKEND.rpcuser"="$RPCUSER" \
+        "--$BACKEND.rpcpass"="$RPCPASS" \
+        "--$BACKEND.zmqpubrawblock"="tcp://$RPCHOST:28332" \
+        "--$BACKEND.zmqpubrawtx"="tcp://$RPCHOST:28333" \
         "--rpclisten=$HOSTNAME:10005" \
         "--rpclisten=localhost:10005" \
         --debuglevel="$DEBUG" \
         "$@"
 elif [ "$BACKEND" == "btcd" ]; then
-    # Standardize BACKEND name for flags
-    REAL_BACKEND="btcd"
-
-    exec flnd \
+    exec lnd \
         --noseedbackup \
         "--$CHAIN.active" \
         "--$CHAIN.$NETWORK" \
-        "--$CHAIN.node"="$REAL_BACKEND" \
-        "--$REAL_BACKEND.rpccert"="$RPCCRTPATH" \
-        "--$REAL_BACKEND.rpchost"="$RPCHOST" \
-        "--$REAL_BACKEND.rpcuser"="$RPCUSER" \
-        "--$REAL_BACKEND.rpcpass"="$RPCPASS" \
+        "--$CHAIN.node"="$BACKEND" \
+        "--$BACKEND.rpccert"="$RPCCRTPATH" \
+        "--$BACKEND.rpchost"="$RPCHOST" \
+        "--$BACKEND.rpcuser"="$RPCUSER" \
+        "--$BACKEND.rpcpass"="$RPCPASS" \
         "--rpclisten=$HOSTNAME:10005" \
         "--rpclisten=localhost:10005" \
         --debuglevel="$DEBUG" \

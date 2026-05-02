@@ -123,17 +123,9 @@ func (r *forwardInterceptor) resolveFromClient(
 
 	switch in.Action {
 	case ResolveHoldForwardAction_RESUME:
-		outgoingChanId := fn.None[lnwire.ShortChannelID]()
-		if in.OutgoingRequestedChanId != 0 {
-			outgoingChanId = fn.Some(lnwire.NewShortChanIDFromInt(
-				in.OutgoingRequestedChanId,
-			))
-		}
-
 		return r.htlcSwitch.Resolve(&htlcswitch.FwdResolution{
-			Key:                     circuitKey,
-			Action:                  htlcswitch.FwdActionResume,
-			OutgoingRequestedChanId: outgoingChanId,
+			Key:    circuitKey,
+			Action: htlcswitch.FwdActionResume,
 		})
 
 	case ResolveHoldForwardAction_RESUME_MODIFIED:
@@ -167,21 +159,13 @@ func (r *forwardInterceptor) resolveFromClient(
 			outWireCustomRecords = fn.Some[lnwire.CustomRecords](cr)
 		}
 
-		outgoingChanId := fn.None[lnwire.ShortChannelID]()
-		if in.OutgoingRequestedChanId != 0 {
-			outgoingChanId = fn.Some(lnwire.NewShortChanIDFromInt(
-				in.OutgoingRequestedChanId,
-			))
-		}
-
 		//nolint:ll
 		return r.htlcSwitch.Resolve(&htlcswitch.FwdResolution{
-			Key:                     circuitKey,
-			Action:                  htlcswitch.FwdActionResumeModified,
-			InAmountMsat:            inAmtMsat,
-			OutAmountMsat:           outAmtMsat,
-			OutWireCustomRecords:    outWireCustomRecords,
-			OutgoingRequestedChanId: outgoingChanId,
+			Key:                  circuitKey,
+			Action:               htlcswitch.FwdActionResumeModified,
+			InAmountMsat:         inAmtMsat,
+			OutAmountMsat:        outAmtMsat,
+			OutWireCustomRecords: outWireCustomRecords,
 		})
 
 	case ResolveHoldForwardAction_FAIL:

@@ -39,7 +39,10 @@ import (
 const (
 	// DefaultMaxOutgoingCltvExpiry is the maximum outgoing time lock that
 	// the node accepts for forwarded payments. The value is relative to the
-	// current block height.
+	// current block height. The reason to have a maximum is to prevent
+	// funds getting locked up unreasonably long. Otherwise, an attacker
+	// willing to lock its own funds too, could force the funds of this node
+	// to be locked up for an indefinite (max int32) number of blocks.
 	//
 	// The value 10080 corresponds to on average one week worth of blocks
 	// and is based on the maximum number of hops (20), the default CLTV
