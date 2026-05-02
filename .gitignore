@@ -86,4 +86,6 @@ coverage.txt
 # All test data generated from rapid.
 */testdata
 
-.agents.dev_ignored/
+.agents
+.dev_ignored/
+
