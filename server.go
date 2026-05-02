@@ -140,12 +140,6 @@ var (
 	// TODO(roasbeef): add command line param to modify.
 	MaxFundingAmount = funding.MaxFlokicoinFundingAmount
 
-	// EndorsementExperimentEnd is the time after which nodes should stop
-	// propagating experimental endorsement signals.
-	//
-	// Per blip04: January 1, 2026 12:00:00 AM UTC in unix seconds.
-	EndorsementExperimentEnd = time.Unix(1767225600, 0)
-
 	// ErrGossiperBan is one of the errors that can be returned when we
 	// attempt to finalize a connection to a remote peer.
 	ErrGossiperBan = errors.New("gossiper has banned remote's key")

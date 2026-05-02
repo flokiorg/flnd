@@ -74,7 +74,7 @@ const (
 
 	defaultNoSeedBackup                  = false
 	defaultPaymentsExpirationGracePeriod = time.Duration(0)
-	defaultTrickleDelay                  = 9 * 1000
+	defaultTrickleDelay                  = 90 * 1000
 	defaultChanStatusSampleInterval      = time.Minute
 	defaultChanEnableTimeout             = 19 * time.Minute
 	defaultChanDisableTimeout            = 20 * time.Minute
@@ -112,15 +112,15 @@ const (
 	// out and return false if it hasn't yet received a response.
 	defaultAcceptorTimeout = 15 * time.Second
 
-	defaultAlias = "myLokinode"
-	defaultColor = "#da9526"
+	defaultAlias = ""
+	defaultColor = "#3399FF"
 
 	// defaultCoopCloseTargetConfs is the default confirmation target
 	// that will be used to estimate a fee rate to use during a
 	// cooperative channel closure initiated by a remote peer. By default
 	// we'll set this to a lax value since we weren't the ones that
 	// initiated the channel closure.
-	defaultCoopCloseTargetConfs = 60
+	defaultCoopCloseTargetConfs = 6
 
 	// defaultBlockCacheSize is the size (in bytes) of blocks that will be
 	// keep in memory if no size is specified.
@@ -384,9 +384,9 @@ type Config struct {
 	FeeURL string `long:"feeurl" description:"DEPRECATED: Use 'fee.url' option. Optional URL for external fee estimation. If no URL is specified, the method for fee estimation will depend on the chosen backend and network. For neutrino on mainnet, a default URL will be used if none is specified." hidden:"true"`
 
 	Flokicoin      *lncfg.Chain      `group:"Flokicoin" namespace:"flokicoin"`
-	BtcdMode       *lncfg.Btcd       `group:"Btcd" namespace:"btcd"`
-	FlokicoindMode *lncfg.Flokicoind `group:"Flokicoind" namespace:"flokicoind"`
-	NeutrinoMode   *lncfg.Neutrino   `group:"Neutrino" namespace:"neutrino"`
+	BtcdMode       *lncfg.Btcd       `group:"btcd" namespace:"btcd"`
+	FlokicoindMode *lncfg.Flokicoind `group:"bitcoind" namespace:"bitcoind"`
+	NeutrinoMode   *lncfg.Neutrino   `group:"neutrino" namespace:"neutrino"`
 
 	BlockCacheSize uint64 `long:"blockcachesize" description:"The maximum capacity of the block cache"`
 
@@ -610,7 +610,7 @@ func DefaultConfig() Config {
 			FeeRate:       chainreg.DefaultFlokicoinFeeRate,
 			TimeLockDelta: chainreg.DefaultFlokicoinTimeLockDelta,
 			MaxLocalDelay: defaultMaxLocalCSVDelay,
-			Node:          neutrinoBackendName,
+			Node:          btcdBackendName,
 		},
 		BtcdMode: &lncfg.Btcd{
 			Dir:     defaultBtcdDir,
@@ -634,9 +634,7 @@ func DefaultConfig() Config {
 		NoSeedBackup:       defaultNoSeedBackup,
 		MinBackoff:         defaultMinBackoff,
 		MaxBackoff:         defaultMaxBackoff,
-		ConnectionTimeout:  60 * time.Second,
-		RestCORS:           []string{"http://localhost:3000"},
-		TLSAutoRefresh:     true,
+		ConnectionTimeout:  tor.DefaultConnTimeout,
 
 		Fee: &lncfg.Fee{
 			MinUpdateTimeout: lncfg.DefaultMinUpdateTimeout,
@@ -762,10 +760,6 @@ func DefaultConfig() Config {
 				PolicyIncreaseMultiplier: lncfg.DefaultBlindedPathPolicyIncreaseMultiplier,
 				PolicyDecreaseMultiplier: lncfg.DefaultBlindedPathPolicyDecreaseMultiplier,
 			},
-		},
-		ProtocolOptions: &lncfg.ProtocolOptions{
-			OptionZeroConf:  true,
-			OptionScidAlias: true,
 		},
 		MaxOutgoingCltvExpiry:     htlcswitch.DefaultMaxOutgoingCltvExpiry,
 		MaxChannelFeeAllocation:   htlcswitch.DefaultMaxLinkFeeAllocation,
@@ -1327,14 +1321,13 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 
 	// The target network must be provided, otherwise, we won't
 	// know how to initialize the daemon.
-	// If no network is specified, we'll default to MainNet.
 	if numNets == 0 {
-		cfg.Flokicoin.MainNet = true
-		cfg.ActiveNetParams = chainreg.FlokicoinMainNetParams
-	}
+		str := "either --bitcoin.mainnet, or --bitcoin.testnet, " +
+			"--bitcoin.testnet4, --bitcoin.simnet, " +
+			"--bitcoin.regtest or --bitcoin.signet must be " +
+			"specified"
 
-	if cfg.Flokicoin.MainNet && cfg.Fee.URL == "" {
-		cfg.Fee.URL = "https://lokichain.info/api/v1/fees/recommended"
+		return nil, mkErr(str)
 	}
 
 	err = cfg.Flokicoin.Validate(minTimeLockDelta, funding.MinFlokicoinRemoteDelay)

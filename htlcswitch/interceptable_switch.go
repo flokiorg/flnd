@@ -141,13 +141,6 @@ type FwdResolution struct {
 	// forwarding if Action is FwdActionResumeModified.
 	OutWireCustomRecords fn.Option[lnwire.CustomRecords]
 
-	// OutgoingRequestedChanId optionally specifies which channel to use for
-	// forwarding. When set to a non-zero value, this overrides the default
-	// channel selection from the onion routing. This is essential for LSPS2
-	// JIT channels where the virtual SCID differs from the actual channel
-	// alias.
-	OutgoingRequestedChanId fn.Option[lnwire.ShortChannelID]
-
 	// FailureMessage is the encrypted failure message that is to be passed
 	// back to the sender if action is FwdActionFail.
 	FailureMessage []byte
@@ -405,7 +398,7 @@ func (s *InterceptableSwitch) setInterceptor(interceptor ForwardInterceptor) {
 	log.Infof("Interceptor disconnected, resolving held packets")
 
 	s.heldHtlcSet.popAll(func(fwd InterceptedForward) {
-		err := fwd.Resume(fn.None[lnwire.ShortChannelID]())
+		err := fwd.Resume()
 		if err != nil {
 			log.Errorf("Failed to resume hold forward %v", err)
 		}
@@ -422,13 +415,12 @@ func (s *InterceptableSwitch) resolve(res *FwdResolution) error {
 
 	switch res.Action {
 	case FwdActionResume:
-		return intercepted.Resume(res.OutgoingRequestedChanId)
+		return intercepted.Resume()
 
 	case FwdActionResumeModified:
 		return intercepted.ResumeModified(
 			res.InAmountMsat, res.OutAmountMsat,
 			res.OutWireCustomRecords,
-			res.OutgoingRequestedChanId,
 		)
 
 	case FwdActionSettle:
@@ -668,14 +660,7 @@ func (f *interceptedForward) Packet() InterceptedPacket {
 }
 
 // Resume resumes the default behavior as if the packet was not intercepted.
-func (f *interceptedForward) Resume(
-	outgoingChanId fn.Option[lnwire.ShortChannelID]) error {
-
-	// Override the outgoing channel if specified.
-	outgoingChanId.WhenSome(func(chanID lnwire.ShortChannelID) {
-		f.packet.outgoingChanID = chanID
-	})
-
+func (f *interceptedForward) Resume() error {
 	// Forward to the switch. A link quit channel isn't needed, because we
 	// are on a different thread now.
 	return f.htlcSwitch.ForwardPackets(nil, f.packet)
@@ -689,8 +674,7 @@ func (f *interceptedForward) Resume(
 func (f *interceptedForward) ResumeModified(
 	inAmountMsat fn.Option[lnwire.MilliLoki],
 	outAmountMsat fn.Option[lnwire.MilliLoki],
-	outWireCustomRecords fn.Option[lnwire.CustomRecords],
-	outgoingChanId fn.Option[lnwire.ShortChannelID]) error {
+	outWireCustomRecords fn.Option[lnwire.CustomRecords]) error {
 
 	// Convert the optional custom records to the correct type and validate
 	// them.
@@ -721,11 +705,6 @@ func (f *interceptedForward) ResumeModified(
 	// Set the incoming amount, if it is provided, on the packet.
 	inAmountMsat.WhenSome(func(amount lnwire.MilliLoki) {
 		f.packet.incomingAmount = amount
-	})
-
-	// Override the outgoing channel if specified.
-	outgoingChanId.WhenSome(func(chanID lnwire.ShortChannelID) {
-		f.packet.outgoingChanID = chanID
 	})
 
 	// Modify the wire message contained in the packet.

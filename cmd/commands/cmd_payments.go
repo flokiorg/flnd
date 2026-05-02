@@ -606,7 +606,7 @@ func SendPaymentRequest(ctx *cli.Context, req *routerrpc.SendPaymentRequest,
 		// If amount is present in the request, override the request
 		// amount.
 		amt := req.Amt
-		invoiceAmt := decodeResp.GetNumSatoshis()
+		invoiceAmt := decodeResp.GetNumLokis()
 		if invoiceAmt != 0 {
 			amt = invoiceAmt
 		}

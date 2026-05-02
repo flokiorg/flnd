@@ -123,7 +123,7 @@ const (
 	DefaultFlokicoinBaseFeeMSat = lnwire.MilliLoki(1000)
 
 	// DefaultFlokicoinFeeRate is the default forwarding fee rate.
-	DefaultFlokicoinFeeRate = lnwire.MilliLoki(100)
+	DefaultFlokicoinFeeRate = lnwire.MilliLoki(1)
 
 	// DefaultFlokicoinTimeLockDelta is the default forwarding time lock
 	// delta.
@@ -327,9 +327,9 @@ func NewPartialChainControl(cfg *Config) (*PartialChainControl, func(), error) {
 				if err != nil || conn == nil {
 					switch {
 					case cfg.Flokicoin.RegTest:
-						rpcPort = 25213
+						rpcPort = 18443
 					case cfg.Flokicoin.SigNet:
-						rpcPort = 55213
+						rpcPort = 38332
 					}
 					bitcoindHost = fmt.Sprintf("%v:%d",
 						bitcoindMode.RPCHost,

@@ -347,7 +347,7 @@ func checkNotBothSet(ctx *cli.Context, a, b string) (string, error) {
 
 func Main() {
 	app := cli.NewApp()
-	app.Name = "flncli"
+	app.Name = "lncli"
 	app.Version = build.Version() + " commit=" + build.Commit
 	app.Usage = "control plane for your Lightning Network Daemon (lnd)"
 	app.Flags = []cli.Flag{
