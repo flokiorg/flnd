@@ -216,7 +216,7 @@ var _ TestMessage = (*ChannelAnnouncement2)(nil)
 func (c *ChannelAnnouncement2) RandTestMessage(t *rapid.T) Message {
 	features := RandFeatureVector(t)
 	shortChanID := RandShortChannelID(t)
-	capacity := uint64(rapid.IntRange(1, 10000000000000).Draw(t, "capacity"))
+	capacity := rapid.Uint64Range(1, 10000000000000).Draw(t, "capacity")
 
 	var nodeID1, nodeID2 [33]byte
 	copy(nodeID1[:], RandPubKey(t).SerializeCompressed())
