@@ -13,6 +13,7 @@ import (
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/chanacceptor"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/discovery"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/graph"
@@ -379,8 +380,9 @@ type Config struct {
 	// so that the channel creation process can be completed.
 	Notifier chainntnfs.ChainNotifier
 
-	// ChannelDB is the database that keeps track of all channel state.
-	ChannelDB *channeldb.ChannelStateDB
+	// ChannelDB is the database that keeps track of channel state used by
+	// the funding flow.
+	ChannelDB chanstate.Store
 
 	// SignMessage signs an arbitrary message with a given public key. The
 	// actual digest signed is the double sha-256 of the message. In the
