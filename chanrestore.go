@@ -9,6 +9,7 @@ import (
 
 	"github.com/flokiorg/flnd/chanbackup"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/contractcourt"
 	"github.com/flokiorg/flnd/keychain"
 	"github.com/flokiorg/flnd/lnwire"
@@ -36,7 +37,7 @@ const (
 // need the secret key chain in order obtain the prior shachain root so we can
 // verify the DLP protocol as initiated by the remote node.
 type chanDBRestorer struct {
-	db *channeldb.ChannelStateDB
+	db chanstate.OpenChannelStore
 
 	secretKeys keychain.SecretKeyRing
 
