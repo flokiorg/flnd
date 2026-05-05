@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/flokiorg/flnd/chainntnfs"
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	graphdb "github.com/flokiorg/flnd/graph/db"
 	"github.com/flokiorg/flnd/input"
@@ -140,10 +140,9 @@ type BreachConfig struct {
 	// a close type to be included in the channel close summary.
 	CloseLink func(*wire.OutPoint, ChannelCloseType)
 
-	// DB provides access to the user's channels, allowing the breach
-	// arbiter to determine the current state of a user's channels, and how
-	// it should respond to channel closure.
-	DB *channeldb.ChannelStateDB
+	// DB provides access to the user's closed channels, allowing the breach
+	// arbiter to determine how it should respond to channel closure.
+	DB chanstate.ClosedChannelStore
 
 	// Estimator is used by the breach arbiter to determine an appropriate
 	// fee level when generating, signing, and broadcasting sweep
