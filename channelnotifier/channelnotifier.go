@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/subscribe"
 	"github.com/flokiorg/go-flokicoin/wire"
 )
@@ -17,7 +18,7 @@ type ChannelNotifier struct {
 
 	ntfnServer *subscribe.Server
 
-	chanDB *channeldb.ChannelStateDB
+	chanDB chanstate.Store
 }
 
 // PendingOpenChannelEvent represents a new event where a new channel has
@@ -91,7 +92,7 @@ type FundingTimeoutEvent struct {
 // New creates a new channel notifier. The ChannelNotifier gets channel
 // events from peers and from the chain arbitrator, and dispatches them to
 // its clients.
-func New(chanDB *channeldb.ChannelStateDB) *ChannelNotifier {
+func New(chanDB chanstate.Store) *ChannelNotifier {
 	return &ChannelNotifier{
 		ntfnServer: subscribe.NewServer(),
 		chanDB:     chanDB,
