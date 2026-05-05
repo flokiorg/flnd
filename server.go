@@ -29,6 +29,7 @@ import (
 	"github.com/flokiorg/flnd/chanfitness"
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/channelnotifier"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/clock"
 	"github.com/flokiorg/flnd/cluster"
 	"github.com/flokiorg/flnd/contractcourt"
@@ -323,7 +324,8 @@ type server struct {
 
 	graphDB *graphdb.ChannelGraph
 
-	chanStateDB *channeldb.ChannelStateDB
+	chanStateDB chanstate.Store
+	linkNodeDB  *channeldb.LinkNodeDB
 
 	addrSource channeldb.AddrSource
 
@@ -687,12 +689,14 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 	}
 
 	addrSource := channeldb.NewMultiAddrSource(dbs.ChanStateDB, dbs.GraphDB)
+	chanStateDB := dbs.ChanStateDB.ChannelStateDB()
 
 	s := &server{
 		cfg:            cfg,
 		implCfg:        implCfg,
 		graphDB:        dbs.GraphDB,
-		chanStateDB:    dbs.ChanStateDB.ChannelStateDB(),
+		chanStateDB:    chanStateDB,
+		linkNodeDB:     chanStateDB.LinkNodeDB(),
 		addrSource:     addrSource,
 		miscDB:         dbs.ChanStateDB,
 		invoicesDB:     dbs.InvoiceDB,
@@ -706,9 +710,7 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 		blockbeatDispatcher: chainio.NewBlockbeatDispatcher(
 			cc.ChainNotifier,
 		),
-		channelNotifier: channelnotifier.New(
-			dbs.ChanStateDB.ChannelStateDB(),
-		),
+		channelNotifier: channelnotifier.New(chanStateDB),
 
 		identityECDH:   nodeKeyECDH,
 		identityKeyLoc: nodeKeyDesc.KeyLocator,
@@ -3488,7 +3490,7 @@ func (s *server) establishPersistentConnections(ctx context.Context) error {
 	// Iterate through the list of LinkNodes to find addresses we should
 	// attempt to connect to based on our set of previous connections. Set
 	// the reconnection port to the default peer port.
-	linkNodes, err := s.chanStateDB.LinkNodeDB().FetchAllLinkNodes()
+	linkNodes, err := s.linkNodeDB.FetchAllLinkNodes()
 	if err != nil && !errors.Is(err, channeldb.ErrLinkNodesNotFound) {
 		return fmt.Errorf("failed to fetch all link nodes: %w", err)
 	}
