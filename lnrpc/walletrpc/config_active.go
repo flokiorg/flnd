@@ -4,14 +4,14 @@
 package walletrpc
 
 import (
-	"github.com/flokiorg/go-flokicoin/chaincfg"
-	"github.com/flokiorg/walletd/wallet"
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/keychain"
 	"github.com/flokiorg/flnd/lnwallet"
 	"github.com/flokiorg/flnd/lnwallet/chainfee"
 	"github.com/flokiorg/flnd/macaroons"
 	"github.com/flokiorg/flnd/sweep"
+	"github.com/flokiorg/go-flokicoin/chaincfg"
+	"github.com/flokiorg/walletd/wallet"
 )
 
 const (
@@ -78,6 +78,6 @@ type Config struct {
 	// coins when funding a transaction.
 	CoinSelectionStrategy wallet.CoinSelectionStrategy
 
-	// ChanStateDB is the reference to the channel db.
-	ChanStateDB *channeldb.ChannelStateDB
+	// ChanStateDB is the reference to the open channel store.
+	ChanStateDB chanstate.OpenChannelStore
 }

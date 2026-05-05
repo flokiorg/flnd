@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/graph/db/models"
 	"github.com/flokiorg/flnd/invoices"
 	"github.com/flokiorg/flnd/lntypes"
@@ -70,9 +71,8 @@ type AddInvoiceConfig struct {
 	// specified.
 	DefaultCLTVExpiry uint32
 
-	// ChanDB is a global boltdb instance which is needed to access the
-	// channel graph.
-	ChanDB *channeldb.ChannelStateDB
+	// ChanDB is used to access open channel state.
+	ChanDB chanstate.OpenChannelStore
 
 	// Graph gives the invoice server access to various graph related
 	// queries.

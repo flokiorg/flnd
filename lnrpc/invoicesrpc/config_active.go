@@ -4,12 +4,12 @@
 package invoicesrpc
 
 import (
-	"github.com/flokiorg/go-flokicoin/chaincfg"
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/invoices"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/macaroons"
 	"github.com/flokiorg/flnd/netann"
+	"github.com/flokiorg/go-flokicoin/chaincfg"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -55,9 +55,9 @@ type Config struct {
 	// graph.
 	Graph GraphSource
 
-	// ChanStateDB is a possibly replicated db instance which contains the
-	// channel state
-	ChanStateDB *channeldb.ChannelStateDB
+	// ChanStateDB is a possibly replicated db instance which contains open
+	// channel state.
+	ChanStateDB chanstate.OpenChannelStore
 
 	// GenInvoiceFeatures returns a feature containing feature bits that
 	// should be advertised on freshly generated invoices.
