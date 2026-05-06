@@ -14,3 +14,11 @@ func bobKey() (*crypto.PrivateKey, *crypto.PublicKey) {
 
 	return priv, pub
 }
+
+// aliceKey returns the deterministic spec test key for Alice, whose 32-byte
+// scalar is 0x41 repeated.
+func aliceKey() (*crypto.PrivateKey, *crypto.PublicKey) {
+	priv, pub := crypto.PrivKeyFromBytes(bytes.Repeat([]byte{0x41}, 32))
+
+	return priv, pub
+}
