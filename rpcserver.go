@@ -63,7 +63,6 @@ import (
 	paymentsdb "github.com/flokiorg/flnd/payments/db"
 	"github.com/flokiorg/flnd/peer"
 	"github.com/flokiorg/flnd/peernotifier"
-	"github.com/flokiorg/flnd/record"
 	"github.com/flokiorg/flnd/routing"
 	"github.com/flokiorg/flnd/routing/blindedpath"
 	"github.com/flokiorg/flnd/routing/route"
