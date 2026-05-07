@@ -259,24 +259,6 @@ func TestNodeInsertionAndDeletion(t *testing.T) {
 	dbNode, err = graph.FetchNode(ctx, testPub)
 	require.NoError(t, err)
 	require.Equal(t, expAddrs, dbNode.Addresses)
-
-	// Also check that the withAddr param of ForEachNodeCached correctly
-	// returns the addresses we expect for this node.
-	err = graph.ForEachNodeCached(
-		ctx, true, func(ctx context.Context, node route.Vertex,
-			addrs []net.Addr,
-			chans map[uint64]*DirectedChannel) error {
-
-			if node != dbNode.PubKeyBytes {
-				return nil
-			}
-
-			require.Equal(t, expAddrs, addrs)
-
-			return nil
-		}, func() {},
-	)
-	require.NoError(t, err)
 }
 
 // TestPartialNode checks that we can add and retrieve a Node where
@@ -1438,8 +1420,8 @@ func TestGraphTraversal(t *testing.T) {
 	// set of channels (to force the fall back), we should find all the
 	// channel as well as the nodes included.
 	graph.graphCache = nil
-	err := graph.ForEachNodeCached(ctx, false, func(_ context.Context,
-		node route.Vertex, _ []net.Addr,
+	err := graph.ForEachNodeCached(ctx, func(_ context.Context,
+		node route.Vertex,
 		chans map[uint64]*DirectedChannel) error {
 
 		if _, ok := nodeIndex[node]; !ok {

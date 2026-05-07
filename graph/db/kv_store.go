@@ -678,8 +678,8 @@ func (c *KVStore) FetchNodeFeatures(_ context.Context, nodePub route.Vertex) (
 // data to the call-back.
 //
 // NOTE: The callback contents MUST not be modified.
-func (c *KVStore) ForEachNodeCached(ctx context.Context, withAddrs bool,
-	cb func(ctx context.Context, node route.Vertex, addrs []net.Addr,
+func (c *KVStore) ForEachNodeCached(ctx context.Context,
+	cb func(ctx context.Context, node route.Vertex,
 		chans map[uint64]*DirectedChannel) error, reset func()) error {
 
 	// Otherwise call back to a version that uses the database directly.
@@ -740,12 +740,7 @@ func (c *KVStore) ForEachNodeCached(ctx context.Context, withAddrs bool,
 			return err
 		}
 
-		var addrs []net.Addr
-		if withAddrs {
-			addrs = node.Addresses
-		}
-
-		return cb(ctx, node.PubKeyBytes, addrs, channels)
+		return cb(ctx, node.PubKeyBytes, channels)
 	}, reset)
 }
 

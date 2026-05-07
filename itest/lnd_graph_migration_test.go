@@ -3,7 +3,6 @@ package itest
 import (
 	"context"
 	"database/sql"
-	"net"
 
 	graphdb "github.com/flokiorg/flnd/graph/db"
 	"github.com/flokiorg/flnd/lntest"
@@ -65,8 +64,8 @@ func testGraphMigration(ht *lntest.HarnessTest) {
 			numNodes int
 			edges    = make(map[uint64]bool)
 		)
-		err := db.ForEachNodeCached(ctx, false, func(_ context.Context,
-			_ route.Vertex, _ []net.Addr,
+		err := db.ForEachNodeCached(ctx, func(_ context.Context,
+			_ route.Vertex,
 			chans map[uint64]*graphdb.DirectedChannel) error {
 
 			numNodes++

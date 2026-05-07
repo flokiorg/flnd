@@ -1261,19 +1261,15 @@ func (s *SQLStore) ChanUpdatesInHorizon(startTime, endTime time.Time,
 }
 
 // ForEachNodeCached is similar to forEachNode, but it returns DirectedChannel
-// data to the call-back. If withAddrs is true, then the call-back will also be
-// provided with the addresses associated with the node. The address retrieval
-// result in an additional round-trip to the database, so it should only be used
-// if the addresses are actually needed.
+// data to the call-back.
 //
 // NOTE: part of the V1Store interface.
-func (s *SQLStore) ForEachNodeCached(ctx context.Context, withAddrs bool,
-	cb func(ctx context.Context, node route.Vertex, addrs []net.Addr,
+func (s *SQLStore) ForEachNodeCached(ctx context.Context,
+	cb func(ctx context.Context, node route.Vertex,
 		chans map[uint64]*DirectedChannel) error, reset func()) error {
 
 	type nodeCachedBatchData struct {
 		features      map[int64][]int
-		addrs         map[int64][]nodeAddress
 		chanBatchData *batchChannelData
 		chanMap       map[int64][]sqlc.ListChannelsForNodeIDsRow
 	}
@@ -1304,19 +1300,6 @@ func (s *SQLStore) ForEachNodeCached(ctx context.Context, withAddrs bool,
 			if err != nil {
 				return nil, fmt.Errorf("unable to batch load "+
 					"node features: %w", err)
-			}
-
-			// Maybe fetch the node's addresses if requested.
-			var nodeAddrs map[int64][]nodeAddress
-			if withAddrs {
-				nodeAddrs, err = batchLoadNodeAddressesHelper(
-					ctx, s.cfg.QueryCfg, db, nodeIDs,
-				)
-				if err != nil {
-					return nil, fmt.Errorf("unable to "+
-						"batch load node "+
-						"addresses: %w", err)
-				}
 			}
 
 			// Batch load ALL unique channels for ALL nodes in this
@@ -1407,7 +1390,6 @@ func (s *SQLStore) ForEachNodeCached(ctx context.Context, withAddrs bool,
 
 			return &nodeCachedBatchData{
 				features:      nodeFeatures,
-				addrs:         nodeAddrs,
 				chanBatchData: channelBatchData,
 				chanMap:       nodeChannelMap,
 			}, nil
@@ -1451,15 +1433,7 @@ func (s *SQLStore) ForEachNodeCached(ctx context.Context, withAddrs bool,
 				channels[directedChan.ChannelID] = directedChan
 			}
 
-			addrs, err := buildNodeAddresses(
-				batchData.addrs[nodeData.ID],
-			)
-			if err != nil {
-				return fmt.Errorf("unable to build node "+
-					"addresses: %w", err)
-			}
-
-			return cb(ctx, nodePub, addrs, channels)
+			return cb(ctx, nodePub, channels)
 		}
 
 		return sqldb.ExecuteCollectAndBatchWithSharedDataQuery(

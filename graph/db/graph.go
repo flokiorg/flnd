@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -246,21 +245,21 @@ func (c *ChannelGraph) GraphSession(cb func(graph NodeTraverser) error,
 // graph, executing the passed callback with each node encountered.
 //
 // NOTE: The callback contents MUST not be modified.
-func (c *ChannelGraph) ForEachNodeCached(ctx context.Context, withAddrs bool,
-	cb func(ctx context.Context, node route.Vertex, addrs []net.Addr,
+func (c *ChannelGraph) ForEachNodeCached(ctx context.Context,
+	cb func(ctx context.Context, node route.Vertex,
 		chans map[uint64]*DirectedChannel) error, reset func()) error {
 
-	if !withAddrs && c.graphCache != nil {
+	if c.graphCache != nil {
 		return c.graphCache.ForEachNode(
 			func(node route.Vertex,
 				channels map[uint64]*DirectedChannel) error {
 
-				return cb(ctx, node, nil, channels)
+				return cb(ctx, node, channels)
 			},
 		)
 	}
 
-	return c.V1Store.ForEachNodeCached(ctx, withAddrs, cb, reset)
+	return c.V1Store.ForEachNodeCached(ctx, cb, reset)
 }
 
 // AddNode adds a vertex/node to the graph database. If the node is not
