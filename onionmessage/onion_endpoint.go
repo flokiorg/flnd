@@ -1,8 +1,8 @@
 package onionmessage
 
 import (
+	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/record"
-	sphinx "github.com/flokiorg/lightning-onion"
 )
 
 // OnionMessageUpdate is onion message update dispatched to any potential
@@ -26,7 +26,7 @@ type OnionMessageUpdate struct {
 	CustomRecords record.CustomSet
 
 	// ReplyPath contains the reply path information for the onion message.
-	ReplyPath *sphinx.BlindedPath
+	ReplyPath *lnwire.BlindedPath
 
 	// EncryptedRecipientData contains the encrypted recipient data for the
 	// onion message, created by the creator of the blinded route. This is
