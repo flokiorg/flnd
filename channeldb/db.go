@@ -1478,7 +1478,7 @@ func (c *ChannelStateDB) RestoreChannelShells(channelShells ...*ChannelShell) er
 			// is idempotent, we'll continue to the next step.
 			channel.Db = c
 			err := syncNewChannel(
-				tx, channel, channelShell.NodeAddrs,
+				tx, channel, channelShell.NodeAddrs, c.backend,
 			)
 			if err != nil {
 				return err
