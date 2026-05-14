@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/flokiorg/flnd/chainntnfs"
+	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	graphdb "github.com/flokiorg/flnd/graph/db"
@@ -142,7 +143,7 @@ type BreachConfig struct {
 
 	// DB provides access to the user's closed channels, allowing the breach
 	// arbiter to determine how it should respond to channel closure.
-	DB chanstate.ClosedChannelStore
+	DB chanstate.ClosedChannelStore[*channeldb.OpenChannel]
 
 	// Estimator is used by the breach arbiter to determine an appropriate
 	// fee level when generating, signing, and broadcasting sweep

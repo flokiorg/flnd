@@ -4,6 +4,7 @@
 package invoicesrpc
 
 import (
+	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/invoices"
 	"github.com/flokiorg/flnd/lnwire"
@@ -57,7 +58,7 @@ type Config struct {
 
 	// ChanStateDB is a possibly replicated db instance which contains open
 	// channel state.
-	ChanStateDB chanstate.OpenChannelStore
+	ChanStateDB chanstate.OpenChannelStore[*channeldb.OpenChannel]
 
 	// GenInvoiceFeatures returns a feature containing feature bits that
 	// should be advertised on freshly generated invoices.
