@@ -7,6 +7,7 @@ import (
 	"github.com/flokiorg/flnd/graph/db/models"
 	"github.com/flokiorg/flnd/lntypes"
 	"github.com/flokiorg/flnd/lnwire"
+	"github.com/flokiorg/flnd/shachain"
 	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/flokiorg/go-flokicoin/wire"
 )
@@ -264,6 +265,18 @@ type OpenChannelCommitmentStore[Channel any] interface {
 	AdvanceCommitChainTail(channel Channel, fwdPkg *FwdPkg,
 		updates []LogUpdate, ourOutputIndex,
 		theirOutputIndex uint32) error
+
+	// CommitmentHeight returns the current persisted commitment height.
+	CommitmentHeight(channel Channel) (uint64, error)
+
+	// LatestCommitments returns the two latest commitments for both the
+	// local and remote party.
+	LatestCommitments(channel Channel) (*ChannelCommitment,
+		*ChannelCommitment, error)
+
+	// RemoteRevocationStore returns the most up to date commitment version
+	// of the revocation storage tree for the remote party.
+	RemoteRevocationStore(channel Channel) (shachain.Store, error)
 }
 
 // OpenChannelFwdPkgStore owns forwarding packages tied to open channel records.
