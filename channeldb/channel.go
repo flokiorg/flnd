@@ -264,6 +264,13 @@ type openChannelTlvData struct {
 	// confirmationHeight records the block height at which the funding
 	// transaction was first confirmed.
 	confirmationHeight tlv.RecordT[tlv.TlvType8, uint32]
+
+	// closeConfirmationHeight records the block height at which the closing
+	// transaction was first confirmed. This is used to calculate the
+	// remaining confirmations until the channel is considered fully closed.
+	// Note: if not set, it means either the channel has not been
+	// closed yet, or it was closed before this field was introduced.
+	closeConfirmationHeight tlv.OptionalRecordT[tlv.TlvType9, uint32]
 }
 
 // encode serializes the openChannelTlvData to the given io.Writer.
@@ -286,6 +293,11 @@ func (c *openChannelTlvData) encode(w io.Writer) error {
 	c.customBlob.WhenSome(func(blob tlv.RecordT[tlv.TlvType7, tlv.Blob]) {
 		tlvRecords = append(tlvRecords, blob.Record())
 	})
+	c.closeConfirmationHeight.WhenSome(
+		func(h tlv.RecordT[tlv.TlvType9, uint32]) {
+			tlvRecords = append(tlvRecords, h.Record())
+		},
+	)
 
 	tlv.SortRecords(tlvRecords)
 
@@ -303,6 +315,7 @@ func (c *openChannelTlvData) decode(r io.Reader) error {
 	memo := c.memo.Zero()
 	tapscriptRoot := c.tapscriptRoot.Zero()
 	blob := c.customBlob.Zero()
+	closeConfHeight := c.closeConfirmationHeight.Zero()
 
 	// Create the tlv stream.
 	tlvStream, err := tlv.NewStream(
@@ -314,6 +327,7 @@ func (c *openChannelTlvData) decode(r io.Reader) error {
 		tapscriptRoot.Record(),
 		blob.Record(),
 		c.confirmationHeight.Record(),
+		closeConfHeight.Record(),
 	)
 	if err != nil {
 		return err
@@ -332,6 +346,9 @@ func (c *openChannelTlvData) decode(r io.Reader) error {
 	}
 	if _, ok := tlvs[c.customBlob.TlvType()]; ok {
 		c.customBlob = tlv.SomeRecordT(blob)
+	}
+	if _, ok := tlvs[closeConfHeight.TlvType()]; ok {
+		c.closeConfirmationHeight = tlv.SomeRecordT(closeConfHeight)
 	}
 
 	return nil
@@ -709,6 +726,14 @@ type OpenChannel struct {
 	// transaction was first confirmed.
 	ConfirmationHeight uint32
 
+	// CloseConfirmationHeight records the block height at which the closing
+	// transaction was first confirmed. This is used to track remaining
+	// confirmations until the channel is considered fully closed. It is
+	// None if the closing transaction has not yet been confirmed, or if
+	// this data was not available (e.g. channels closed before this
+	// field was introduced).
+	CloseConfirmationHeight fn.Option[uint32]
+
 	// NumConfsRequired is the number of confirmations a channel's funding
 	// transaction must have received in order to be considered available
 	// for normal transactional use.
@@ -1021,6 +1046,9 @@ func (c *OpenChannel) amendTlvData(auxData openChannelTlvData) {
 	auxData.customBlob.WhenSomeV(func(blob tlv.Blob) {
 		c.CustomBlob = fn.Some(blob)
 	})
+	auxData.closeConfirmationHeight.WhenSomeV(func(h uint32) {
+		c.CloseConfirmationHeight = fn.Some(h)
+	})
 }
 
 // extractTlvData creates a new openChannelTlvData from the given channel.
@@ -1058,6 +1086,11 @@ func (c *OpenChannel) extractTlvData() openChannelTlvData {
 			tlv.NewPrimitiveRecord[tlv.TlvType7](blob),
 		)
 	})
+	c.CloseConfirmationHeight.WhenSome(func(h uint32) {
+		auxData.closeConfirmationHeight = tlv.SomeRecordT(
+			tlv.NewPrimitiveRecord[tlv.TlvType9](h),
+		)
+	})
 
 	return auxData
 }
@@ -1068,9 +1101,16 @@ func (c *OpenChannel) Refresh() error {
 	c.Lock()
 	defer c.Unlock()
 
-	err := kvdb.View(c.Db.backend, func(tx kvdb.RTx) error {
+	return c.Db.RefreshChannel(c)
+}
+
+// RefreshChannel updates the in-memory channel state using the latest state
+// observed on disk.
+func (c *ChannelStateDB) RefreshChannel(channel *OpenChannel) error {
+	return kvdb.View(c.backend, func(tx kvdb.RTx) error {
 		chanBucket, err := fetchChanBucket(
-			tx, c.IdentityPub, &c.FundingOutpoint, c.ChainHash,
+			tx, channel.IdentityPub, &channel.FundingOutpoint,
+			channel.ChainHash,
 		)
 		if err != nil {
 			return err
@@ -1078,30 +1118,27 @@ func (c *OpenChannel) Refresh() error {
 
 		// We'll re-populating the in-memory channel with the info
 		// fetched from disk.
-		if err := fetchChanInfo(chanBucket, c); err != nil {
+		if err := fetchChanInfo(chanBucket, channel); err != nil {
 			return fmt.Errorf("unable to fetch chan info: %w", err)
 		}
 
 		// Also populate the channel's commitment states for both sides
 		// of the channel.
-		if err := fetchChanCommitments(chanBucket, c); err != nil {
+		err = fetchChanCommitments(chanBucket, channel)
+		if err != nil {
 			return fmt.Errorf("unable to fetch chan commitments: "+
 				"%v", err)
 		}
 
 		// Also retrieve the current revocation state.
-		if err := fetchChanRevocationState(chanBucket, c); err != nil {
+		err = fetchChanRevocationState(chanBucket, channel)
+		if err != nil {
 			return fmt.Errorf("unable to fetch chan revocations: "+
 				"%v", err)
 		}
 
 		return nil
 	}, func() {})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // fetchChanBucket is a helper function that returns the bucket where a
@@ -1242,9 +1279,9 @@ func fetchFinalHtlcsBucketRw(tx kvdb.RwTx,
 	return chanBucket, nil
 }
 
-// fullSync syncs the contents of an OpenChannel while re-using an existing
-// database transaction.
-func (c *OpenChannel) fullSync(tx kvdb.RwTx) error {
+// fullSyncOpenChannel syncs the contents of an OpenChannel while re-using an
+// existing database transaction.
+func fullSyncOpenChannel(tx kvdb.RwTx, c *OpenChannel) error {
 	// Fetch the outpoint bucket and check if the outpoint already exists.
 	opBucket := tx.ReadWriteBucket(outpointBucket)
 	if opBucket == nil {
@@ -1340,23 +1377,7 @@ func (c *OpenChannel) MarkConfirmationHeight(height uint32) error {
 	c.Lock()
 	defer c.Unlock()
 
-	if err := kvdb.Update(c.Db.backend, func(tx kvdb.RwTx) error {
-		chanBucket, err := fetchChanBucketRw(
-			tx, c.IdentityPub, &c.FundingOutpoint, c.ChainHash,
-		)
-		if err != nil {
-			return err
-		}
-
-		channel, err := fetchOpenChannel(chanBucket, &c.FundingOutpoint)
-		if err != nil {
-			return err
-		}
-
-		channel.ConfirmationHeight = height
-
-		return putOpenChannel(chanBucket, channel)
-	}, func() {}); err != nil {
+	if err := c.Db.MarkChannelConfirmationHeight(c, height); err != nil {
 		return err
 	}
 
@@ -1365,30 +1386,91 @@ func (c *OpenChannel) MarkConfirmationHeight(height uint32) error {
 	return nil
 }
 
+// MarkChannelConfirmationHeight updates the channel's confirmation height once
+// the channel opening transaction receives one confirmation.
+func (c *ChannelStateDB) MarkChannelConfirmationHeight(channel *OpenChannel,
+	height uint32) error {
+
+	return kvdb.Update(c.backend, func(tx kvdb.RwTx) error {
+		chanBucket, err := fetchChanBucketRw(
+			tx, channel.IdentityPub, &channel.FundingOutpoint,
+			channel.ChainHash,
+		)
+		if err != nil {
+			return err
+		}
+
+		diskChannel, err := fetchOpenChannel(
+			chanBucket, &channel.FundingOutpoint,
+		)
+		if err != nil {
+			return err
+		}
+
+		diskChannel.ConfirmationHeight = height
+
+		return putOpenChannel(chanBucket, diskChannel)
+	}, func() {})
+}
+
+// ResetCloseConfirmationHeight clears the channel's close confirmation height
+// when the spending transaction is reorged out.
+func (c *OpenChannel) ResetCloseConfirmationHeight() error {
+	return c.MarkCloseConfirmationHeight(fn.None[uint32]())
+}
+
+// MarkCloseConfirmationHeight updates the channel's close confirmation height
+// when the closing transaction is first detected in a block (spend height).
+func (c *OpenChannel) MarkCloseConfirmationHeight(
+	height fn.Option[uint32]) error {
+
+	c.Lock()
+	defer c.Unlock()
+
+	err := c.Db.MarkChannelCloseConfirmationHeight(c, height)
+	if err != nil {
+		return err
+	}
+
+	c.CloseConfirmationHeight = height
+
+	return nil
+}
+
+// MarkChannelCloseConfirmationHeight updates the channel's close confirmation
+// height when the closing transaction is first detected in a block.
+func (c *ChannelStateDB) MarkChannelCloseConfirmationHeight(
+	channel *OpenChannel, height fn.Option[uint32]) error {
+
+	return kvdb.Update(c.backend, func(tx kvdb.RwTx) error {
+		chanBucket, err := fetchChanBucketRw(
+			tx, channel.IdentityPub, &channel.FundingOutpoint,
+			channel.ChainHash,
+		)
+		if err != nil {
+			return err
+		}
+
+		diskChannel, err := fetchOpenChannel(
+			chanBucket, &channel.FundingOutpoint,
+		)
+		if err != nil {
+			return err
+		}
+
+		diskChannel.CloseConfirmationHeight = height
+
+		return putOpenChannel(chanBucket, diskChannel)
+	}, func() {})
+}
+
 // MarkAsOpen marks a channel as fully open given a locator that uniquely
 // describes its location within the chain.
 func (c *OpenChannel) MarkAsOpen(openLoc lnwire.ShortChannelID) error {
 	c.Lock()
 	defer c.Unlock()
 
-	if err := kvdb.Update(c.Db.backend, func(tx kvdb.RwTx) error {
-		chanBucket, err := fetchChanBucketRw(
-			tx, c.IdentityPub, &c.FundingOutpoint, c.ChainHash,
-		)
-		if err != nil {
-			return err
-		}
-
-		channel, err := fetchOpenChannel(chanBucket, &c.FundingOutpoint)
-		if err != nil {
-			return err
-		}
-
-		channel.IsPending = false
-		channel.ShortChannelID = openLoc
-
-		return putOpenChannel(chanBucket, channel)
-	}, func() {}); err != nil {
+	if err := c.Db.MarkChannelOpen(c, openLoc); err != nil {
 		return err
 	}
 
@@ -1399,31 +1481,41 @@ func (c *OpenChannel) MarkAsOpen(openLoc lnwire.ShortChannelID) error {
 	return nil
 }
 
+// MarkChannelOpen marks a channel as fully open given a locator that uniquely
+// describes its location within the chain.
+func (c *ChannelStateDB) MarkChannelOpen(channel *OpenChannel,
+	openLoc lnwire.ShortChannelID) error {
+
+	return kvdb.Update(c.backend, func(tx kvdb.RwTx) error {
+		chanBucket, err := fetchChanBucketRw(
+			tx, channel.IdentityPub, &channel.FundingOutpoint,
+			channel.ChainHash,
+		)
+		if err != nil {
+			return err
+		}
+
+		diskChannel, err := fetchOpenChannel(
+			chanBucket, &channel.FundingOutpoint,
+		)
+		if err != nil {
+			return err
+		}
+
+		diskChannel.IsPending = false
+		diskChannel.ShortChannelID = openLoc
+
+		return putOpenChannel(chanBucket, diskChannel)
+	}, func() {})
+}
+
 // MarkRealScid marks the zero-conf channel's confirmed ShortChannelID. This
 // should only be done if IsZeroConf returns true.
 func (c *OpenChannel) MarkRealScid(realScid lnwire.ShortChannelID) error {
 	c.Lock()
 	defer c.Unlock()
 
-	if err := kvdb.Update(c.Db.backend, func(tx kvdb.RwTx) error {
-		chanBucket, err := fetchChanBucketRw(
-			tx, c.IdentityPub, &c.FundingOutpoint, c.ChainHash,
-		)
-		if err != nil {
-			return err
-		}
-
-		channel, err := fetchOpenChannel(
-			chanBucket, &c.FundingOutpoint,
-		)
-		if err != nil {
-			return err
-		}
-
-		channel.confirmedScid = realScid
-
-		return putOpenChannel(chanBucket, channel)
-	}, func() {}); err != nil {
+	if err := c.Db.MarkChannelRealScid(c, realScid); err != nil {
 		return err
 	}
 
@@ -1432,36 +1524,72 @@ func (c *OpenChannel) MarkRealScid(realScid lnwire.ShortChannelID) error {
 	return nil
 }
 
+// MarkChannelRealScid marks the zero-conf channel's confirmed ShortChannelID.
+func (c *ChannelStateDB) MarkChannelRealScid(channel *OpenChannel,
+	realScid lnwire.ShortChannelID) error {
+
+	return kvdb.Update(c.backend, func(tx kvdb.RwTx) error {
+		chanBucket, err := fetchChanBucketRw(
+			tx, channel.IdentityPub, &channel.FundingOutpoint,
+			channel.ChainHash,
+		)
+		if err != nil {
+			return err
+		}
+
+		diskChannel, err := fetchOpenChannel(
+			chanBucket, &channel.FundingOutpoint,
+		)
+		if err != nil {
+			return err
+		}
+
+		diskChannel.confirmedScid = realScid
+
+		return putOpenChannel(chanBucket, diskChannel)
+	}, func() {})
+}
+
 // MarkScidAliasNegotiated adds ScidAliasFeatureBit to ChanType in-memory and
 // in the database.
 func (c *OpenChannel) MarkScidAliasNegotiated() error {
 	c.Lock()
 	defer c.Unlock()
 
-	if err := kvdb.Update(c.Db.backend, func(tx kvdb.RwTx) error {
-		chanBucket, err := fetchChanBucketRw(
-			tx, c.IdentityPub, &c.FundingOutpoint, c.ChainHash,
-		)
-		if err != nil {
-			return err
-		}
-
-		channel, err := fetchOpenChannel(
-			chanBucket, &c.FundingOutpoint,
-		)
-		if err != nil {
-			return err
-		}
-
-		channel.ChanType |= ScidAliasFeatureBit
-		return putOpenChannel(chanBucket, channel)
-	}, func() {}); err != nil {
+	if err := c.Db.MarkChannelScidAliasNegotiated(c); err != nil {
 		return err
 	}
 
 	c.ChanType |= ScidAliasFeatureBit
 
 	return nil
+}
+
+// MarkChannelScidAliasNegotiated adds ScidAliasFeatureBit to ChanType in the
+// database.
+func (c *ChannelStateDB) MarkChannelScidAliasNegotiated(
+	channel *OpenChannel) error {
+
+	return kvdb.Update(c.backend, func(tx kvdb.RwTx) error {
+		chanBucket, err := fetchChanBucketRw(
+			tx, channel.IdentityPub, &channel.FundingOutpoint,
+			channel.ChainHash,
+		)
+		if err != nil {
+			return err
+		}
+
+		diskChannel, err := fetchOpenChannel(
+			chanBucket, &channel.FundingOutpoint,
+		)
+		if err != nil {
+			return err
+		}
+
+		diskChannel.ChanType |= ScidAliasFeatureBit
+
+		return putOpenChannel(chanBucket, diskChannel)
+	}, func() {})
 }
 
 // MarkDataLoss marks sets the channel status to LocalDataLoss and stores the
@@ -2099,7 +2227,7 @@ func (c *OpenChannel) SyncPending(addr net.Addr, pendingHeight uint32) error {
 // LinkNode (if needed) for the channel peer.
 func syncNewChannel(tx kvdb.RwTx, c *OpenChannel, addrs []net.Addr) error {
 	// First, sync all the persistent channel state to disk.
-	if err := c.fullSync(tx); err != nil {
+	if err := fullSyncOpenChannel(tx, c); err != nil {
 		return err
 	}
 
