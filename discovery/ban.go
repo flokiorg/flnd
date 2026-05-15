@@ -6,12 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flokiorg/go-flokicoin/crypto"
-
 	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flokicoin-neutrino/cache"
 	"github.com/flokiorg/flokicoin-neutrino/cache/lru"
+	"github.com/flokiorg/go-flokicoin/crypto"
 )
 
 const (
