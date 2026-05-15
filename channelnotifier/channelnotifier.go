@@ -3,7 +3,6 @@ package channelnotifier
 import (
 	"sync"
 
-	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/subscribe"
 	"github.com/flokiorg/go-flokicoin/wire"
@@ -31,14 +30,14 @@ type PendingOpenChannelEvent struct {
 	// channel. This might not have been persisted to the channel DB yet
 	// because we are still waiting for the final message from the remote
 	// peer.
-	PendingChannel *channeldb.OpenChannel
+	PendingChannel *chanstate.OpenChannel
 }
 
 // OpenChannelEvent represents a new event where a channel goes from pending
 // open to open.
 type OpenChannelEvent struct {
 	// Channel is the channel that has become open.
-	Channel *channeldb.OpenChannel
+	Channel *chanstate.OpenChannel
 }
 
 // ActiveLinkEvent represents a new event where the link becomes active in the
@@ -70,7 +69,13 @@ type InactiveChannelEvent struct {
 // ClosedChannelEvent represents a new event where a channel becomes closed.
 type ClosedChannelEvent struct {
 	// CloseSummary is the summary of the channel close that has occurred.
-	CloseSummary *channeldb.ChannelCloseSummary
+	CloseSummary *chanstate.ChannelCloseSummary
+}
+
+// ChannelUpdateEvent represents a new event where a channel's state is updated.
+type ChannelUpdateEvent struct {
+	// Channel is the channel that has been updated.
+	Channel *chanstate.OpenChannel
 }
 
 // FullyResolvedChannelEvent represents a new event where a channel becomes
@@ -137,7 +142,7 @@ func (c *ChannelNotifier) SubscribeChannelEvents() (*subscribe.Client, error) {
 // persisted to the DB because we still wait for the final message from the
 // remote peer.
 func (c *ChannelNotifier) NotifyPendingOpenChannelEvent(chanPoint wire.OutPoint,
-	pendingChan *channeldb.OpenChannel) {
+	pendingChan *chanstate.OpenChannel) {
 
 	event := PendingOpenChannelEvent{
 		ChannelPoint:   &chanPoint,
@@ -178,6 +183,23 @@ func (c *ChannelNotifier) NotifyClosedChannelEvent(chanPoint wire.OutPoint) {
 	event := ClosedChannelEvent{CloseSummary: closeSummary}
 	if err := c.ntfnServer.SendUpdate(event); err != nil {
 		log.Warnf("Unable to send closed channel update: %v", err)
+	}
+}
+
+// NotifyEarlyClosedChannelEvent dispatches a ClosedChannelEvent built from the
+// supplied close summary, without consulting the channel database. This is
+// used by the chain watcher to insta-dispatch CLOSED_CHANNEL events to RPC
+// subscribers as soon as a coop close is first detected on chain, before the
+// async N-conf path has persisted the close in the database. The summary's
+// IsPending field will typically be true at this point; callers should set it
+// accordingly.
+func (c *ChannelNotifier) NotifyEarlyClosedChannelEvent(
+	summary *chanstate.ChannelCloseSummary) {
+
+	event := ClosedChannelEvent{CloseSummary: summary}
+	if err := c.ntfnServer.SendUpdate(event); err != nil {
+		log.Warnf("Unable to send early closed channel update: %v",
+			err)
 	}
 }
 
@@ -237,5 +259,16 @@ func (c *ChannelNotifier) NotifyInactiveChannelEvent(chanPoint wire.OutPoint) {
 	event := InactiveChannelEvent{ChannelPoint: &chanPoint}
 	if err := c.ntfnServer.SendUpdate(event); err != nil {
 		log.Warnf("Unable to send inactive channel update: %v", err)
+	}
+}
+
+// NotifyChannelUpdateEvent notifies subscribers that a channel's state has been
+// updated.
+func (c *ChannelNotifier) NotifyChannelUpdateEvent(
+	channel *chanstate.OpenChannel) {
+
+	event := ChannelUpdateEvent{Channel: channel}
+	if err := c.ntfnServer.SendUpdate(event); err != nil {
+		log.Warnf("Unable to send channel update: %v", err)
 	}
 }
