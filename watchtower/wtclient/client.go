@@ -13,7 +13,7 @@ import (
 
 	"github.com/flokiorg/go-flokicoin/crypto"
 
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/keychain"
 	"github.com/flokiorg/flnd/lnwallet"
 	"github.com/flokiorg/flnd/lnwire"
@@ -96,7 +96,7 @@ type RegisteredTower struct {
 // BreachRetribution from a channel ID and a commitment height.
 type BreachRetributionBuilder func(id lnwire.ChannelID,
 	commitHeight uint64) (*lnwallet.BreachRetribution,
-	channeldb.ChannelType, error)
+	chanstate.ChannelType, error)
 
 // newTowerMsg is an internal message we'll use within the client to signal
 // that a new tower can be considered.

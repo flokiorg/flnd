@@ -12,6 +12,7 @@ import (
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/channelnotifier"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/lnwire"
@@ -68,7 +69,7 @@ type ClientManager interface {
 	// parameters within the client. This should be called during link
 	// startup to ensure that the client is able to support the link during
 	// operation.
-	RegisterChannel(lnwire.ChannelID, channeldb.ChannelType) error
+	RegisterChannel(lnwire.ChannelID, chanstate.ChannelType) error
 
 	// BackupState initiates a request to back up a particular revoked
 	// state. If the method returns nil, the backup is guaranteed to be
@@ -94,7 +95,7 @@ type Config struct {
 	// channel. If the channel is not found or not yet closed then
 	// channeldb.ErrClosedChannelNotFound will be returned.
 	FetchClosedChannel func(cid lnwire.ChannelID) (
-		*channeldb.ChannelCloseSummary, error)
+		*chanstate.ChannelCloseSummary, error)
 
 	// ChainNotifier can be used to subscribe to block notifications.
 	ChainNotifier chainntnfs.ChainNotifier
@@ -598,7 +599,7 @@ func (m *Manager) Policy(blobType blob.Type) (wtpolicy.Policy, error) {
 // within the client. This should be called during link startup to ensure that
 // the client is able to support the link during operation.
 func (m *Manager) RegisterChannel(id lnwire.ChannelID,
-	chanType channeldb.ChannelType) error {
+	chanType chanstate.ChannelType) error {
 
 	blobType := blob.TypeFromChannel(chanType)
 

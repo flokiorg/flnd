@@ -13,6 +13,7 @@ import (
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/channelnotifier"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/keychain"
@@ -514,7 +515,7 @@ func newHarness(t *testing.T, cfg harnessCfg) *testHarness {
 	})
 
 	fetchChannel := func(id lnwire.ChannelID) (
-		*channeldb.ChannelCloseSummary, error) {
+		*chanstate.ChannelCloseSummary, error) {
 
 		h.mu.Lock()
 		defer h.mu.Unlock()
@@ -524,7 +525,7 @@ func newHarness(t *testing.T, cfg harnessCfg) *testHarness {
 			return nil, channeldb.ErrClosedChannelNotFound
 		}
 
-		return &channeldb.ChannelCloseSummary{CloseHeight: height}, nil
+		return &chanstate.ChannelCloseSummary{CloseHeight: height}, nil
 	}
 
 	h.clientPolicy = cfg.policy
@@ -552,11 +553,11 @@ func newHarness(t *testing.T, cfg harnessCfg) *testHarness {
 
 	h.clientCfg.BuildBreachRetribution = func(id lnwire.ChannelID,
 		commitHeight uint64) (*lnwallet.BreachRetribution,
-		channeldb.ChannelType, error) {
+		chanstate.ChannelType, error) {
 
 		_, retribution := h.channelFromID(id).getState(commitHeight)
 
-		return retribution, channeldb.SimpleTaprootFeatureBit, nil
+		return retribution, chanstate.SimpleTaprootFeatureBit, nil
 	}
 
 	if !cfg.noServerStart {
@@ -689,7 +690,7 @@ func (h *testHarness) closeChannel(id uint64, height uint32) {
 	}
 
 	h.channelEvents.sendUpdate(channelnotifier.ClosedChannelEvent{
-		CloseSummary: &channeldb.ChannelCloseSummary{
+		CloseSummary: &chanstate.ChannelCloseSummary{
 			ChanPoint: wire.OutPoint{
 				Hash:  *chanPointHash,
 				Index: 0,
@@ -705,7 +706,7 @@ func (h *testHarness) registerChannel(id uint64) {
 
 	chanID := chanIDFromInt(id)
 	err := h.clientMgr.RegisterChannel(
-		chanID, channeldb.SimpleTaprootFeatureBit,
+		chanID, chanstate.SimpleTaprootFeatureBit,
 	)
 	require.NoError(h.t, err)
 }
