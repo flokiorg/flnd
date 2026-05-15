@@ -8,6 +8,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/clock"
 	"github.com/flokiorg/flnd/lnmock"
 	"github.com/flokiorg/flnd/lnwallet/chainfee"
@@ -586,7 +587,7 @@ func TestMailBoxDustHandling(t *testing.T) {
 	})
 }
 
-func testMailBoxDust(t *testing.T, chantype channeldb.ChannelType) {
+func testMailBoxDust(t *testing.T, chantype chanstate.ChannelType) {
 	t.Parallel()
 
 	ctx := newMailboxContext(t, time.Now(), testExpiry)

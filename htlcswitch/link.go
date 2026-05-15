@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/contractcourt"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/graph/db/models"
@@ -254,6 +255,10 @@ type ChannelLinkConfig struct {
 	// NotifyInactiveLinkEvent allows the switch to tell the
 	// ChannelNotifier when a channel link become inactive.
 	NotifyInactiveLinkEvent func(wire.OutPoint)
+
+	// NotifyChannelUpdate allows the link to tell the ChannelNotifier when
+	// a channel's state has been updated.
+	NotifyChannelUpdate func(*chanstate.OpenChannel)
 
 	// HtlcNotifier is an instance of a htlcNotifier which we will pipe htlc
 	// events through.
@@ -2339,7 +2344,7 @@ type dustClosure func(feerate chainfee.SatPerKWeight, incoming bool,
 	whoseCommit lntypes.ChannelParty, amt chainutil.Amount) bool
 
 // dustHelper is used to construct the dustClosure.
-func dustHelper(chantype channeldb.ChannelType, localDustLimit,
+func dustHelper(chantype chanstate.ChannelType, localDustLimit,
 	remoteDustLimit chainutil.Amount) dustClosure {
 
 	isDust := func(feerate chainfee.SatPerKWeight, incoming bool,

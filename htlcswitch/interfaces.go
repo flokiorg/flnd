@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/graph/db/models"
 	"github.com/flokiorg/flnd/invoices"
@@ -354,7 +355,7 @@ type TowerClient interface {
 	// parameters within the client. This should be called during link
 	// startup to ensure that the client is able to support the link during
 	// operation.
-	RegisterChannel(lnwire.ChannelID, channeldb.ChannelType) error
+	RegisterChannel(lnwire.ChannelID, chanstate.ChannelType) error
 
 	// BackupState initiates a request to back up a particular revoked
 	// state. If the method returns nil, the backup is guaranteed to be
