@@ -7,7 +7,7 @@ import (
 
 	"github.com/flokiorg/go-flokicoin/crypto"
 
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	graphdb "github.com/flokiorg/flnd/graph/db"
 	"github.com/flokiorg/flnd/keychain"
 	"github.com/flokiorg/flnd/lnwallet"
@@ -600,14 +600,14 @@ func (m *ChanStatusManager) disableInactiveChannels() {
 // fetchChannels returns the working set of channels managed by the
 // ChanStatusManager. The returned channels are filtered to only contain public
 // channels.
-func (m *ChanStatusManager) fetchChannels() ([]*channeldb.OpenChannel, error) {
+func (m *ChanStatusManager) fetchChannels() ([]*chanstate.OpenChannel, error) {
 	allChannels, err := m.cfg.DB.FetchAllOpenChannels()
 	if err != nil {
 		return nil, err
 	}
 
 	// Filter out private channels.
-	var channels []*channeldb.OpenChannel
+	var channels []*chanstate.OpenChannel
 	for _, c := range allChannels {
 		// We'll skip any private channels, as they aren't used for
 		// routing within the network by other nodes.
