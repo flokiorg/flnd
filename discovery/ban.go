@@ -8,7 +8,7 @@ import (
 
 	"github.com/flokiorg/go-flokicoin/crypto"
 
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flokicoin-neutrino/cache"
 	"github.com/flokiorg/flokicoin-neutrino/cache/lru"
@@ -67,7 +67,7 @@ type GraphCloser interface {
 type NodeInfoInquirer interface {
 	// FetchOpenChannels returns the set of channels that we have with the
 	// peer identified by the passed-in public key.
-	FetchOpenChannels(*crypto.PublicKey) ([]*channeldb.OpenChannel, error)
+	FetchOpenChannels(*crypto.PublicKey) ([]*chanstate.OpenChannel, error)
 }
 
 // ScidCloserMan helps the gossiper handle closed channels that are in the

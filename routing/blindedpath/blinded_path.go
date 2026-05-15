@@ -7,7 +7,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/graph/db/models"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/record"
@@ -46,7 +46,7 @@ type BuildBlindedPathCfg struct {
 		*models.ChannelEdgePolicy, *models.ChannelEdgePolicy, error)
 
 	// FetchOurOpenChannels fetches this node's set of open channels.
-	FetchOurOpenChannels func() ([]*channeldb.OpenChannel, error)
+	FetchOurOpenChannels func() ([]*chanstate.OpenChannel, error)
 
 	// BestHeight can be used to fetch the best block height that this node
 	// is aware of.
@@ -529,7 +529,7 @@ func buildDummyRouteData(node route.Vertex, relayInfo *record.PaymentRelayInfo,
 // we use the provided default policy values, and we get the average capacity of
 // this node's channels to compute a MaxHTLC value.
 func computeDummyHopPolicy(defaultPolicy *BlindedHopPolicy,
-	fetchOurChannels func() ([]*channeldb.OpenChannel, error),
+	fetchOurChannels func() ([]*chanstate.OpenChannel, error),
 	policies map[uint64]*BlindedHopPolicy) (*BlindedHopPolicy, error) {
 
 	numPolicies := len(policies)

@@ -1,7 +1,7 @@
 package netann
 
 import (
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/graph/db/models"
 	"github.com/flokiorg/go-flokicoin/wire"
 )
@@ -11,7 +11,7 @@ import (
 type DB interface {
 	// FetchAllOpenChannels returns a slice of all open channels known to
 	// the daemon. This may include private or pending channels.
-	FetchAllOpenChannels() ([]*channeldb.OpenChannel, error)
+	FetchAllOpenChannels() ([]*chanstate.OpenChannel, error)
 }
 
 // ChannelGraph abstracts the required channel graph queries used by the
