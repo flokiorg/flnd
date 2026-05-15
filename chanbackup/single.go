@@ -7,7 +7,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/keychain"
 	"github.com/flokiorg/flnd/lnencrypt"
@@ -169,7 +169,7 @@ type Single struct {
 	//
 	// NOTE: Of the items in the ChannelConstraints, we only write the CSV
 	// delay.
-	LocalChanCfg channeldb.ChannelConfig
+	LocalChanCfg chanstate.ChannelConfig
 
 	// RemoteChanCfg is the remote channel confirmation. We store this as
 	// well since we'll need some of their keys to re-derive things like
@@ -178,7 +178,7 @@ type Single struct {
 	//
 	// NOTE: Of the items in the ChannelConstraints, we only write the CSV
 	// delay.
-	RemoteChanCfg channeldb.ChannelConfig
+	RemoteChanCfg chanstate.ChannelConfig
 
 	// ShaChainRootDesc describes how to derive the private key that was
 	// used as the shachain root for this channel.
@@ -234,7 +234,7 @@ type CloseTxInputs struct {
 // connect to the channel peer. If possible, we include the data needed to
 // produce a force close transaction from the most recent state using externally
 // provided private key.
-func NewSingle(channel *channeldb.OpenChannel,
+func NewSingle(channel *chanstate.OpenChannel,
 	nodeAddrs []net.Addr) Single {
 
 	var shaChainRootDesc keychain.KeyDescriptor

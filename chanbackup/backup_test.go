@@ -8,13 +8,13 @@ import (
 
 	"github.com/flokiorg/go-flokicoin/crypto"
 
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/go-flokicoin/wire"
 	"github.com/stretchr/testify/require"
 )
 
 type mockChannelSource struct {
-	chans map[wire.OutPoint]*channeldb.OpenChannel
+	chans map[wire.OutPoint]*chanstate.OpenChannel
 
 	failQuery bool
 
@@ -23,17 +23,19 @@ type mockChannelSource struct {
 
 func newMockChannelSource() *mockChannelSource {
 	return &mockChannelSource{
-		chans: make(map[wire.OutPoint]*channeldb.OpenChannel),
+		chans: make(map[wire.OutPoint]*chanstate.OpenChannel),
 		addrs: make(map[[33]byte][]net.Addr),
 	}
 }
 
-func (m *mockChannelSource) FetchAllChannels() ([]*channeldb.OpenChannel, error) {
+func (m *mockChannelSource) FetchAllChannels() (
+	[]*chanstate.OpenChannel, error) {
+
 	if m.failQuery {
 		return nil, fmt.Errorf("fail")
 	}
 
-	chans := make([]*channeldb.OpenChannel, 0, len(m.chans))
+	chans := make([]*chanstate.OpenChannel, 0, len(m.chans))
 	for _, channel := range m.chans {
 		chans = append(chans, channel)
 	}
@@ -42,7 +44,7 @@ func (m *mockChannelSource) FetchAllChannels() ([]*channeldb.OpenChannel, error)
 }
 
 func (m *mockChannelSource) FetchChannel(chanPoint wire.OutPoint) (
-	*channeldb.OpenChannel, error) {
+	*chanstate.OpenChannel, error) {
 
 	if m.failQuery {
 		return nil, fmt.Errorf("fail")

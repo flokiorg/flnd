@@ -9,7 +9,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/keychain"
 	"github.com/flokiorg/flnd/lnutils"
 	"github.com/flokiorg/go-flokicoin/wire"
@@ -31,7 +31,7 @@ type Swapper interface {
 // ChannelWithAddrs bundles an open channel along with all the addresses for
 // the channel peer.
 type ChannelWithAddrs struct {
-	*channeldb.OpenChannel
+	*chanstate.OpenChannel
 
 	// Addrs is the set of addresses that we can use to reach the target
 	// peer.
