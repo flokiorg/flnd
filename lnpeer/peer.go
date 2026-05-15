@@ -5,7 +5,7 @@ import (
 
 	"github.com/flokiorg/go-flokicoin/crypto"
 
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/lnwallet"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/go-flokicoin/wire"
@@ -15,7 +15,7 @@ import (
 // with the set of channel options that may change how the channel is created.
 // This can be used to pass along the nonce state needed for taproot channels.
 type NewChannel struct {
-	*channeldb.OpenChannel
+	*chanstate.OpenChannel
 
 	// ChanOpts can be used to change how the channel is created.
 	ChanOpts []lnwallet.ChannelOpt
