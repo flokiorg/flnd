@@ -39,16 +39,16 @@ type bip340Signer struct {
 
 	// privKeys maps compressed pubkey bytes to private keys, allowing the
 	// wrapper to look up the signing key for BIP-340 re-signing.
-	privKeys map[[33]byte]*btcec.PrivateKey
+	privKeys map[[33]byte]*crypto.PrivateKey
 }
 
 // newBIP340Signer creates a bip340Signer that wraps the given signer. The
 // provided private keys are indexed by their compressed public key for lookup
 // during taproot script spend signing.
 func newBIP340Signer(inner input.Signer,
-	keys []*btcec.PrivateKey) *bip340Signer {
+	keys []*crypto.PrivateKey) *bip340Signer {
 
-	keyMap := make(map[[33]byte]*btcec.PrivateKey, len(keys))
+	keyMap := make(map[[33]byte]*crypto.PrivateKey, len(keys))
 	for _, k := range keys {
 		var pub [33]byte
 		copy(pub[:], k.PubKey().SerializeCompressed())
@@ -865,7 +865,6 @@ func createTaprootTestChannelsForVectors(tc *taprootTestContext,
 		LocalCommitment:         remoteCommit,
 		RemoteCommitment:        remoteCommit,
 		Db:                      dbRemote.ChannelStateDB(),
-		Packager:                channeldb.NewChannelPackager(shortChanID),
 		FundingTxn:              fundingTx,
 	}
 	localChannelState := &channeldb.OpenChannel{
@@ -883,7 +882,6 @@ func createTaprootTestChannelsForVectors(tc *taprootTestContext,
 		LocalCommitment:         localCommit,
 		RemoteCommitment:        localCommit,
 		Db:                      dbLocal.ChannelStateDB(),
-		Packager:                channeldb.NewChannelPackager(shortChanID),
 		FundingTxn:              fundingTx,
 	}
 

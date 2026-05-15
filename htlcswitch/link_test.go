@@ -19,9 +19,9 @@ import (
 
 	"github.com/flokiorg/go-flokicoin/crypto"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/flokiorg/flnd/build"
 	"github.com/flokiorg/flnd/channeldb"
+	cstate "github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/contractcourt"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/graph/db/models"
@@ -29,7 +29,6 @@ import (
 	"github.com/flokiorg/flnd/htlcswitch/hop"
 	"github.com/flokiorg/flnd/input"
 	invpkg "github.com/flokiorg/flnd/invoices"
-	"github.com/flokiorg/flnd/kvdb"
 	"github.com/flokiorg/flnd/lnpeer"
 	"github.com/flokiorg/flnd/lntest/wait"
 	"github.com/flokiorg/flnd/lntypes"
@@ -41,6 +40,7 @@ import (
 	"github.com/flokiorg/go-flokicoin/chainutil"
 	"github.com/flokiorg/go-flokicoin/wire"
 	sphinx "github.com/flokiorg/lightning-onion"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/require"
 )
 
@@ -5768,42 +5768,20 @@ func TestChannelLinkCleanupSpuriousResponses(t *testing.T) {
 	}
 }
 
-type mockPackager struct {
-	failLoadFwdPkgs bool
+// mockFailLoadFwdPkgStore wraps a real channel state store and overrides only
+// LoadFwdPkgs. This lets the link startup test inject a forwarding-package
+// load failure through OpenChannel.Db without replacing the rest of the store.
+type mockFailLoadFwdPkgStore struct {
+	cstate.Store[*channeldb.OpenChannel]
 }
 
-func (*mockPackager) AddFwdPkg(tx kvdb.RwTx, fwdPkg *channeldb.FwdPkg) error {
-	return nil
-}
+// LoadFwdPkgs fails the forwarding-package load to exercise link startup
+// failure handling while all other store methods delegate to the embedded
+// store.
+func (m *mockFailLoadFwdPkgStore) LoadFwdPkgs(
+	*channeldb.OpenChannel) ([]*channeldb.FwdPkg, error) {
 
-func (*mockPackager) SetFwdFilter(tx kvdb.RwTx, height uint64,
-	fwdFilter *channeldb.PkgFilter) error {
-	return nil
-}
-
-func (*mockPackager) AckAddHtlcs(tx kvdb.RwTx,
-	addRefs ...channeldb.AddRef) error {
-	return nil
-}
-
-func (m *mockPackager) LoadFwdPkgs(tx kvdb.RTx) ([]*channeldb.FwdPkg, error) {
-	if m.failLoadFwdPkgs {
-		return nil, fmt.Errorf("failing LoadFwdPkgs")
-	}
-	return nil, nil
-}
-
-func (*mockPackager) RemovePkg(tx kvdb.RwTx, height uint64) error {
-	return nil
-}
-
-func (*mockPackager) Wipe(tx kvdb.RwTx) error {
-	return nil
-}
-
-func (*mockPackager) AckSettleFails(tx kvdb.RwTx,
-	settleFailRefs ...channeldb.SettleFailRef) error {
-	return nil
+	return nil, fmt.Errorf("failing LoadFwdPkgs")
 }
 
 // TestChannelLinkFail tests that we will fail the channel, and force close the
@@ -5879,10 +5857,10 @@ func TestChannelLinkFail(t *testing.T) {
 			func(c *channelLink) {
 				// We make the call to resolveFwdPkgs fail by
 				// making the underlying forwarder fail.
-				pkg := &mockPackager{
-					failLoadFwdPkgs: true,
+				state := c.channel.State()
+				state.Db = &mockFailLoadFwdPkgStore{
+					Store: state.Db,
 				}
-				c.channel.State().Packager = pkg
 			},
 			func(*testing.T, *Switch, *channelLink,
 				*lnwallet.LightningChannel) {
