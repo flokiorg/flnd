@@ -6,6 +6,7 @@ import (
 
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/channelnotifier"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/clock"
 	"github.com/flokiorg/flnd/peernotifier"
 	"github.com/flokiorg/flnd/routing/route"
@@ -72,7 +73,7 @@ func newChanEventStoreTestCtx(t *testing.T) *chanEventStoreTestCtx {
 		SubscribePeerEvents: func() (subscribe.Subscription, error) {
 			return testCtx.peerSubscription, nil
 		},
-		GetOpenChannels: func() ([]*channeldb.OpenChannel, error) {
+		GetOpenChannels: func() ([]*chanstate.OpenChannel, error) {
 			return nil, nil
 		},
 		WriteFlapCount: func(updates map[route.Vertex]*channeldb.FlapCount) error {
@@ -181,7 +182,7 @@ func (c *chanEventStoreTestCtx) closeChannel(channel wire.OutPoint,
 	peer *crypto.PublicKey) {
 
 	update := channelnotifier.ClosedChannelEvent{
-		CloseSummary: &channeldb.ChannelCloseSummary{
+		CloseSummary: &chanstate.ChannelCloseSummary{
 			ChanPoint: channel,
 			RemotePub: peer,
 		},
@@ -221,7 +222,7 @@ func (c *chanEventStoreTestCtx) sendChannelOpenedUpdate(pubkey *crypto.PublicKey
 	channel wire.OutPoint) {
 
 	update := channelnotifier.OpenChannelEvent{
-		Channel: &channeldb.OpenChannel{
+		Channel: &chanstate.OpenChannel{
 			FundingOutpoint: channel,
 			IdentityPub:     pubkey,
 		},

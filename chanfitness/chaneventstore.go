@@ -19,6 +19,7 @@ import (
 
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/channelnotifier"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/clock"
 	"github.com/flokiorg/flnd/peernotifier"
 	"github.com/flokiorg/flnd/routing/route"
@@ -84,7 +85,7 @@ type Config struct {
 	// GetOpenChannels provides a list of existing open channels which is
 	// used to populate the ChannelEventStore with a set of channels on
 	// startup.
-	GetOpenChannels func() ([]*channeldb.OpenChannel, error)
+	GetOpenChannels func() ([]*chanstate.OpenChannel, error)
 
 	// Clock is the time source that the subsystem uses, provided here
 	// for ease of testing.

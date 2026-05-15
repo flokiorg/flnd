@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/clock"
 	"github.com/flokiorg/flnd/routing/route"
 	"github.com/flokiorg/flnd/subscribe"
@@ -35,7 +36,7 @@ func TestStartStoreError(t *testing.T) {
 		name          string
 		ChannelEvents func() (subscribe.Subscription, error)
 		PeerEvents    func() (subscribe.Subscription, error)
-		GetChannels   func() ([]*channeldb.OpenChannel, error)
+		GetChannels   func() ([]*chanstate.OpenChannel, error)
 	}{
 		{
 			name:          "Channel events fail",
@@ -50,7 +51,7 @@ func TestStartStoreError(t *testing.T) {
 			name:          "Get open channels fails",
 			ChannelEvents: okSubscribeFunc,
 			PeerEvents:    okSubscribeFunc,
-			GetChannels: func() ([]*channeldb.OpenChannel, error) {
+			GetChannels: func() ([]*chanstate.OpenChannel, error) {
 				return nil, errors.New("intentional test err")
 			},
 		},
