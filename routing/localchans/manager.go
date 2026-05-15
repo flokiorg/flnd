@@ -11,6 +11,7 @@ import (
 	"github.com/flokiorg/go-flokicoin/crypto"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/discovery"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/funding"
@@ -48,7 +49,7 @@ type Manager struct {
 
 	// FetchChannel is used to query local channel parameters. Optionally an
 	// existing db tx can be supplied.
-	FetchChannel func(chanPoint wire.OutPoint) (*channeldb.OpenChannel,
+	FetchChannel func(chanPoint wire.OutPoint) (*chanstate.OpenChannel,
 		error)
 
 	// AddEdge is used to add edge/channel to the topology of the router.
@@ -247,7 +248,7 @@ func (r *Manager) UpdatePolicy(ctx context.Context,
 }
 
 func (r *Manager) createMissingEdge(ctx context.Context,
-	channel *channeldb.OpenChannel,
+	channel *chanstate.OpenChannel,
 	newSchema routing.ChannelPolicy) (*models.ChannelEdgeInfo,
 	*models.ChannelEdgePolicy, *lnrpc.FailedUpdate) {
 
@@ -294,7 +295,7 @@ func (r *Manager) createMissingEdge(ctx context.Context,
 }
 
 // createEdge recreates an edge and policy from an open channel in-memory.
-func (r *Manager) createEdge(channel *channeldb.OpenChannel,
+func (r *Manager) createEdge(channel *chanstate.OpenChannel,
 	timestamp time.Time) (*models.ChannelEdgeInfo,
 	*models.ChannelEdgePolicy, error) {
 
@@ -457,7 +458,7 @@ func (r *Manager) updateEdge(chanPoint wire.OutPoint,
 
 // getHtlcAmtLimits retrieves the negotiated channel min and max htlc amount
 // constraints.
-func (r *Manager) getHtlcAmtLimits(ch *channeldb.OpenChannel) (
+func (r *Manager) getHtlcAmtLimits(ch *chanstate.OpenChannel) (
 	lnwire.MilliLoki, lnwire.MilliLoki, error) {
 
 	// The max htlc policy field must be less than or equal to the channel

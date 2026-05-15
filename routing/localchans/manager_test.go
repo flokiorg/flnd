@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/discovery"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/funding"
@@ -137,28 +138,29 @@ func TestManager(t *testing.T) {
 		return nil
 	}
 
-	fetchChannel := func(chanPoint wire.OutPoint) (*channeldb.OpenChannel,
+	fetchChannel := func(chanPoint wire.OutPoint) (*chanstate.OpenChannel,
 		error) {
 
 		if chanPoint == chanPointMissing {
-			return &channeldb.OpenChannel{}, channeldb.ErrChannelNotFound
+			return &chanstate.OpenChannel{},
+				channeldb.ErrChannelNotFound
 		}
 
-		bounds := channeldb.ChannelStateBounds{
+		bounds := chanstate.ChannelStateBounds{
 			MaxPendingAmount: maxPendingAmount,
 			MinHTLC:          minHTLC,
 		}
 
-		return &channeldb.OpenChannel{
+		return &chanstate.OpenChannel{
 			FundingOutpoint: chanPointValid,
 			IdentityPub:     remotepub,
-			LocalChanCfg: channeldb.ChannelConfig{
+			LocalChanCfg: chanstate.ChannelConfig{
 				ChannelStateBounds: bounds,
 				MultiSigKey: keychain.KeyDescriptor{
 					PubKey: localMultisigKey,
 				},
 			},
-			RemoteChanCfg: channeldb.ChannelConfig{
+			RemoteChanCfg: chanstate.ChannelConfig{
 				ChannelStateBounds: bounds,
 				MultiSigKey: keychain.KeyDescriptor{
 					PubKey: remoteMultisigKey,
@@ -367,14 +369,14 @@ func TestCreateEdgeLower(t *testing.T) {
 		TimeLockDelta: 7,
 	}
 
-	channel := &channeldb.OpenChannel{
+	channel := &chanstate.OpenChannel{
 		IdentityPub: remotepub,
-		LocalChanCfg: channeldb.ChannelConfig{
+		LocalChanCfg: chanstate.ChannelConfig{
 			MultiSigKey: keychain.KeyDescriptor{
 				PubKey: localMultisigKey,
 			},
 		},
-		RemoteChanCfg: channeldb.ChannelConfig{
+		RemoteChanCfg: chanstate.ChannelConfig{
 			MultiSigKey: keychain.KeyDescriptor{
 				PubKey: remoteMultisigKey,
 			},
@@ -460,14 +462,14 @@ func TestCreateEdgeHigher(t *testing.T) {
 		TimeLockDelta: 7,
 	}
 
-	channel := &channeldb.OpenChannel{
+	channel := &chanstate.OpenChannel{
 		IdentityPub: remotepub,
-		LocalChanCfg: channeldb.ChannelConfig{
+		LocalChanCfg: chanstate.ChannelConfig{
 			MultiSigKey: keychain.KeyDescriptor{
 				PubKey: localMultisigKey,
 			},
 		},
-		RemoteChanCfg: channeldb.ChannelConfig{
+		RemoteChanCfg: chanstate.ChannelConfig{
 			MultiSigKey: keychain.KeyDescriptor{
 				PubKey: remoteMultisigKey,
 			},
