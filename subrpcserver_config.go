@@ -9,7 +9,6 @@ import (
 	"github.com/flokiorg/flnd/aliasmgr"
 	"github.com/flokiorg/flnd/autopilot"
 	"github.com/flokiorg/flnd/chainreg"
-	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	graphdb "github.com/flokiorg/flnd/graph/db"
@@ -116,7 +115,7 @@ func (s *subRPCServerConfigs) PopulateDependencies(cfg *Config,
 	routerBackend *routerrpc.RouterBackend,
 	nodeSigner *netann.NodeSigner,
 	graphDB *graphdb.ChannelGraph,
-	chanStateDB chanstate.Store[*channeldb.OpenChannel],
+	chanStateDB chanstate.Store,
 	sweeper *sweep.UtxoSweeper,
 	tower *watchtower.Standalone,
 	towerClientMgr *wtclient.Manager,

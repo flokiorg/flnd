@@ -4,7 +4,6 @@
 package walletrpc
 
 import (
-	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/keychain"
 	"github.com/flokiorg/flnd/lnwallet"
@@ -80,5 +79,5 @@ type Config struct {
 	CoinSelectionStrategy wallet.CoinSelectionStrategy
 
 	// ChanStateDB is the reference to the open channel store.
-	ChanStateDB chanstate.OpenChannelStore[*channeldb.OpenChannel]
+	ChanStateDB chanstate.OpenChannelStore
 }
