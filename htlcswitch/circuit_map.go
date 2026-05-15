@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/htlcswitch/hop"
 	"github.com/flokiorg/flnd/kvdb"
 	"github.com/flokiorg/flnd/lnutils"
@@ -203,12 +203,12 @@ type CircuitMapConfig struct {
 
 	// FetchAllOpenChannels is a function that fetches all currently open
 	// channels from the channel database.
-	FetchAllOpenChannels func() ([]*channeldb.OpenChannel, error)
+	FetchAllOpenChannels func() ([]*chanstate.OpenChannel, error)
 
 	// FetchClosedChannels is a function that fetches all closed channels
 	// from the channel database.
 	FetchClosedChannels func(
-		pendingOnly bool) ([]*channeldb.ChannelCloseSummary, error)
+		pendingOnly bool) ([]*chanstate.ChannelCloseSummary, error)
 
 	// ExtractErrorEncrypter derives the shared secret used to encrypt
 	// errors from the obfuscator's ephemeral public key.

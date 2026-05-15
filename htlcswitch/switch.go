@@ -12,6 +12,7 @@ import (
 
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/clock"
 	"github.com/flokiorg/flnd/contractcourt"
 	"github.com/flokiorg/flnd/fn"
@@ -150,16 +151,16 @@ type Config struct {
 
 	// FetchAllOpenChannels is a function that fetches all currently open
 	// channels from the channel database.
-	FetchAllOpenChannels func() ([]*channeldb.OpenChannel, error)
+	FetchAllOpenChannels func() ([]*chanstate.OpenChannel, error)
 
 	// FetchAllChannels is a function that fetches all pending open, open,
 	// and waiting close channels from the database.
-	FetchAllChannels func() ([]*channeldb.OpenChannel, error)
+	FetchAllChannels func() ([]*chanstate.OpenChannel, error)
 
 	// FetchClosedChannels is a function that fetches all closed channels
 	// from the channel database.
 	FetchClosedChannels func(
-		pendingOnly bool) ([]*channeldb.ChannelCloseSummary, error)
+		pendingOnly bool) ([]*chanstate.ChannelCloseSummary, error)
 
 	// SwitchPackager provides access to the forwarding packages of all
 	// active channels. This gives the switch the ability to read arbitrary

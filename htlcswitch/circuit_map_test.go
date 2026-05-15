@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/htlcswitch"
 	"github.com/flokiorg/flnd/kvdb"
 	"github.com/flokiorg/flnd/lnwire"
@@ -362,7 +363,7 @@ func createTestCloseChannelSummery(tx kvdb.RwTx, isPending bool,
 	}
 	outputPoint := wire.OutPoint{Hash: hash1, Index: 1}
 
-	ccs := &channeldb.ChannelCloseSummary{
+	ccs := &chanstate.ChannelCloseSummary{
 		ChanPoint:      outputPoint,
 		ShortChanID:    chanID,
 		ChainHash:      hash1,
@@ -371,7 +372,7 @@ func createTestCloseChannelSummery(tx kvdb.RwTx, isPending bool,
 		RemotePub:      testEphemeralKey,
 		Capacity:       chainutil.Amount(10000),
 		SettledBalance: chainutil.Amount(50000),
-		CloseType:      channeldb.RemoteForceClose,
+		CloseType:      chanstate.RemoteForceClose,
 		IsPending:      isPending,
 	}
 	var b bytes.Buffer
@@ -389,7 +390,7 @@ func createTestCloseChannelSummery(tx kvdb.RwTx, isPending bool,
 
 func serializeChannelCloseSummary(
 	w io.Writer,
-	cs *channeldb.ChannelCloseSummary) error {
+	cs *chanstate.ChannelCloseSummary) error {
 
 	err := channeldb.WriteElements(
 		w,

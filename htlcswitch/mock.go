@@ -17,6 +17,7 @@ import (
 
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/clock"
 	"github.com/flokiorg/flnd/contractcourt"
 	"github.com/flokiorg/flnd/fn"
@@ -74,7 +75,7 @@ func (m *mockPreimageCache) AddPreimages(preimages ...lntypes.Preimage) error {
 }
 
 func (m *mockPreimageCache) SubscribeUpdates(
-	chanID lnwire.ShortChannelID, htlc *channeldb.HTLC,
+	chanID lnwire.ShortChannelID, htlc *chanstate.HTLC,
 	payload *hop.Payload,
 	nextHopOnionBlob []byte) (*contractcourt.WitnessSubscription, error) {
 
