@@ -7,6 +7,7 @@ import (
 	"github.com/flokiorg/flnd/chanbackup"
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/channelnotifier"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/go-flokicoin/wire"
 )
 
@@ -46,7 +47,7 @@ func (c *channelNotifier) SubscribeChans(ctx context.Context,
 	// sendChanOpenUpdate is a closure that sends a ChannelEvent to the
 	// chanUpdates channel to inform subscribers about new pending or
 	// confirmed channels.
-	sendChanOpenUpdate := func(newOrPendingChan *channeldb.OpenChannel) {
+	sendChanOpenUpdate := func(newOrPendingChan *chanstate.OpenChannel) {
 		_, nodeAddrs, err := c.addrs.AddrsForNode(
 			ctx, newOrPendingChan.IdentityPub,
 		)
