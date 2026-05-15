@@ -6,9 +6,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/flokiorg/go-flokicoin/crypto"
-
 	"github.com/flokiorg/flnd/chanstate"
+	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/flokiorg/go-flokicoin/wire"
 	"github.com/stretchr/testify/require"
 )
