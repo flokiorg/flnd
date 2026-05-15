@@ -3,11 +3,10 @@ package lnpeer
 import (
 	"net"
 
-	"github.com/flokiorg/go-flokicoin/crypto"
-
 	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/lnwallet"
 	"github.com/flokiorg/flnd/lnwire"
+	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/flokiorg/go-flokicoin/wire"
 )
 
