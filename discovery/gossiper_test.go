@@ -19,6 +19,7 @@ import (
 	"github.com/flokiorg/flnd/batch"
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/graph"
 	graphdb "github.com/flokiorg/flnd/graph/db"
 	"github.com/flokiorg/flnd/graph/db/models"
@@ -883,7 +884,7 @@ func (ctx *testCtx) createChannelAnnouncement(blockHeight uint32, key1,
 }
 
 func mockFindChannel(node *crypto.PublicKey, chanID lnwire.ChannelID) (
-	*channeldb.OpenChannel, error) {
+	*chanstate.OpenChannel, error) {
 
 	return nil, nil
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/flokiorg/flnd/batch"
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/graph"
 	graphdb "github.com/flokiorg/flnd/graph/db"
@@ -378,7 +379,7 @@ type Config struct {
 	// FindChannel allows the gossiper to find a channel that we're party
 	// to without iterating over the entire set of open channels.
 	FindChannel func(node *crypto.PublicKey, chanID lnwire.ChannelID) (
-		*channeldb.OpenChannel, error)
+		*chanstate.OpenChannel, error)
 
 	// IsStillZombieChannel takes the timestamps of the latest channel
 	// updates for a channel and returns true if the channel should be
