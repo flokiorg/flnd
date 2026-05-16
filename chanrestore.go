@@ -188,7 +188,7 @@ func (c *chanDBRestorer) openChannelShell(backup chanbackup.Single) (
 
 	chanShell := channeldb.ChannelShell{
 		NodeAddrs: backup.Addresses,
-		Chan: &channeldb.OpenChannel{
+		Chan: &chanstate.OpenChannel{
 			ChanType:                chanType,
 			ChainHash:               backup.ChainHash,
 			IsInitiator:             backup.IsInitiator,
