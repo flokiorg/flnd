@@ -2,7 +2,6 @@ package funding
 
 import (
 	"bytes"
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -23,6 +22,7 @@ import (
 	acpt "github.com/flokiorg/flnd/chanacceptor"
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/channelnotifier"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/discovery"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/graph/db/models"
@@ -248,7 +248,7 @@ func (m *mockChanEvent) NotifyOpenChannelEvent(outpoint wire.OutPoint,
 }
 
 func (m *mockChanEvent) NotifyPendingOpenChannelEvent(outpoint wire.OutPoint,
-	pendingChannel *channeldb.OpenChannel,
+	pendingChannel *chanstate.OpenChannel,
 	remotePub *crypto.PublicKey) {
 
 	m.pendingOpenEvent <- channelnotifier.PendingOpenChannelEvent{
@@ -495,7 +495,7 @@ func createTestFundingManager(t *testing.T, privKey *crypto.PrivateKey,
 		},
 		TempChanIDSeed: chanIDSeed,
 		FindChannel: func(node *crypto.PublicKey,
-			chanID lnwire.ChannelID) (*channeldb.OpenChannel,
+			chanID lnwire.ChannelID) (*chanstate.OpenChannel,
 			error) {
 
 			nodeChans, err := cdb.FetchOpenChannels(node)
@@ -545,7 +545,7 @@ func createTestFundingManager(t *testing.T, privKey *crypto.PrivateKey,
 		RequiredRemoteMaxHTLCs: func(chanAmt chainutil.Amount) uint16 {
 			return uint16(input.MaxHTLCNumber / 2)
 		},
-		WatchNewChannel: func(*channeldb.OpenChannel,
+		WatchNewChannel: func(*chanstate.OpenChannel,
 			*crypto.PublicKey) error {
 
 			return nil
@@ -5188,69 +5188,6 @@ func TestFundingManagerCoinbase(t *testing.T) {
 	assertHandleChannelReady(t, alice, bob)
 }
 
-// TestMapGossipError verifies that mapGossipError correctly translates gossip
-// result errors into funding manager errors.
-func TestMapGossipError(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name    string
-		inErr   error
-		wantErr error
-	}{
-		{
-			name:    "nil error",
-			inErr:   nil,
-			wantErr: nil,
-		},
-		{
-			name:    "context canceled maps to shutdown",
-			inErr:   context.Canceled,
-			wantErr: ErrFundingManagerShuttingDown,
-		},
-		{
-			name:    "gossiper shutting down maps to shutdown",
-			inErr:   discovery.ErrGossiperShuttingDown,
-			wantErr: ErrFundingManagerShuttingDown,
-		},
-		{
-			name:    "graph outdated treated as non-fatal",
-			inErr:   graph.NewErrf(graph.ErrOutdated, "outdated"),
-			wantErr: nil,
-		},
-		{
-			name:    "graph ignored treated as non-fatal",
-			inErr:   graph.NewErrf(graph.ErrIgnored, "ignored"),
-			wantErr: nil,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			got := mapGossipError(tc.inErr, "TestMsg")
-
-			if tc.wantErr == nil {
-				require.NoError(t, got)
-				return
-			}
-
-			require.Error(t, got)
-			require.ErrorIs(t, got, tc.wantErr)
-		})
-	}
-
-	// Verify that unrecognized errors pass through unchanged.
-	t.Run("other errors passed through", func(t *testing.T) {
-		t.Parallel()
-
-		sentinel := errors.New("unexpected failure")
-		got := mapGossipError(sentinel, "TestMsg")
-		require.ErrorIs(t, got, sentinel)
-	})
-}
-
 // TestChannelReadyUnknownChannelID verifies that channel_ready messages
 // referencing ChannelIDs unknown to the funding manager are consumed without
 // stalling the coordinator. After a batch of such messages drains through,
@@ -5267,9 +5204,9 @@ func TestChannelReadyUnknownChannelID(t *testing.T) {
 		t, func(cfg *Config) {
 			origFindChannel := cfg.FindChannel
 			cfg.FindChannel = func(
-				node *btcec.PublicKey,
+				node *crypto.PublicKey,
 				chanID lnwire.ChannelID,
-			) (*channeldb.OpenChannel, error) {
+			) (*chanstate.OpenChannel, error) {
 
 				findChannelCalls.Add(1)
 
