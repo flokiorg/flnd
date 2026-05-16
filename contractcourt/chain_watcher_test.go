@@ -11,6 +11,7 @@ import (
 	"github.com/flokiorg/flnd/chainio"
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
 	lnmock "github.com/flokiorg/flnd/lntest/mock"
@@ -264,11 +265,11 @@ type dlpTestCase struct {
 // state) are returned.
 func executeStateTransitions(t *testing.T, htlcAmount lnwire.MilliLoki,
 	aliceChannel, bobChannel *lnwallet.LightningChannel,
-	numUpdates uint8) ([]*channeldb.OpenChannel, error) {
+	numUpdates uint8) ([]*chanstate.OpenChannel, error) {
 
 	// We'll make a copy of the channel state before each transition.
 	var (
-		chanStates []*channeldb.OpenChannel
+		chanStates []*chanstate.OpenChannel
 	)
 
 	state, err := copyChannelState(t, aliceChannel.State())

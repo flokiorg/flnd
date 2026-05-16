@@ -12,6 +12,7 @@ import (
 	"github.com/flokiorg/flnd/chainio"
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/lntypes"
@@ -239,7 +240,7 @@ type chainWatcherConfig struct {
 	// chanState is a snapshot of the persistent state of the channel that
 	// we're watching. In the event of an on-chain event, we'll query the
 	// database to ensure that we act using the most up to date state.
-	chanState *channeldb.OpenChannel
+	chanState *chanstate.OpenChannel
 
 	// notifier is a reference to the channel notifier that we'll use to be
 	// notified of output spends and when transactions are confirmed.
@@ -627,7 +628,7 @@ type chainSet struct {
 
 // newChainSet creates a new chainSet given the current up to date channel
 // state.
-func newChainSet(chanState *channeldb.OpenChannel) (*chainSet, error) {
+func newChainSet(chanState *chanstate.OpenChannel) (*chainSet, error) {
 	// First, we'll grab the current unrevoked commitments for ourselves
 	// and the remote party.
 	localCommit, remoteCommit, err := chanState.LatestCommitments()
@@ -1678,7 +1679,7 @@ func (c *chainWatcher) waitForCommitmentPoint() *crypto.PublicKey {
 }
 
 // deriveFundingPkScript derives the script used in the funding output.
-func deriveFundingPkScript(chanState *channeldb.OpenChannel) ([]byte, error) {
+func deriveFundingPkScript(chanState *chanstate.OpenChannel) ([]byte, error) {
 	localKey := chanState.LocalChanCfg.MultiSigKey.PubKey
 	remoteKey := chanState.RemoteChanCfg.MultiSigKey.PubKey
 

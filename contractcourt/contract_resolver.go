@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/sweep"
 	flog "github.com/flokiorg/go-flokicoin/log/v2"
@@ -59,7 +60,7 @@ type ContractResolver interface {
 
 	// SupplementState allows the user of a ContractResolver to supplement
 	// it with state required for the proper resolution of a contract.
-	SupplementState(*channeldb.OpenChannel)
+	SupplementState(*chanstate.OpenChannel)
 
 	// IsResolved returns true if the stored state in the resolve is fully
 	// resolved. In this case the target output can be forgotten.

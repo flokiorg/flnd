@@ -6,6 +6,7 @@ import (
 
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/clock"
 	"github.com/flokiorg/flnd/graph/db/models"
 	"github.com/flokiorg/flnd/lntest/mock"
@@ -26,7 +27,7 @@ func TestChainArbitratorRepublishCloses(t *testing.T) {
 
 	// Create 10 test channels and sync them to the database.
 	const numChans = 10
-	var channels []*channeldb.OpenChannel
+	var channels []*chanstate.OpenChannel
 	for i := 0; i < numChans; i++ {
 		lChannel, _, err := lnwallet.CreateTestChannels(
 			t, channeldb.SingleFunderTweaklessBit,

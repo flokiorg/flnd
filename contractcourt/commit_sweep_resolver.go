@@ -8,6 +8,7 @@ import (
 
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/lnwallet"
@@ -210,7 +211,7 @@ func (c *commitSweepResolver) Stop() {
 // state required for the proper resolution of a contract.
 //
 // NOTE: Part of the ContractResolver interface.
-func (c *commitSweepResolver) SupplementState(state *channeldb.OpenChannel) {
+func (c *commitSweepResolver) SupplementState(state *chanstate.OpenChannel) {
 	if state.ChanType.HasLeaseExpiration() {
 		c.leaseExpiry = state.ThawHeight
 	}

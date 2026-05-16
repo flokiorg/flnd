@@ -14,6 +14,7 @@ import (
 	"github.com/flokiorg/flnd/chainio"
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/clock"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/graph/db/models"
@@ -446,8 +447,8 @@ func createTestChannelArbitrator(t *testing.T, log ArbitratorLog,
 
 			return nil
 		},
-		FetchHistoricalChannel: func() (*channeldb.OpenChannel, error) {
-			return &channeldb.OpenChannel{}, nil
+		FetchHistoricalChannel: func() (*chanstate.OpenChannel, error) {
+			return &chanstate.OpenChannel{}, nil
 		},
 		FindOutgoingHTLCDeadline: func(
 			htlc channeldb.HTLC) fn.Option[int32] {
@@ -2162,7 +2163,9 @@ func TestChannelArbitratorPendingExpiredHTLC(t *testing.T) {
 func TestRemoteCloseInitiator(t *testing.T) {
 	// getCloseSummary returns a unilateral close summary for the channel
 	// provided.
-	getCloseSummary := func(channel *channeldb.OpenChannel) *RemoteUnilateralCloseInfo {
+	getCloseSummary := func(
+		channel *chanstate.OpenChannel) *RemoteUnilateralCloseInfo {
+
 		return &RemoteUnilateralCloseInfo{
 			UnilateralCloseSummary: &lnwallet.UnilateralCloseSummary{
 				SpendDetail: &chainntnfs.SpendDetail{
@@ -2192,7 +2195,7 @@ func TestRemoteCloseInitiator(t *testing.T) {
 		// is expected to be buffered, as is the default for test
 		// channel arbitrators.
 		notifyClose func(sub *ChainEventSubscription,
-			channel *channeldb.OpenChannel)
+			channel *chanstate.OpenChannel)
 
 		// expectedStates is the set of states we expect the arbitrator
 		// to progress through.
@@ -2201,7 +2204,7 @@ func TestRemoteCloseInitiator(t *testing.T) {
 		{
 			name: "force close",
 			notifyClose: func(sub *ChainEventSubscription,
-				channel *channeldb.OpenChannel) {
+				channel *chanstate.OpenChannel) {
 
 				s := getCloseSummary(channel)
 				sub.RemoteUnilateralClosure <- s

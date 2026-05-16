@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/sweep"
@@ -159,7 +160,7 @@ func (c *anchorResolver) Stop() {
 // state required for the proper resolution of a contract.
 //
 // NOTE: Part of the ContractResolver interface.
-func (c *anchorResolver) SupplementState(state *channeldb.OpenChannel) {
+func (c *anchorResolver) SupplementState(state *chanstate.OpenChannel) {
 	c.chanType = state.ChanType
 }
 

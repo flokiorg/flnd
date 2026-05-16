@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/graph/db/models"
 	"github.com/flokiorg/flnd/input"
@@ -372,6 +373,18 @@ func (h *htlcSuccessResolver) Supplement(htlc channeldb.HTLC) {
 func (h *htlcSuccessResolver) HtlcPoint() wire.OutPoint {
 	return h.htlcResolution.HtlcPoint()
 }
+
+// SupplementState allows the user of a ContractResolver to supplement it with
+// state required for the proper resolution of a contract. This restores the
+// channel type which is needed to select the correct witness type for
+// production taproot channels after restart.
+//
+// NOTE: Part of the ContractResolver interface.
+func (h *htlcSuccessResolver) SupplementState(state *chanstate.OpenChannel) {
+	h.htlcLeaseResolver.SupplementState(state)
+	h.chanType = state.ChanType
+}
+
 
 // SupplementDeadline does nothing for an incoming htlc resolver.
 //
