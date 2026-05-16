@@ -6,9 +6,8 @@ import (
 	"net"
 	"sync"
 
-	"github.com/flokiorg/go-flokicoin/crypto"
-
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/keychain"
@@ -17,6 +16,7 @@ import (
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
 	"github.com/flokiorg/go-flokicoin/chainutil"
+	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/flokiorg/go-flokicoin/crypto/schnorr/musig2"
 	"github.com/flokiorg/go-flokicoin/wire"
 )
@@ -236,7 +236,7 @@ type ChannelReservation struct {
 	ourContribution   *ChannelContribution
 	theirContribution *ChannelContribution
 
-	partialState *channeldb.OpenChannel
+	partialState *chanstate.OpenChannel
 	nodeAddr     net.Addr
 
 	// The ID of this reservation, used to uniquely track the reservation
@@ -477,7 +477,7 @@ func NewChannelReservation(capacity, localFundingAmt chainutil.Amount,
 			FundingAmount: theirBalance.ToLokis(),
 			ChannelConfig: &channeldb.ChannelConfig{},
 		},
-		partialState: &channeldb.OpenChannel{
+		partialState: &chanstate.OpenChannel{
 			ChanType:     chanType,
 			ChainHash:    *chainHash,
 			IsPending:    true,
@@ -760,11 +760,11 @@ func (r *ChannelReservation) OurSignatures() ([]*input.Script,
 // confirmations. Once the method unblocks, a LightningChannel instance is
 // returned, marking the channel available for updates.
 func (r *ChannelReservation) CompleteReservation(fundingInputScripts []*input.Script,
-	commitmentSig input.Signature) (*channeldb.OpenChannel, error) {
+	commitmentSig input.Signature) (*chanstate.OpenChannel, error) {
 
 	// TODO(roasbeef): add flag for watch or not?
 	errChan := make(chan error, 1)
-	completeChan := make(chan *channeldb.OpenChannel, 1)
+	completeChan := make(chan *chanstate.OpenChannel, 1)
 
 	r.wallet.msgChan <- &addCounterPartySigsMsg{
 		pendingFundingID:         r.reservationID,
@@ -788,11 +788,11 @@ func (r *ChannelReservation) CompleteReservation(fundingInputScripts []*input.Sc
 // will be populated.
 func (r *ChannelReservation) CompleteReservationSingle(
 	fundingPoint *wire.OutPoint, commitSig input.Signature,
-	auxFundingDesc fn.Option[AuxFundingDesc]) (*channeldb.OpenChannel,
+	auxFundingDesc fn.Option[AuxFundingDesc]) (*chanstate.OpenChannel,
 	error) {
 
 	errChan := make(chan error, 1)
-	completeChan := make(chan *channeldb.OpenChannel, 1)
+	completeChan := make(chan *chanstate.OpenChannel, 1)
 
 	r.wallet.msgChan <- &addSingleFunderSigsMsg{
 		pendingFundingID:   r.reservationID,
@@ -886,7 +886,7 @@ func (r *ChannelReservation) Cancel() error {
 }
 
 // ChanState the current open channel state.
-func (r *ChannelReservation) ChanState() *channeldb.OpenChannel {
+func (r *ChannelReservation) ChanState() *chanstate.OpenChannel {
 	r.RLock()
 	defer r.RUnlock()
 

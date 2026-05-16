@@ -12,14 +12,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/flokiorg/go-flokicoin/crypto"
-	"github.com/flokiorg/go-flokicoin/crypto/schnorr"
-	"github.com/flokiorg/go-flokicoin/crypto/schnorr/musig2"
-	"github.com/flokiorg/go-flokicoin/chainutil"
-	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
-	"github.com/flokiorg/go-flokicoin/txscript"
-	"github.com/flokiorg/go-flokicoin/wire"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/keychain"
@@ -27,6 +21,13 @@ import (
 	"github.com/flokiorg/flnd/lnwallet/chainfee"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/shachain"
+	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
+	"github.com/flokiorg/go-flokicoin/chainutil"
+	"github.com/flokiorg/go-flokicoin/crypto"
+	"github.com/flokiorg/go-flokicoin/crypto/schnorr"
+	"github.com/flokiorg/go-flokicoin/crypto/schnorr/musig2"
+	"github.com/flokiorg/go-flokicoin/txscript"
+	"github.com/flokiorg/go-flokicoin/wire"
 	"github.com/stretchr/testify/require"
 )
 
@@ -850,7 +851,7 @@ func createTaprootTestChannelsForVectors(tc *taprootTestContext,
 
 	shortChanID := lnwire.NewShortChanIDFromInt(0xdeadbeef)
 
-	remoteChannelState := &channeldb.OpenChannel{
+	remoteChannelState := &chanstate.OpenChannel{
 		LocalChanCfg:            remoteCfg,
 		RemoteChanCfg:           localCfg,
 		IdentityPub:             tc.remoteFundingPrivkey.PubKey(),
@@ -867,7 +868,7 @@ func createTaprootTestChannelsForVectors(tc *taprootTestContext,
 		Db:                      dbRemote.ChannelStateDB(),
 		FundingTxn:              fundingTx,
 	}
-	localChannelState := &channeldb.OpenChannel{
+	localChannelState := &chanstate.OpenChannel{
 		LocalChanCfg:            localCfg,
 		RemoteChanCfg:           remoteCfg,
 		IdentityPub:             tc.localFundingPrivkey.PubKey(),

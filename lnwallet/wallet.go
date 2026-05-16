@@ -10,9 +10,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/flokiorg/go-flokicoin/crypto"
-
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/keychain"
@@ -30,6 +29,7 @@ import (
 	"github.com/flokiorg/go-flokicoin/chainutil"
 	"github.com/flokiorg/go-flokicoin/chainutil/psbt"
 	"github.com/flokiorg/go-flokicoin/chainutil/txsort"
+	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/flokiorg/go-flokicoin/crypto/schnorr/musig2"
 	"github.com/flokiorg/go-flokicoin/txscript"
 	"github.com/flokiorg/go-flokicoin/wire"
@@ -335,7 +335,7 @@ type addCounterPartySigsMsg struct {
 
 	// This channel is used to return the completed channel after the wallet
 	// has completed all of its stages in the funding process.
-	completeChan chan *channeldb.OpenChannel
+	completeChan chan *chanstate.OpenChannel
 
 	// NOTE: In order to avoid deadlocks, this channel MUST be buffered.
 	err chan error
@@ -364,7 +364,7 @@ type addSingleFunderSigsMsg struct {
 
 	// This channel is used to return the completed channel after the wallet
 	// has completed all of its stages in the funding process.
-	completeChan chan *channeldb.OpenChannel
+	completeChan chan *chanstate.OpenChannel
 
 	// NOTE: In order to avoid deadlocks, this channel MUST be buffered.
 	err chan error
@@ -1153,7 +1153,7 @@ func (l *LightningWallet) CurrentNumAnchorChans() (int, error) {
 	}
 
 	var numAnchors int
-	cntChannel := func(c *channeldb.OpenChannel) {
+	cntChannel := func(c *chanstate.OpenChannel) {
 		// We skip private channels, as we assume they won't be used
 		// for routing.
 		if c.ChannelFlags&lnwire.FFAnnounceChannel == 0 {
@@ -2602,7 +2602,7 @@ func initStateHints(commit1, commit2 *wire.MsgTx,
 // ValidateChannel will attempt to fully validate a newly mined channel, given
 // its funding transaction and existing channel state. If this method returns
 // an error, then the mined channel is invalid, and shouldn't be used.
-func (l *LightningWallet) ValidateChannel(channelState *channeldb.OpenChannel,
+func (l *LightningWallet) ValidateChannel(channelState *chanstate.OpenChannel,
 	fundingTx *wire.MsgTx) error {
 
 	var chanOpts []ChannelOpt

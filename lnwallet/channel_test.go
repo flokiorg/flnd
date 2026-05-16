@@ -17,6 +17,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/graph/db/models"
 	"github.com/flokiorg/flnd/input"
@@ -9069,7 +9070,7 @@ func TestEvaluateView(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			isInitiator := test.channelInitiator == lntypes.Local
 			lc := LightningChannel{
-				channelState: &channeldb.OpenChannel{
+				channelState: &chanstate.OpenChannel{
 					IsInitiator:       isInitiator,
 					TotalMSatSent:     0,
 					TotalMSatReceived: 0,
@@ -9861,7 +9862,7 @@ func testGetDustSum(t *testing.T, chantype channeldb.ChannelType) {
 
 // deriveDummyRetributionParams is a helper function that derives a list of
 // dummy params to assist retribution creation related tests.
-func deriveDummyRetributionParams(chanState *channeldb.OpenChannel) (uint32,
+func deriveDummyRetributionParams(chanState *chanstate.OpenChannel) (uint32,
 	*CommitmentKeyRing, chainhash.Hash) {
 
 	config := chanState.RemoteChanCfg

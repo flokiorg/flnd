@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/keychain"
@@ -308,7 +309,7 @@ func CreateTestChannels(t *testing.T, chanType channeldb.ChannelType,
 		binary.BigEndian.Uint64(chanIDBytes[:]),
 	)
 
-	aliceChannelState := &channeldb.OpenChannel{
+	aliceChannelState := &chanstate.OpenChannel{
 		LocalChanCfg:            aliceCfg,
 		RemoteChanCfg:           bobCfg,
 		IdentityPub:             aliceKeys[0].PubKey(),
@@ -325,7 +326,7 @@ func CreateTestChannels(t *testing.T, chanType channeldb.ChannelType,
 		Db:                      dbAlice.ChannelStateDB(),
 		FundingTxn:              testTx,
 	}
-	bobChannelState := &channeldb.OpenChannel{
+	bobChannelState := &chanstate.OpenChannel{
 		LocalChanCfg:            bobCfg,
 		RemoteChanCfg:           aliceCfg,
 		IdentityPub:             bobKeys[0].PubKey(),
