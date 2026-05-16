@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/flokiorg/flnd/chainntnfs"
-	"github.com/flokiorg/flnd/channeldb"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/contractcourt"
 	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/htlcswitch"
@@ -15,10 +15,14 @@ import (
 	"github.com/flokiorg/flnd/lnwallet"
 	"github.com/flokiorg/flnd/lnwallet/chancloser"
 	"github.com/flokiorg/flnd/lnwire"
+	"github.com/flokiorg/flnd/routing/route"
+	"github.com/flokiorg/flnd/tlv"
 	"github.com/flokiorg/go-flokicoin/chaincfg"
 	"github.com/flokiorg/go-flokicoin/chainutil"
+	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/flokiorg/go-flokicoin/txscript"
 	"github.com/flokiorg/go-flokicoin/wire"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -760,7 +764,7 @@ func TestCustomShutdownScript(t *testing.T) {
 
 	// setShutdown is a function which sets the upfront shutdown address for
 	// the local channel.
-	setShutdown := func(a, b *channeldb.OpenChannel) {
+	setShutdown := func(a, b *chanstate.OpenChannel) {
 		a.LocalShutdownScript = script
 		b.RemoteShutdownScript = script
 	}
@@ -770,7 +774,7 @@ func TestCustomShutdownScript(t *testing.T) {
 
 		// update is a function used to set values on the channel set up for the
 		// test. It is used to set values for upfront shutdown addresses.
-		update func(a, b *channeldb.OpenChannel)
+		update func(a, b *chanstate.OpenChannel)
 
 		// userCloseScript is the address specified by the user.
 		userCloseScript lnwire.DeliveryAddress
@@ -1130,8 +1134,8 @@ func assertMsgSent(t *testing.T, conn *mockMessageConn,
 func TestAlwaysSendChannelUpdate(t *testing.T) {
 	require := require.New(t)
 
-	var channel *channeldb.OpenChannel
-	channelIntercept := func(a, b *channeldb.OpenChannel) {
+	var channel *chanstate.OpenChannel
+	channelIntercept := func(a, b *chanstate.OpenChannel) {
 		channel = a
 	}
 
@@ -1342,8 +1346,8 @@ func TestStartupWriteMessageRace(t *testing.T) {
 	// createTestPeerWithChannel, so we can mark it borked below.
 	// We can't mark it borked within the callback, since the channel hasn't
 	// been saved to the DB yet when the callback executes.
-	var channel *channeldb.OpenChannel
-	getChannels := func(a, b *channeldb.OpenChannel) {
+	var channel *chanstate.OpenChannel
+	getChannels := func(a, b *chanstate.OpenChannel) {
 		channel = a
 	}
 
@@ -1464,4 +1468,211 @@ func TestRemovePendingChannel(t *testing.T) {
 	}, wait.DefaultTimeout)
 
 	require.NoError(t, err)
+}
+
+// mockAuxTrafficShaper is a mock implementation of htlcswitch.AuxTrafficShaper
+// for testing the createHtlcValidator function.
+type mockAuxTrafficShaper struct {
+	mock.Mock
+}
+
+// ShouldHandleTraffic returns the configured mock values.
+func (m *mockAuxTrafficShaper) ShouldHandleTraffic(
+	cid lnwire.ShortChannelID,
+	fundingBlob, htlcBlob fn.Option[tlv.Blob]) (bool, error) {
+
+	args := m.Called(cid, fundingBlob, htlcBlob)
+	return args.Bool(0), args.Error(1)
+}
+
+// PaymentBandwidth returns the configured mock values.
+func (m *mockAuxTrafficShaper) PaymentBandwidth(fundingBlob, htlcBlob,
+	commitmentBlob fn.Option[tlv.Blob], linkBandwidth,
+	htlcAmt lnwire.MilliSatoshi, htlcView lnwallet.AuxHtlcView,
+	peer route.Vertex) (lnwire.MilliSatoshi, error) {
+
+	args := m.Called(
+		fundingBlob, htlcBlob, commitmentBlob, linkBandwidth,
+		htlcAmt, htlcView, peer,
+	)
+
+	bw, _ := args.Get(0).(lnwire.MilliSatoshi)
+
+	return bw, args.Error(1)
+}
+
+// ProduceHtlcExtraData is part of the AuxTrafficShaper interface.
+func (m *mockAuxTrafficShaper) ProduceHtlcExtraData(
+	totalAmount lnwire.MilliSatoshi,
+	htlcCustomRecords lnwire.CustomRecords,
+	peer route.Vertex) (lnwire.MilliSatoshi, lnwire.CustomRecords,
+	error) {
+
+	args := m.Called(totalAmount, htlcCustomRecords, peer)
+
+	amt, _ := args.Get(0).(lnwire.MilliSatoshi)
+	records, _ := args.Get(1).(lnwire.CustomRecords)
+
+	return amt, records, args.Error(2)
+}
+
+// IsCustomHTLC is part of the AuxTrafficShaper interface.
+func (m *mockAuxTrafficShaper) IsCustomHTLC(
+	htlcRecords lnwire.CustomRecords) bool {
+
+	args := m.Called(htlcRecords)
+	return args.Bool(0)
+}
+
+// Compile-time check that mockAuxTrafficShaper implements AuxTrafficShaper.
+var _ htlcswitch.AuxTrafficShaper = (*mockAuxTrafficShaper)(nil)
+
+// TestCreateHtlcValidator tests that the HTLC validator created by
+// createHtlcValidator respects the ShouldHandleTraffic check. When
+// ShouldHandleTraffic returns false, the validator should return nil without
+// calling PaymentBandwidth.
+func TestCreateHtlcValidator(t *testing.T) {
+	t.Parallel()
+
+	// Create a minimal Brontide with just the identity key set.
+	privKey, err := crypto.NewPrivateKey()
+	require.NoError(t, err)
+
+	peer := &Brontide{
+		cfg: Config{
+			Addr: &lnwire.NetAddress{
+				IdentityKey: privKey.PubKey(),
+			},
+		},
+	}
+
+	// Create a mock channel with minimal required fields.
+	dbChan := &chanstate.OpenChannel{
+		ShortChannelID: lnwire.NewShortChanIDFromInt(123),
+	}
+
+	anyArg := mock.Anything
+
+	testCases := []struct {
+		name        string
+		setupMock   func(*mockAuxTrafficShaper)
+		htlcAmount  lnwire.MilliSatoshi
+		linkBw      lnwire.MilliSatoshi
+		expectError bool
+	}{
+		{
+			name: "non-custom channel skips check",
+			setupMock: func(m *mockAuxTrafficShaper) {
+				m.On(
+					"ShouldHandleTraffic",
+					anyArg, anyArg, anyArg,
+				).Return(false, nil)
+			},
+			htlcAmount:  1000,
+			linkBw:      5000,
+			expectError: false,
+		},
+		{
+			name: "sufficient bandwidth",
+			setupMock: func(m *mockAuxTrafficShaper) {
+				m.On(
+					"ShouldHandleTraffic",
+					anyArg, anyArg, anyArg,
+				).Return(true, nil)
+				m.On(
+					"PaymentBandwidth",
+					anyArg, anyArg, anyArg,
+					anyArg, anyArg, anyArg,
+					anyArg,
+				).Return(
+					lnwire.MilliSatoshi(10000),
+					nil,
+				)
+			},
+			htlcAmount:  1000,
+			linkBw:      5000,
+			expectError: false,
+		},
+		{
+			name: "insufficient bandwidth",
+			setupMock: func(m *mockAuxTrafficShaper) {
+				m.On(
+					"ShouldHandleTraffic",
+					anyArg, anyArg, anyArg,
+				).Return(true, nil)
+				m.On(
+					"PaymentBandwidth",
+					anyArg, anyArg, anyArg,
+					anyArg, anyArg, anyArg,
+					anyArg,
+				).Return(
+					lnwire.MilliSatoshi(500),
+					nil,
+				)
+			},
+			htlcAmount:  1000,
+			linkBw:      5000,
+			expectError: true,
+		},
+		{
+			name: "ShouldHandleTraffic error",
+			setupMock: func(m *mockAuxTrafficShaper) {
+				m.On(
+					"ShouldHandleTraffic",
+					anyArg, anyArg, anyArg,
+				).Return(
+					false,
+					fmt.Errorf("shaper error"),
+				)
+			},
+			htlcAmount:  1000,
+			linkBw:      5000,
+			expectError: true,
+		},
+		{
+			name: "PaymentBandwidth error",
+			setupMock: func(m *mockAuxTrafficShaper) {
+				m.On(
+					"ShouldHandleTraffic",
+					anyArg, anyArg, anyArg,
+				).Return(true, nil)
+				m.On(
+					"PaymentBandwidth",
+					anyArg, anyArg, anyArg,
+					anyArg, anyArg, anyArg,
+					anyArg,
+				).Return(
+					lnwire.MilliSatoshi(0),
+					fmt.Errorf("bandwidth error"),
+				)
+			},
+			htlcAmount:  1000,
+			linkBw:      5000,
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := &mockAuxTrafficShaper{}
+			tc.setupMock(m)
+
+			validator := peer.createHtlcValidator(
+				dbChan, m,
+			)
+
+			err := validator.ValidateHtlc(
+				tc.htlcAmount, tc.linkBw,
+				nil, lnwallet.AuxHtlcView{},
+			)
+
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			m.AssertExpectations(t)
+		})
+	}
 }

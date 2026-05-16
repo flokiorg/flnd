@@ -14,6 +14,7 @@ import (
 	"github.com/flokiorg/flnd/chainntnfs"
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/channelnotifier"
+	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/fn"
 	graphdb "github.com/flokiorg/flnd/graph/db"
 	"github.com/flokiorg/flnd/htlcswitch"
@@ -55,7 +56,7 @@ var (
 // noUpdate is a function which can be used as a parameter in
 // createTestPeerWithChannel to call the setup code with no custom values on
 // the channels set up.
-var noUpdate = func(a, b *channeldb.OpenChannel) {}
+var noUpdate = func(a, b *chanstate.OpenChannel) {}
 
 type peerTestCtx struct {
 	peer          *Brontide
@@ -75,7 +76,7 @@ type peerTestCtx struct {
 // It takes an updateChan function which can be used to modify the default
 // values on the channel states for each peer.
 func createTestPeerWithChannel(t *testing.T, updateChan func(a,
-	b *channeldb.OpenChannel)) (*peerTestCtx, error) {
+	b *chanstate.OpenChannel)) (*peerTestCtx, error) {
 
 	params := createTestPeer(t)
 
@@ -238,7 +239,7 @@ func createTestPeerWithChannel(t *testing.T, updateChan func(a,
 		binary.BigEndian.Uint64(chanIDBytes[:]),
 	)
 
-	aliceChannelState := &channeldb.OpenChannel{
+	aliceChannelState := &chanstate.OpenChannel{
 		LocalChanCfg:            aliceCfg,
 		RemoteChanCfg:           bobCfg,
 		IdentityPub:             aliceKeyPub,
@@ -255,7 +256,7 @@ func createTestPeerWithChannel(t *testing.T, updateChan func(a,
 		Db:                      dbAlice.ChannelStateDB(),
 		FundingTxn:              channels.TestFundingTx,
 	}
-	bobChannelState := &channeldb.OpenChannel{
+	bobChannelState := &chanstate.OpenChannel{
 		LocalChanCfg:            bobCfg,
 		RemoteChanCfg:           aliceCfg,
 		IdentityPub:             bobKeyPub,
