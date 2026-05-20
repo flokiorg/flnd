@@ -385,8 +385,13 @@ func explicitNegotiateCommitmentType(channelType lnwire.ChannelType, local,
 }
 
 // implicitNegotiateCommitmentType negotiates the commitment type of a channel
-// implicitly by choosing the latest type supported by the local and remote
-// features.
+// implicitly by choosing the latest non-taproot type supported by the local and
+// remote features. Taproot channels must be requested explicitly, keeping
+// implicit opens on channel types that can be used for both public and private
+// channels.
+//
+// TODO(yy): Revisit implicit taproot negotiation once public taproot channel
+// announcements are supported.
 func implicitNegotiateCommitmentType(local,
 	remote *lnwire.FeatureVector) (*lnwire.ChannelType,
 	lnwallet.CommitmentType) {
