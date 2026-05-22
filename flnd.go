@@ -534,11 +534,11 @@ func Main(cfg *Config, lisCfg ListenerCfg, implCfg *ImplementationCfg,
 		}
 	}
 
-	// If tor is active and either v2 or v3 onion services have been
-	// specified, make a tor controller and pass it into both the watchtower
-	// server and the regular lnd server.
+	// If tor is active and a v3 onion service has been specified, make a
+	// tor controller and pass it into both the watchtower server and the
+	// regular lnd server.
 	var torController *tor.Controller
-	if cfg.Tor.Active && (cfg.Tor.V2 || cfg.Tor.V3) {
+	if cfg.Tor.Active && cfg.Tor.V3 {
 		torController = tor.NewController(
 			cfg.Tor.Control, cfg.Tor.TargetIPAddress,
 			cfg.Tor.Password,
@@ -595,13 +595,6 @@ func Main(cfg *Config, lisCfg ListenerCfg, implCfg *ImplementationCfg,
 			wtCfg.WatchtowerKeyPath = cfg.Tor.WatchtowerKeyPath
 			wtCfg.EncryptKey = cfg.Tor.EncryptKey
 			wtCfg.KeyRing = activeChainControl.KeyRing
-
-			switch {
-			case cfg.Tor.V2:
-				wtCfg.Type = tor.V2
-			case cfg.Tor.V3:
-				wtCfg.Type = tor.V3
-			}
 		}
 
 		wtConfig, err := cfg.Watchtower.Apply(
