@@ -299,8 +299,8 @@ func (c *ChannelEventStore) getOrCreatePeerMonitor(
 	peerMonitor = newPeerLog(c.cfg.Clock, flapCount, lastFlap)
 	c.peers[peer] = peerMonitor
 
-	// Send an online event given it's the first time we see this peer.
-	peerMonitor.onlineEvent(true)
+	// Send an liveness event given it's the first time we see this peer.
+	peerMonitor.onlineEvent(c.cfg.IsPeerOnline(peer))
 
 	return peerMonitor, nil
 }
