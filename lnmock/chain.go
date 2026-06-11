@@ -1,6 +1,7 @@
 package lnmock
 
 import (
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
 	"github.com/flokiorg/go-flokicoin/chainjson"
 	"github.com/flokiorg/go-flokicoin/chainutil"
@@ -168,6 +169,19 @@ func (m *MockChain) TestMempoolAccept(txns []*wire.MsgTx, maxFeeRate float64) (
 	}
 
 	return args.Get(0).([]*chainjson.TestMempoolAcceptResult), args.Error(1)
+}
+
+// SubmitPackage is a mock implementation of the chain.Interface method.
+func (m *MockChain) SubmitPackage(txns []*wire.MsgTx,
+	maxFeeRate *float64) (*btcjson.SubmitPackageResult, error) {
+
+	args := m.Called(txns, maxFeeRate)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*btcjson.SubmitPackageResult), args.Error(1)
 }
 
 func (m *MockChain) MapRPCErr(err error) error {
