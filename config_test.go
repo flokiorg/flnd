@@ -183,7 +183,7 @@ func TestValidateMaxOutgoingCltvExpiry(t *testing.T) {
 	require.NoError(
 		t, validateMaxOutgoingCltvExpiry(
 			htlcswitch.DefaultMaxOutgoingCltvExpiry,
-			cfg.Bitcoin.TimeLockDelta,
+			cfg.Flokicoin.TimeLockDelta,
 		),
 	)
 	require.NoError(t, validateMaxOutgoingCltvExpiry(
@@ -191,13 +191,13 @@ func TestValidateMaxOutgoingCltvExpiry(t *testing.T) {
 	))
 
 	err := validateMaxOutgoingCltvExpiry(
-		cfg.Bitcoin.TimeLockDelta-1,
-		cfg.Bitcoin.TimeLockDelta,
+		cfg.Flokicoin.TimeLockDelta-1,
+		cfg.Flokicoin.TimeLockDelta,
 	)
 	require.ErrorContains(t, err, "max-cltv-expiry must be at least")
 
 	err = validateMaxOutgoingCltvExpiry(
-		MaxTimeLockDelta+1, cfg.Bitcoin.TimeLockDelta,
+		MaxTimeLockDelta+1, cfg.Flokicoin.TimeLockDelta,
 	)
 	require.ErrorContains(t, err, "max-cltv-expiry must be at most")
 }
@@ -210,7 +210,7 @@ func TestValidateChannelPolicyTimeLockDelta(t *testing.T) {
 	cfg := DefaultConfig()
 
 	require.NoError(t, validateChannelPolicyTimeLockDelta(
-		cfg.Bitcoin.TimeLockDelta, cfg.MaxOutgoingCltvExpiry,
+		cfg.Flokicoin.TimeLockDelta, cfg.MaxOutgoingCltvExpiry,
 	))
 	require.NoError(t, validateChannelPolicyTimeLockDelta(
 		cfg.MaxOutgoingCltvExpiry, cfg.MaxOutgoingCltvExpiry,
