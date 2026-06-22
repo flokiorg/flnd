@@ -925,12 +925,7 @@ func newServer(ctx context.Context, cfg *Config, listenAddrs []net.Addr,
 	s.witnessBeacon = newPreimageBeacon(
 		dbs.ChanStateDB.NewWitnessCache(),
 		s.interceptableSwitch.ForwardPacket,
-		func(key models.CircuitKey) error {
-			return s.interceptableSwitch.Resolve(&htlcswitch.FwdResolution{
-				Key:    key,
-				Action: htlcswitch.FwdActionFail,
-			})
-		},
+		s.interceptableSwitch.RemoveOnChainIntercept,
 	)
 
 	chanStatusMgrCfg := &netann.ChanStatusConfig{
