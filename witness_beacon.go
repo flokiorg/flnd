@@ -7,6 +7,7 @@ import (
 	"github.com/flokiorg/flnd/channeldb"
 	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/contractcourt"
+	"github.com/flokiorg/flnd/fn"
 	"github.com/flokiorg/flnd/graph/db/models"
 	"github.com/flokiorg/flnd/htlcswitch"
 	"github.com/flokiorg/flnd/htlcswitch/hop"
@@ -118,6 +119,12 @@ func (p *preimageBeacon) SubscribeUpdates(
 		OutgoingAmount:       payload.FwdInfo.AmountToForward,
 		InOnionCustomRecords: payload.CustomRecords(),
 		InWireCustomRecords:  htlc.CustomRecords,
+		// Keep the on-chain intercept available to the
+		// interceptor until the HTLC expires on chain.
+		Deadline: fn.NewRight[
+			htlcswitch.OffChainAutoFailHeight,
+			htlcswitch.OnChainSettleDeadline,
+		](htlcswitch.OnChainSettleDeadline(htlc.RefundTimeout)),
 	}
 	copy(packet.OnionBlob[:], nextHopOnionBlob)
 
