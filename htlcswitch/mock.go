@@ -376,7 +376,8 @@ func encodeFwdInfo(w io.Writer, f *hop.ForwardingInfo) error {
 		return err
 	}
 
-	if err := binary.Write(w, binary.BigEndian, f.OutgoingCTLV); err != nil {
+	err := binary.Write(w, binary.BigEndian, f.OutgoingCLTV)
+	if err != nil {
 		return err
 	}
 
@@ -515,7 +516,7 @@ func (p *mockIteratorDecoder) DecodeHopIterator(r io.Reader, rHash []byte,
 			Realm:         [1]byte{}, // hop.FlokicoinNetwork
 			NextAddress:   nextHopBytes,
 			ForwardAmount: uint64(f.AmountToForward),
-			OutgoingCltv:  f.OutgoingCTLV,
+			OutgoingCltv:  f.OutgoingCLTV,
 		})
 	}
 
@@ -570,7 +571,8 @@ func decodeFwdInfo(r io.Reader, f *hop.ForwardingInfo) error {
 		return err
 	}
 
-	if err := binary.Read(r, binary.BigEndian, &f.OutgoingCTLV); err != nil {
+	err := binary.Read(r, binary.BigEndian, &f.OutgoingCLTV)
+	if err != nil {
 		return err
 	}
 

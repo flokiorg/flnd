@@ -3204,7 +3204,7 @@ func (l *channelLink) processRemoteAdds(fwdPkg *channeldb.FwdPkg) {
 				// Otherwise, it was already processed, we can
 				// can collect it and continue.
 				outgoingAdd := &lnwire.UpdateAddHTLC{
-					Expiry:        fwdInfo.OutgoingCTLV,
+					Expiry:        fwdInfo.OutgoingCLTV,
 					Amount:        fwdInfo.AmountToForward,
 					PaymentHash:   add.PaymentHash,
 					BlindingPoint: fwdInfo.NextBlinding,
@@ -3243,7 +3243,7 @@ func (l *channelLink) processRemoteAdds(fwdPkg *channeldb.FwdPkg) {
 					htlc:                 outgoingAdd,
 					obfuscator:           obfuscator,
 					incomingTimeout:      add.Expiry,
-					outgoingTimeout:      fwdInfo.OutgoingCTLV,
+					outgoingTimeout:      fwdInfo.OutgoingCLTV,
 					inOnionCustomRecords: pld.CustomRecords(),
 					inboundFee:           inboundFee,
 					inWireCustomRecords:  add.CustomRecords.Copy(),
@@ -3262,7 +3262,7 @@ func (l *channelLink) processRemoteAdds(fwdPkg *channeldb.FwdPkg) {
 			// create the outgoing HTLC using the parameters as
 			// specified in the forwarding info.
 			addMsg := &lnwire.UpdateAddHTLC{
-				Expiry:        fwdInfo.OutgoingCTLV,
+				Expiry:        fwdInfo.OutgoingCLTV,
 				Amount:        fwdInfo.AmountToForward,
 				PaymentHash:   add.PaymentHash,
 				BlindingPoint: fwdInfo.NextBlinding,
@@ -3320,7 +3320,7 @@ func (l *channelLink) processRemoteAdds(fwdPkg *channeldb.FwdPkg) {
 					htlc:                 addMsg,
 					obfuscator:           obfuscator,
 					incomingTimeout:      add.Expiry,
-					outgoingTimeout:      fwdInfo.OutgoingCTLV,
+					outgoingTimeout:      fwdInfo.OutgoingCLTV,
 					inOnionCustomRecords: pld.CustomRecords(),
 					inboundFee:           inboundFee,
 					inWireCustomRecords:  add.CustomRecords.Copy(),
@@ -3449,7 +3449,7 @@ func (l *channelLink) processExitHop(add lnwire.UpdateAddHTLC,
 	case hop.FinalHtlcInvalidCltv:
 		l.log.Errorf("onion payload of incoming htlc(%x) has "+
 			"incompatible time-lock: expected <=%v, got %v",
-			add.PaymentHash, add.Expiry, fwdInfo.OutgoingCTLV)
+			add.PaymentHash, add.Expiry, fwdInfo.OutgoingCLTV)
 
 		failure := NewLinkError(
 			lnwire.NewFinalIncorrectCltvExpiry(add.Expiry),

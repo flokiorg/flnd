@@ -114,7 +114,7 @@ func (p *preimageBeacon) SubscribeUpdates(
 		IncomingAmount:       htlc.Amt,
 		IncomingCircuit:      inKey,
 		OutgoingChanID:       payload.FwdInfo.NextHop,
-		OutgoingExpiry:       payload.FwdInfo.OutgoingCTLV,
+		OutgoingExpiry:       payload.FwdInfo.OutgoingCLTV,
 		OutgoingAmount:       payload.FwdInfo.AmountToForward,
 		InOnionCustomRecords: payload.CustomRecords(),
 		InWireCustomRecords:  htlc.CustomRecords,
