@@ -7,6 +7,7 @@ import (
 
 	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/graph/db/models"
+	"github.com/flokiorg/flnd/invoices"
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/zpay32"
 	"github.com/flokiorg/go-flokicoin/crypto"
@@ -24,6 +25,24 @@ var (
 	_       = pubKeyY.SetByteSlice(pubkeyBytes)
 	pubkey  = crypto.NewPublicKey(new(crypto.FieldVal).SetInt(4), pubKeyY)
 )
+
+// TestAddInvoiceRejectsCltvAboveMaxIncoming asserts that invoice creation
+// rejects final CLTV deltas above the supported maximum.
+func TestAddInvoiceRejectsCltvAboveMaxIncoming(t *testing.T) {
+	t.Parallel()
+
+	_, _, err := AddInvoice(
+		t.Context(), &AddInvoiceConfig{}, &AddInvoiceData{
+			CltvExpiry: invoices.MaxFinalCltvDelta + 1,
+		},
+	)
+	require.ErrorContains(
+		t, err, fmt.Sprintf(
+			"max accepted is: %v",
+			invoices.MaxFinalCltvDelta,
+		),
+	)
+}
 
 type hopHintsConfigMock struct {
 	t *testing.T
