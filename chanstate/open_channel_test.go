@@ -3,7 +3,7 @@ package chanstate
 import (
 	"testing"
 
-	"github.com/lightningnetwork/lnd/lnwire"
+	"github.com/flokiorg/flnd/lnwire"
 	"github.com/stretchr/testify/require"
 )
 
