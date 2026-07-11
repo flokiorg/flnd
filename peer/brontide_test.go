@@ -1488,29 +1488,29 @@ func (m *mockAuxTrafficShaper) ShouldHandleTraffic(
 // PaymentBandwidth returns the configured mock values.
 func (m *mockAuxTrafficShaper) PaymentBandwidth(fundingBlob, htlcBlob,
 	commitmentBlob fn.Option[tlv.Blob], linkBandwidth,
-	htlcAmt lnwire.MilliSatoshi, htlcView lnwallet.AuxHtlcView,
-	peer route.Vertex) (lnwire.MilliSatoshi, error) {
+	htlcAmt lnwire.MilliLoki, htlcView lnwallet.AuxHtlcView,
+	peer route.Vertex) (lnwire.MilliLoki, error) {
 
 	args := m.Called(
 		fundingBlob, htlcBlob, commitmentBlob, linkBandwidth,
 		htlcAmt, htlcView, peer,
 	)
 
-	bw, _ := args.Get(0).(lnwire.MilliSatoshi)
+	bw, _ := args.Get(0).(lnwire.MilliLoki)
 
 	return bw, args.Error(1)
 }
 
 // ProduceHtlcExtraData is part of the AuxTrafficShaper interface.
 func (m *mockAuxTrafficShaper) ProduceHtlcExtraData(
-	totalAmount lnwire.MilliSatoshi,
+	totalAmount lnwire.MilliLoki,
 	htlcCustomRecords lnwire.CustomRecords,
-	peer route.Vertex) (lnwire.MilliSatoshi, lnwire.CustomRecords,
+	peer route.Vertex) (lnwire.MilliLoki, lnwire.CustomRecords,
 	error) {
 
 	args := m.Called(totalAmount, htlcCustomRecords, peer)
 
-	amt, _ := args.Get(0).(lnwire.MilliSatoshi)
+	amt, _ := args.Get(0).(lnwire.MilliLoki)
 	records, _ := args.Get(1).(lnwire.CustomRecords)
 
 	return amt, records, args.Error(2)
@@ -1556,8 +1556,8 @@ func TestCreateHtlcValidator(t *testing.T) {
 	testCases := []struct {
 		name        string
 		setupMock   func(*mockAuxTrafficShaper)
-		htlcAmount  lnwire.MilliSatoshi
-		linkBw      lnwire.MilliSatoshi
+		htlcAmount  lnwire.MilliLoki
+		linkBw      lnwire.MilliLoki
 		expectError bool
 	}{
 		{
@@ -1585,7 +1585,7 @@ func TestCreateHtlcValidator(t *testing.T) {
 					anyArg, anyArg, anyArg,
 					anyArg,
 				).Return(
-					lnwire.MilliSatoshi(10000),
+					lnwire.MilliLoki(10000),
 					nil,
 				)
 			},
@@ -1606,7 +1606,7 @@ func TestCreateHtlcValidator(t *testing.T) {
 					anyArg, anyArg, anyArg,
 					anyArg,
 				).Return(
-					lnwire.MilliSatoshi(500),
+					lnwire.MilliLoki(500),
 					nil,
 				)
 			},
@@ -1642,7 +1642,7 @@ func TestCreateHtlcValidator(t *testing.T) {
 					anyArg, anyArg, anyArg,
 					anyArg,
 				).Return(
-					lnwire.MilliSatoshi(0),
+					lnwire.MilliLoki(0),
 					fmt.Errorf("bandwidth error"),
 				)
 			},
