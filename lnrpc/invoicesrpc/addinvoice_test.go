@@ -7,11 +7,8 @@ import (
 
 	"github.com/flokiorg/flnd/chanstate"
 	"github.com/flokiorg/flnd/graph/db/models"
-	"github.com/flokiorg/flnd/invoices"
 	"github.com/flokiorg/flnd/lnwire"
-	"github.com/flokiorg/flnd/routing/route"
 	"github.com/flokiorg/flnd/zpay32"
-	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
 	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/flokiorg/go-flokicoin/wire"
 	"github.com/stretchr/testify/mock"
