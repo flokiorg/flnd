@@ -3149,7 +3149,7 @@ func (c *OpenChannel) InsertNextRevocation(revKey *crypto.PublicKey) error {
 // InsertNextRevocation inserts the next commitment point into the persisted
 // channel state.
 func (c *ChannelStateDB) InsertNextRevocation(channel *OpenChannel,
-	revKey *btcec.PublicKey) error {
+	revKey *crypto.PublicKey) error {
 
 	channel.RemoteNextRevocation = revKey
 

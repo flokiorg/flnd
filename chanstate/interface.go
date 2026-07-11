@@ -252,7 +252,7 @@ type OpenChannelCommitmentStore[Channel any] interface {
 
 	// InsertNextRevocation inserts the next commitment point into the
 	// persisted channel state.
-	InsertNextRevocation(channel Channel, revKey *btcec.PublicKey) error
+	InsertNextRevocation(channel Channel, revKey *crypto.PublicKey) error
 }
 
 // ClosedChannelStore owns closed-channel summaries and lifecycle mutations.
