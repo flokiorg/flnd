@@ -1,9 +1,9 @@
 package chanstate
 
 import (
-	"github.com/lightningnetwork/lnd/lntypes"
-	"github.com/lightningnetwork/lnd/lnwire"
-	"github.com/lightningnetwork/lnd/tlv"
+	"github.com/flokiorg/flnd/lntypes"
+	"github.com/flokiorg/flnd/lnwire"
+	"github.com/flokiorg/flnd/tlv"
 )
 
 // ShutdownInfo contains various info about the shutdown initiation of a
