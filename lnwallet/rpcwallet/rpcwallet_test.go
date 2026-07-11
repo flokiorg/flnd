@@ -5,12 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/btcsuite/btcd/btcutil/psbt"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/lightningnetwork/lnd/input"
-	"github.com/lightningnetwork/lnd/lnwallet"
+	"github.com/flokiorg/flnd/input"
+	"github.com/flokiorg/flnd/lnwallet"
+	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
+	"github.com/flokiorg/go-flokicoin/chainutil/psbt"
+	"github.com/flokiorg/go-flokicoin/txscript"
+	"github.com/flokiorg/go-flokicoin/wire"
 	"github.com/stretchr/testify/require"
 )
 
