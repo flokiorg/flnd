@@ -1263,15 +1263,15 @@ func (c *ChannelStateDB) markBroadcasted(channel *OpenChannel,
 	status ChannelStatus, key []byte, closeTx *wire.MsgTx,
 	closer lntypes.ChannelParty) error {
 
-	if closeTx == nil {
-		return fmt.Errorf("closeTx must be non-nil")
-	}
-
 	channel.Lock()
 	defer channel.Unlock()
 
 	// If a closing tx is provided, we'll generate a closure to write the
-	// transaction in the appropriate bucket under the given key.
+	// transaction in the appropriate bucket under the given key. Some
+	// callers (e.g. the legacy coop-close negotiation path) mark the
+	// channel as broadcasted before a closing tx has been finalized, so a
+	// nil closeTx here just means the status is updated without a tx
+	// being persisted yet.
 	var putClosingTx func(kvdb.RwBucket) error
 	if closeTx != nil {
 		var b bytes.Buffer
