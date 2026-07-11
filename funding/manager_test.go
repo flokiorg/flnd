@@ -3892,12 +3892,12 @@ func TestFundingManagerPushAmountExceedsCapacity(t *testing.T) {
 	// exceeds 1000 * funding_satoshis. We only need the fields that
 	// Bob's fundeeProcessOpenChannel inspects before the BOLT-02 bound
 	// check, so other fields are left zero.
-	const fundingAmt = btcutil.Amount(500000)
+	const fundingAmt = chainutil.Amount(500000)
 	openChannelReq := &lnwire.OpenChannel{
 		ChainHash:        *fundingNetParams.GenesisHash,
 		PendingChannelID: [32]byte{0x01},
 		FundingAmount:    fundingAmt,
-		PushAmount:       lnwire.NewMSatFromSatoshis(fundingAmt) + 1,
+		PushAmount:       lnwire.NewMSatFromLokis(fundingAmt) + 1,
 	}
 
 	bob.fundingMgr.ProcessFundingMsg(openChannelReq, alice)
@@ -3929,12 +3929,12 @@ func TestFundingManagerPushAmountAtCapacity(t *testing.T) {
 		tearDownFundingManagers(t, alice, bob)
 	})
 
-	const fundingAmt = btcutil.Amount(500000)
+	const fundingAmt = chainutil.Amount(500000)
 	openChannelReq := &lnwire.OpenChannel{
 		ChainHash:        *fundingNetParams.GenesisHash,
 		PendingChannelID: [32]byte{0x01},
 		FundingAmount:    fundingAmt,
-		PushAmount:       lnwire.NewMSatFromSatoshis(fundingAmt),
+		PushAmount:       lnwire.NewMSatFromLokis(fundingAmt),
 	}
 
 	bob.fundingMgr.ProcessFundingMsg(openChannelReq, alice)

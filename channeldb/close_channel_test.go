@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/btcsuite/btcd/wire"
-	graphdb "github.com/lightningnetwork/lnd/graph/db"
-	"github.com/lightningnetwork/lnd/kvdb"
-	"github.com/lightningnetwork/lnd/tlv"
+	graphdb "github.com/flokiorg/flnd/graph/db"
+	"github.com/flokiorg/flnd/kvdb"
+	"github.com/flokiorg/flnd/tlv"
+	"github.com/flokiorg/go-flokicoin/wire"
 	"github.com/stretchr/testify/require"
 )
 

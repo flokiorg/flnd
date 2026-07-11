@@ -88,12 +88,12 @@ func ErrNonZeroPushAmount() ReservationError {
 // ErrPushAmountTooLarge is returned when the push amount exceeds the channel's
 // funding amount, which violates BOLT-02 (push_msat MUST be <=
 // 1000 * funding_satoshis).
-func ErrPushAmountTooLarge(pushAmt lnwire.MilliSatoshi,
-	fundingAmt btcutil.Amount) ReservationError {
+func ErrPushAmountTooLarge(pushAmt lnwire.MilliLoki,
+	fundingAmt chainutil.Amount) ReservationError {
 
 	return ReservationError{
 		fmt.Errorf("push amount %v exceeds funding amount %v",
-			pushAmt, lnwire.NewMSatFromSatoshis(fundingAmt)),
+			pushAmt, lnwire.NewMSatFromLokis(fundingAmt)),
 	}
 }
 
