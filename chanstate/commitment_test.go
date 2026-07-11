@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/lightningnetwork/lnd/lnwire"
-	"github.com/lightningnetwork/lnd/tlv"
+	"github.com/flokiorg/flnd/lnwire"
+	"github.com/flokiorg/flnd/tlv"
+	"github.com/flokiorg/go-flokicoin/crypto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,7 +14,7 @@ import (
 func TestHTLCCopy(t *testing.T) {
 	t.Parallel()
 
-	_, blindingPoint := btcec.PrivKeyFromBytes(bytes.Repeat([]byte{1}, 32))
+	_, blindingPoint := crypto.PrivKeyFromBytes(bytes.Repeat([]byte{1}, 32))
 
 	var rHash [32]byte
 	copy(rHash[:], bytes.Repeat([]byte{2}, len(rHash)))
