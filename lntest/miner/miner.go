@@ -480,7 +480,7 @@ func (h *HarnessMiner) GetNumTxsFromMempool(n int) []*wire.MsgTx {
 			// tests may RBF-replace a tx while we iterate over
 			// the snapshot. Retry with a fresh snapshot when
 			// that happens.
-			tx, err := h.backend.GetRawTransaction(&txid)
+			tx, err := h.Client.GetRawTransaction(&txid)
 			if err != nil {
 				return err
 			}
