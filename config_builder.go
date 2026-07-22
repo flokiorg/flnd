@@ -1749,7 +1749,7 @@ func initNeutrinoBackend(ctx context.Context, cfg *Config, chainDir string,
 			"client: %v", err)
 	}
 
-	if err := neutrinoCS.Start(); err != nil {
+	if err := neutrinoCS.Start(ctx); err != nil {
 		db.Close()
 		return nil, nil, err
 	}

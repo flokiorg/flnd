@@ -3387,7 +3387,7 @@ func runTests(t *testing.T, walletDriver *lnwallet.WalletDriver,
 			if err != nil {
 				t.Fatalf("unable to make neutrino: %v", err)
 			}
-			aliceChain.Start()
+			aliceChain.Start(t.Context())
 			defer aliceChain.Stop()
 			aliceClient = chain.NewNeutrinoClient(
 				netParams, aliceChain,
@@ -3417,7 +3417,7 @@ func runTests(t *testing.T, walletDriver *lnwallet.WalletDriver,
 			if err != nil {
 				t.Fatalf("unable to make neutrino: %v", err)
 			}
-			bobChain.Start()
+			bobChain.Start(t.Context())
 			defer bobChain.Stop()
 			bobClient = chain.NewNeutrinoClient(
 				netParams, bobChain,

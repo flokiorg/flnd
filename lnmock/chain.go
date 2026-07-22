@@ -1,6 +1,8 @@
 package lnmock
 
 import (
+	"context"
+
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
 	"github.com/flokiorg/go-flokicoin/chainjson"
@@ -19,7 +21,7 @@ type MockChain struct {
 // Compile-time constraint to ensure MockChain implements the Chain interface.
 var _ chain.Interface = (*MockChain)(nil)
 
-func (m *MockChain) Start() error {
+func (m *MockChain) Start(_ context.Context) error {
 	args := m.Called()
 
 	return args.Error(0)
