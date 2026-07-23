@@ -1330,7 +1330,7 @@ func (c *client) handleStaleTower(msg *staleTowerMsg) error {
 		// replayed back onto the main task pipeline.
 		err = c.activeSessions.StopAndRemove(sessionID, true)
 		if err != nil {
-			c.log.Errorf("could not stop session %s: %w", sessionID,
+			c.log.Errorf("could not stop session %s: %v", sessionID,
 				err)
 		}
 	}
