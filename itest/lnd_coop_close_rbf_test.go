@@ -322,7 +322,7 @@ func testCoopCloseRBFWithReorg(ht *lntest.HarnessTest) {
 		}
 
 		return nil
-	}, DefaultTimeout)
+	}, wait.DefaultTimeout)
 	require.NoError(ht, err)
 
 	ht.Logf("Successfully verified closing txid: %s", expectedClosingTxid)
