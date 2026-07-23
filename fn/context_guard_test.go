@@ -145,7 +145,7 @@ func TestContextGuard(t *testing.T) {
 			select {
 			case <-ctxc.Done():
 			case <-task:
-				t.Fatalf("should not get here")
+				t.Errorf("should not get here")
 			}
 		}()
 
@@ -188,7 +188,7 @@ func TestContextGuard(t *testing.T) {
 			select {
 			case <-ctxc.Done():
 			case <-task:
-				t.Fatalf("should not get here")
+				t.Errorf("should not get here")
 			}
 		}()
 
@@ -237,7 +237,7 @@ func TestContextGuard(t *testing.T) {
 			select {
 			case <-ctxc.Done():
 			case <-task:
-				t.Fatalf("Expected context to be cancelled")
+				t.Errorf("Expected context to be cancelled")
 			}
 		}()
 
@@ -275,7 +275,7 @@ func TestContextGuard(t *testing.T) {
 
 			select {
 			case <-ctxc.Done():
-				t.Fatalf("Expected task to be performed")
+				t.Errorf("Expected task to be performed")
 			case <-task:
 			}
 		}()
@@ -338,7 +338,7 @@ func TestContextGuard(t *testing.T) {
 			select {
 			case <-ctxc.Done():
 			case <-task:
-				t.Fatalf("Expected context to be cancelled")
+				t.Errorf("Expected context to be cancelled")
 			}
 		}()
 
@@ -379,7 +379,7 @@ func TestContextGuard(t *testing.T) {
 			select {
 			case <-ctxc.Done():
 			case <-task:
-				t.Fatalf("Expected context to be cancelled")
+				t.Errorf("Expected context to be cancelled")
 			}
 		}()
 
@@ -414,7 +414,7 @@ func TestContextGuard(t *testing.T) {
 
 			select {
 			case <-ctxc.Done():
-				t.Fatalf("Expected the task to be performed")
+				t.Errorf("Expected the task to be performed")
 			case <-task:
 			}
 		}()
