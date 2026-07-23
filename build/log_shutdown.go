@@ -39,7 +39,7 @@ func (s *ShutdownLogger) Criticalf(format string, params ...interface{}) {
 //
 // Note: it is part of the flog.Logger interface.
 func (s *ShutdownLogger) Critical(v ...interface{}) {
-	s.Logger.Critical(v)
+	s.Logger.Critical(v...)
 	s.Logger.Info("Sending request for shutdown")
 	s.shutdown()
 }
