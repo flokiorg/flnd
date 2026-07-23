@@ -58,7 +58,7 @@ func (w *mockWalletController) FetchOutpointInfo(
 
 	utxo := &Utxo{
 		AddressType:   WitnessPubKey,
-		Value:         10 * chainutil.LokiPerFlokicoin,
+		Value:         200_000 * chainutil.LokiPerFlokicoin,
 		PkScript:      []byte("dummy"),
 		Confirmations: 1,
 		OutPoint:      *prevOut,
@@ -184,7 +184,7 @@ func (w *mockWalletController) ListUnspentWitness(int32, int32,
 	// Otherwise create one to return.
 	utxo := &Utxo{
 		AddressType: WitnessPubKey,
-		Value:       chainutil.Amount(10 * chainutil.LokiPerFlokicoin),
+		Value:       chainutil.Amount(200_000 * chainutil.LokiPerFlokicoin),
 		PkScript:    CoinPkScript,
 		OutPoint: wire.OutPoint{
 			Hash:  chainhash.Hash{},
