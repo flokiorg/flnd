@@ -980,7 +980,7 @@ func (s *Switch) handleLocalResponse(pkt *htlcPacket) {
 	// HTLC internally.
 	if pkt.destRef != nil {
 		if err := s.ackSettleFail(*pkt.destRef); err != nil {
-			log.Warnf("Unable to ack settle/fail reference: %s: %v",
+			log.Warnf("Unable to ack settle/fail reference: %v: %v",
 				*pkt.destRef, err)
 			return
 		}
