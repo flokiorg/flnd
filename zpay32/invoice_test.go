@@ -932,7 +932,7 @@ func TestDecodeEncode(t *testing.T) {
 			)
 			if !test.valid {
 				require.Error(t, err)
-                return
+				return
 			} else {
 				require.NoError(t, err)
 				if !compareInvoices(decodedInvoice, invoice) {
