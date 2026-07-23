@@ -160,7 +160,7 @@ func (c *channelAcceptorCtx) queryAndAssert(queries map[*lnwire.OpenChannel]*Cha
 // TestMultipleAcceptClients tests that the RPC acceptor is capable of handling
 // multiple requests to its Accept function and responding to them correctly.
 func TestMultipleAcceptClients(t *testing.T) {
-	testAddr := "bcrt1qwrmq9uca0t3dy9t9wtuq5tm4405r7tfzyqn9pp"
+	testAddr := "fcrt1qqqqsyqcyq5rqwzqfpg9scrgwpugpzysnmt5y76"
 	testUpfront, err := chancloser.ParseUpfrontShutdownAddress(
 		testAddr, &chaincfg.RegressionNetParams,
 	)
