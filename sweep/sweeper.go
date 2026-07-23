@@ -2006,7 +2006,7 @@ func (s *UtxoSweeper) handleBumpEventTxUnknownSpend(r *bumpResp) {
 		}
 
 		log.Debugf("Input(%v): updating params: immediate [%v -> true]",
-			op, r.result.FeeRate, input.params.Immediate)
+			op, input.params.Immediate)
 
 		input.params.Immediate = true
 		inputsToRetry = append(inputsToRetry, input)
