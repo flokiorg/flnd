@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/flokiorg/go-flokicoin/chaincfg"
-	"github.com/flokiorg/go-flokicoin/chainutil"
 	"github.com/flokiorg/flnd/input"
 	"github.com/flokiorg/flnd/lnrpc"
 	"github.com/flokiorg/flnd/lnwallet/chancloser"
 	"github.com/flokiorg/flnd/lnwire"
+	"github.com/flokiorg/go-flokicoin/chaincfg"
+	"github.com/flokiorg/go-flokicoin/chainutil"
 	"github.com/stretchr/testify/require"
 )
 
