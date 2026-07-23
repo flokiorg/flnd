@@ -2763,7 +2763,7 @@ func (f *Manager) funderProcessFundingSigned(peer lnpeer.Peer,
 
 		err := fmt.Errorf("unable to find signed reservation for "+
 			"chan_id=%x", msg.ChanID)
-		log.Warnf(err.Error())
+		log.Warn(err)
 		f.failFundingFlow(peer, cid, err)
 		return
 	}
@@ -5301,7 +5301,7 @@ func (f *Manager) handleInitFundingMsg(msg *InitFundingMsg) {
 	if err := msg.Peer.SendMessage(true, &fundingOpen); err != nil {
 		e := fmt.Errorf("unable to send funding request message: %w",
 			err)
-		log.Errorf(e.Error())
+		log.Error(e)
 
 		// Since we were unable to send the initial message to the peer
 		// and start the funding flow, we'll cancel this reservation.
@@ -5343,7 +5343,7 @@ func (f *Manager) handleErrorMsg(peer lnpeer.Peer, msg *lnwire.Error) {
 	fundingErr := fmt.Errorf("received funding error from %x: %v",
 		peerKey.SerializeCompressed(), msg.Error(),
 	)
-	log.Errorf(fundingErr.Error())
+	log.Error(fundingErr)
 
 	// If this was a PSBT funding flow, the remote likely timed out because
 	// we waited too long. Return a nice error message to the user in that
@@ -5388,7 +5388,7 @@ func (f *Manager) pruneZombieReservations() {
 			"(peer_id:%x, chan_id:%x)",
 			resCtx.peer.IdentityKey().SerializeCompressed(),
 			pendingChanID[:])
-		log.Warnf(err.Error())
+		log.Warn(err)
 
 		chanID := lnwire.NewChanIDFromOutPoint(
 			*resCtx.reservation.FundingOutpoint(),
