@@ -499,18 +499,15 @@ type extractIntentTestCase struct {
 func TestExtractIntentFromSendRequest(t *testing.T) {
 	const paymentAmount = chainutil.Amount(300_000)
 
-	const paymentReq = "lnbcrt500u1pnh0xflpp56w08q26t896vg2e9mtdkrem320tp" +
-		"wws9z9sfr7dw86dx97d90u4sdqqcqzzsxqyz5vqsp5z9945kvfy5g9afmakz" +
-		"yrur2t4hhn2tr87un8j0r0e6l5m5zm0fus9qxpqysgqk98c6j7qefdpdmzt4" +
-		"g6aykds4ydvf2x9lpngqcfux3hv8qlraan9v3s9296r5w5eh959yzadgh5ck" +
-		"gjydgyfxdpumxtuk3p3caugmlqpz5necs"
+	const paymentReq = "lnfcrt500u1p0qhcgqpp5xycnzvf3xycnzvf3xycnzvf3xy" +
+		"cnzvf3xycnzvf3xycnzvf3xycsdq8w3jhxaqxqrrsskug5ughjc4n4sn0rf" +
+		"zrd3fmkqpwedq0wp9hyr36f08kd2497a3wzdzk436ejwj2zcy62ay35hpx" +
+		"977cgulppat8nvlfvvvqx797aywgqfyhes9"
 
-	const paymentReqMissingAddr = "lnbcrt100p1p70xwfzpp5qqqsyqcyq5rqwzqfq" +
-		"qqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpl2pkx2ctnv5sxxmmwwd5kge" +
-		"tjypeh2ursdae8g6twvus8g6rfwvs8qun0dfjkxaqnp4q0n326hr8v9zprg8" +
-		"gsvezcch06gfaqqhde2aj730yg0durunfhv669qypqqqz3uu8wnr7883qzxr" +
-		"566nuhled49fx6e6q0jn06w6gpgyznwzxwf8xdmye87kpx0y8lqtcgwywsau" +
-		"0jkm66evelkw7cggwlegp4anv3cq62wusm"
+	const paymentReqMissingAddr = "lnfcrt100n1pne6eqqpp5xgeryv3jxgeryv3jx" +
+		"geryv3jxgeryv3jxgeryv3jxgeryv3jxgeqdqgw3jhxapjxq97zvuqgdjcl" +
+		"7hznk5sa93w0g5a2m84n6vvaa702a50hxgc8tpsl858dlw5mtc4vv6xgjv" +
+		"8n27hhydxcugv7ppc2naczhdt2je4a4lsdsucgssprq4cqr"
 
 	destNodeBytes, err := hex.DecodeString(destKey)
 	require.NoError(t, err)
