@@ -456,8 +456,8 @@ func TestParseUpfrontShutdownAddress(t *testing.T) {
 	t.Parallel()
 
 	var (
-		testnetAddress = "tb1qdfkmwwgdaa5dnezrlhtftvmj5qn2kwgp7n0z6r"
-		regtestAddress = "bcrt1q09crvvuj95x5nk64wsxf5n6ky0kr8358vpx4d8"
+		testnetAddress = "tf1qqqqsyqcyq5rqwzqfpg9scrgwpugpzysnwc8ve0"
+		regtestAddress = "fcrt1qqqqsyqcyq5rqwzqfpg9scrgwpugpzysnmt5y76"
 	)
 
 	tests := []struct {
