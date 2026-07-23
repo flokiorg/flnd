@@ -422,12 +422,12 @@ func testChannelFundMaxMaxChanSize(ht *lntest.HarnessTest) {
 		{
 			name:        "non-wumbo",
 			wumbo:       false,
-			expectedMax: funding.MaxFLCFundingAmount,
+			expectedMax: funding.MaxFlokicoinFundingAmount,
 		},
 		{
 			name:        "wumbo",
 			wumbo:       true,
-			expectedMax: funding.MaxFLCFundingAmountWumbo,
+			expectedMax: funding.MaxFlokicoinFundingAmountWumbo,
 		},
 	}
 
@@ -458,7 +458,7 @@ func testChannelFundMaxMaxChanSize(ht *lntest.HarnessTest) {
 			st.EnsureConnected(alice, bob)
 
 			// Fund Alice with more than the protocol maximum.
-			fundAmt := tc.expectedMax + chainutil.SatoshiPerBitcoin
+			fundAmt := tc.expectedMax + chainutil.LokiPerFlokicoin
 			st.FundCoins(fundAmt, alice)
 
 			// Open channel with fundMax. This should use the
