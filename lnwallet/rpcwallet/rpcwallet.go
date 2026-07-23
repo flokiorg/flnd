@@ -1460,9 +1460,9 @@ func considerShutdown(err error) {
 	// The signing server's context timed out before the client's due to
 	// clock skew, request a shutdown anyway.
 	case isStatusErr && statusErr.Code() == codes.DeadlineExceeded:
-		log.Critical("RPC signing timed out: %v", err)
+		log.Criticalf("RPC signing timed out: %v", err)
 
 	case isStatusErr && statusErr.Code() == codes.Unavailable:
-		log.Critical("RPC signing server not available: %v", err)
+		log.Criticalf("RPC signing server not available: %v", err)
 	}
 }
