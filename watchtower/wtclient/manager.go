@@ -951,7 +951,7 @@ func (m *Manager) handleClosableSessions(
 				err = m.cfg.DB.DeleteSession(item.sessionID)
 				if err != nil {
 					log.Errorf("could not delete "+
-						"session(%s) from DB: %w",
+						"session(%s) from DB: %v",
 						sess.ID, err)
 
 					continue

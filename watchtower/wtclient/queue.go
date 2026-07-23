@@ -350,7 +350,7 @@ func (q *DiskOverflowQueue[T]) pushToActiveQueue(task T) bool {
 		if err != nil {
 			// Log and back off for a few seconds and then
 			// try again with the same task.
-			q.log.Errorf("could not persist %s to disk. "+
+			q.log.Errorf("could not persist %v to disk. "+
 				"Retrying after backoff", task)
 
 			select {
