@@ -8,9 +8,9 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
 	github.com/fergusstrange/embedded-postgres v1.33.0
-	github.com/flokiorg/flokicoin-neutrino v0.16.6-beta
+	github.com/flokiorg/flokicoin-neutrino v0.17.0-beta
 	github.com/flokiorg/go-flokicoin v0.25.13-alpha
-	github.com/flokiorg/walletd v0.1.8-beta
+	github.com/flokiorg/walletd v0.2.0-beta
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/golangci/plugin-module-register v0.1.2
 	github.com/google/btree v1.1.3

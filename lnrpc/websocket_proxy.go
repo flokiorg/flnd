@@ -146,7 +146,7 @@ func (p *WebsocketProxy) upgradeToWebSocketProxy(w http.ResponseWriter,
 
 	conn, err := p.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		p.logger.Errorf("error upgrading websocket:", err)
+		p.logger.Errorf("error upgrading websocket: %v", err)
 		return
 	}
 	defer func() {
@@ -165,7 +165,7 @@ func (p *WebsocketProxy) upgradeToWebSocketProxy(w http.ResponseWriter,
 		ctx, r.Method, r.URL.String(), requestForwarder,
 	)
 	if err != nil {
-		p.logger.Errorf("WS: error preparing request:", err)
+		p.logger.Errorf("WS: error preparing request: %v", err)
 		return
 	}
 

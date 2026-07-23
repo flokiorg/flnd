@@ -514,7 +514,7 @@ func (p *BimodalEstimator) probabilityFormula(capacityMsat, successAmountMsat,
 	if successAmount >= capacity {
 		log.Debugf("Correcting success amount %s and failure amount "+
 			"%s to capacity %s", successAmountMsat,
-			failAmount, capacityMsat)
+			failAmountMsat, capacityMsat)
 
 		// We choose the success amount to be one less than the
 		// capacity, to both fit success and failure amounts into the

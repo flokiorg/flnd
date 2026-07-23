@@ -1406,8 +1406,8 @@ func (w *WalletKit) BumpForceCloseFee(_ context.Context,
 		// between fetching the pending sweeps and preparing the sweep
 		// params. We log this case and proceed.
 		if !existing {
-			log.Errorf("Sweep anchor input(%v) not known to the " +
-				"sweeper subsystem")
+			log.Errorf("Sweep anchor input(%v) not known to the "+
+				"sweeper subsystem", anchor.OutPoint)
 			continue
 		}
 

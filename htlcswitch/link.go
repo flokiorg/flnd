@@ -1586,7 +1586,7 @@ func (l *channelLink) handleDownstreamUpdateAdd(ctx context.Context,
 	// arbitrary delays between the switch adding an ADD to the
 	// mailbox, and the HTLC being added to the commitment state.
 	if l.cfg.HodlMask.Active(hodl.AddOutgoing) {
-		l.log.Warnf(hodl.AddOutgoing.Warning())
+		l.log.Warn(hodl.AddOutgoing.Warning())
 		l.mailBox.AckPacket(pkt.inKey())
 		return nil
 	}
@@ -1689,7 +1689,7 @@ func (l *channelLink) handleDownstreamPkt(ctx context.Context,
 		!l.quiescer.CanSendUpdates() {
 
 		l.log.Warnf("unable to process channel update. "+
-			"ChannelID=%v is quiescent.", l.ChanID)
+			"ChannelID=%v is quiescent.", l.ChanID())
 
 		return
 	}
@@ -1998,7 +1998,7 @@ func (l *channelLink) updateCommitTx(ctx context.Context) error {
 	// permits testing of either the switch or link's ability to trim
 	// circuits that have been opened, but unsuccessfully committed.
 	if l.cfg.HodlMask.Active(hodl.Commit) {
-		l.log.Warnf(hodl.Commit.Warning())
+		l.log.Warn(hodl.Commit.Warning())
 		return nil
 	}
 
@@ -2871,7 +2871,7 @@ func (l *channelLink) processRemoteSettleFails(fwdPkg *channeldb.FwdPkg) {
 			// forward the SETTLE to the switch and will not signal
 			// a free slot on the commitment transaction.
 			if l.cfg.HodlMask.Active(hodl.SettleIncoming) {
-				l.log.Warnf(hodl.SettleIncoming.Warning())
+				l.log.Warn(hodl.SettleIncoming.Warning())
 				continue
 			}
 
@@ -2896,7 +2896,7 @@ func (l *channelLink) processRemoteSettleFails(fwdPkg *channeldb.FwdPkg) {
 			// forward the FAIL to the switch and will not signal a
 			// free slot on the commitment transaction.
 			if l.cfg.HodlMask.Active(hodl.FailIncoming) {
-				l.log.Warnf(hodl.FailIncoming.Warning())
+				l.log.Warn(hodl.FailIncoming.Warning())
 				continue
 			}
 
@@ -3180,7 +3180,7 @@ func (l *channelLink) processRemoteAdds(fwdPkg *channeldb.FwdPkg) {
 			// validate the forwarded ADD, nor will we send the
 			// packet to the htlc switch.
 			if l.cfg.HodlMask.Active(hodl.AddIncoming) {
-				l.log.Warnf(hodl.AddIncoming.Warning())
+				l.log.Warn(hodl.AddIncoming.Warning())
 				continue
 			}
 
@@ -3532,7 +3532,7 @@ func (l *channelLink) settleHTLC(preimage lntypes.Preimage,
 	// If the link is in hodl.BogusSettle mode, replace the preimage with a
 	// fake one before sending it to the peer.
 	if l.cfg.HodlMask.Active(hodl.BogusSettle) {
-		l.log.Warnf(hodl.BogusSettle.Warning())
+		l.log.Warn(hodl.BogusSettle.Warning())
 		preimage = [32]byte{}
 		copy(preimage[:], bytes.Repeat([]byte{2}, 32))
 	}
@@ -4619,7 +4619,7 @@ func (l *channelLink) processLocalUpdateFulfillHTLC(ctx context.Context,
 	// arbitrary delays between the switch adding the SETTLE to the mailbox,
 	// and the HTLC being added to the commitment state.
 	if l.cfg.HodlMask.Active(hodl.SettleOutgoing) {
-		l.log.Warnf(hodl.SettleOutgoing.Warning())
+		l.log.Warn(hodl.SettleOutgoing.Warning())
 		l.mailBox.AckPacket(pkt.inKey())
 
 		return
@@ -4686,7 +4686,7 @@ func (l *channelLink) processLocalUpdateFailHTLC(ctx context.Context,
 	// arbitrary delays between the switch adding a FAIL to the mailbox, and
 	// the HTLC being added to the commitment state.
 	if l.cfg.HodlMask.Active(hodl.FailOutgoing) {
-		l.log.Warnf(hodl.FailOutgoing.Warning())
+		l.log.Warn(hodl.FailOutgoing.Warning())
 		l.mailBox.AckPacket(pkt.inKey())
 
 		return

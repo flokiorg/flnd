@@ -39,7 +39,7 @@ var (
 	// firstAddress is the first address that we should get from the wallet,
 	// corresponding to the derivation path m/84'/0'/0'/0/0 (even on regtest
 	// which is a special case for the BIP49/84 addresses in btcwallet).
-	firstAddress = "bcrt1qgdlgjc5ede7fjv350wcjqat80m0zsmfaswsj9p"
+	firstAddress = "fcrt1q6x2yk8ngmptr8pcdx6k7460932ayp09knndt6k"
 
 	// firstAddressPubKey is the public key of the first address that we
 	// should get from the wallet.
@@ -48,8 +48,8 @@ var (
 
 	// firstAddressTaproot is the first address that we should get from the
 	// wallet when deriving a taproot address.
-	firstAddressTaproot = "bcrt1ps8c222fgysvnsj2m8hxk8khy6wthcrhv9va9z3t4" +
-		"h3qeyz65sh4qqwvdgc"
+	firstAddressTaproot = "fcrt1pyhjw75wnsvqjgdfeh3vhdtc3zttv36uxrmvud4uw5" +
+		"994ruqywdeqx7al2m"
 
 	// firstAddressTaprootPubKey is the public key of the first address that
 	// we should get from the wallet when deriving a taproot address.
@@ -67,8 +67,8 @@ var (
 	)
 	testTaprootKey, _ = crypto.ParsePubKey(testTaprootKeyBytes)
 
-	testTapscriptAddr = "bcrt1p7p5xsny3gyp8xx8wm9vdejl57lm5suqwrkjnx9trpk" +
-		"p2xckk4zrs4xehl8"
+	testTapscriptAddr = "fcrt1p7p5xsny3gyp8xx8wm9vdejl57lm5suqwrkjnx9trpk" +
+		"p2xckk4zrs70k8es"
 	testTapscriptPkScript = append(
 		[]byte{txscript.OP_1, txscript.OP_DATA_32},
 		schnorr.SerializePubKey(testTaprootKey)...,
@@ -84,58 +84,58 @@ var (
 		path: []uint32{
 			hardenedKey(84), hardenedKey(0), hardenedKey(0), 0, 0,
 		},
-		wif: "cPp3XUewCBQVg3pgwVWbtpzDwhWTQpHhu8saN3SdGRTkiLpu1R6h",
+		wif: "cNrtPgGscX2J1qFwX7cLiqpPHq9UBwtn3cZCH1HRt5gKSf1A1AWb",
 	}, {
 		name: "m/84'/0'/0'/1/0",
 		path: []uint32{
 			hardenedKey(84), hardenedKey(0), hardenedKey(0), 1, 0,
 		},
-		wif: "cPUR1nFAeYAtSWSkKoWB6WbzRTbDSGdrGRmv1kVLRPyo7QXph2gt",
+		wif: "cNXSKKYe3NHYAuQcmMJHSrmUmqDgxZ6YpFgo3j3RYSXFJhssNuBQ",
 	}, {
 		name: "m/84'/0'/0'/0/12345",
 		path: []uint32{
 			hardenedKey(84), hardenedKey(0), hardenedKey(0), 0,
 			12345,
 		},
-		wif: "cQCdGxqKeGZKiC2uRYMAGenJHkDvajiPieT4Yg7k1BKawjKkywvz",
+		wif: "cUCejD1MST246GA2EiZwbcZeLVzApJ7RkboViTxc9ByVBBAMvXuV",
 	}, {
 		name: "m/49'/0'/0'/0/0",
 		path: []uint32{
 			hardenedKey(49), hardenedKey(0), hardenedKey(0), 0, 0,
 		},
-		wif: "cMwVK2bcTzivPZfcCH585rBGghqsJAP9MdVy8inRti1wZvLn5DvY",
+		wif: "cSdXrGNwMRgoBzSwAMJSFEywmRrxNAXJawKL9QsqYRAXpeNyqFx2",
 	}, {
 		name: "m/49'/0'/0'/1/0",
 		path: []uint32{
 			hardenedKey(49), hardenedKey(0), hardenedKey(0), 1, 0,
 		},
-		wif: "cNPW9bMtdc2YGBzWzSCXFN4excjrT34nZzGYtfkzkazUrt3dXuv7",
+		wif: "cUNtPq6N7ECUxVeWN68B4PpxKHdLsDPnVkMSj9rSFbap2oHojwSF",
 	}, {
 		name: "m/49'/0'/0'/1/12345",
 		path: []uint32{
 			hardenedKey(49), hardenedKey(0), hardenedKey(0), 1,
 			12345,
 		},
-		wif: "cNdJt2fSNUJYVSb8JFjhosPcQgNvJ92SjNeNpsf1gUwDVDv2KVRa",
+		wif: "cS4iDpkdBfEvhY5UU9ApZHoURBn3HYv1z3Wv8G6WUzQcGnzY4T19",
 	}, {
 		name: "m/1017'/1'/0'/0/0",
 		path: []uint32{
 			hardenedKey(1017), hardenedKey(1), hardenedKey(0), 0, 0,
 		},
-		wif: "cPsCmbWQENgptj3eTiyd85QSAD1xqYKPM9jUkfvm7vgN3SoVPWSP",
+		wif: "cUDPCz7NrBNPdPtxHw2xuNWjawbafmUgnTTVxfeqZVEfHHjv6iv8",
 	}, {
 		name: "m/1017'/1'/6'/0/0",
 		path: []uint32{
 			hardenedKey(1017), hardenedKey(1), hardenedKey(6), 0, 0,
 		},
-		wif: "cPeQdpcGJmLqpdmvokh3DK9ZtjYAXxiw4p4ELNUWkWt6bMRqArEV",
+		wif: "cRvCrPFn7FaF66EZPv9gUMQ42kGwKef5M9gjKCySjNZ7fLeqvSqE",
 	}, {
 		name: "m/1017'/1'/7'/0/123",
 		path: []uint32{
 			hardenedKey(1017), hardenedKey(1), hardenedKey(7), 0,
 			123,
 		},
-		wif: "cPcWZMqY4YErkcwjtFJaYoXkzd7bKxrfxAVzhDgy3n5BGH8CU8sn",
+		wif: "cNvmooSYBR9CY7iAQNPdYUjKm2Dwmm9qdc9YzMx5otEPHjVSstxw",
 	}, {
 		name: "m/84'/1'/0'/0/0",
 		path: []uint32{

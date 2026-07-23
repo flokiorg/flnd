@@ -39,15 +39,15 @@ var (
 		salt:     testSalt,
 		password: []byte{},
 		expectedMnemonic: [NumMnemonicWords]string{
-			"ability", "liquid", "travel", "stem", "barely", "drastic",
-			"pact", "cupboard", "apple", "thrive", "morning", "oak",
-			"feature", "tissue", "couch", "old", "math", "inform",
-			"success", "suggest", "drink", "motion", "know", "royal",
+			"absent", "lens", "dose", "scare", "snow", "divide",
+			"blood", "increase", "exact", "invite", "chief", "actual",
+			"excite", "weasel", "cotton", "genuine", "furnace", "fortune",
+			"success", "suggest", "drink", "tip", "spatial", "cake",
 		},
 		expectedBirthday: 0,
 	}, {
 		version:  0,
-		time:     time.Unix(1521799345, 0), // 03/23/2018 @ 10:02am (UTC)
+		time:     time.Unix(1922221359, 0), // 3365 days after FlokicoinGenesisDate
 		entropy:  testEntropy,
 		salt:     testSalt,
 		password: []byte("!very_safe_55345_password*"),
