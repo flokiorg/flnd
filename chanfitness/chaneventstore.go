@@ -255,7 +255,7 @@ func (c *ChannelEventStore) addChannel(channelPoint wire.OutPoint,
 
 	peerMonitor, err := c.getOrCreatePeerMonitor(peer)
 	if err != nil {
-		log.Error("could not create monitor: %v", err)
+		log.Errorf("could not create monitor: %v", err)
 		return
 	}
 
