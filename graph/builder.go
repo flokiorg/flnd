@@ -747,7 +747,7 @@ func (b *Builder) networkHandler() {
 		// pausing while consecutive windows contain new info.
 		case <-b.statTicker.Ticks():
 			if !b.stats.Empty() {
-				log.Infof(b.stats.String())
+				log.Info(b.stats.String())
 			} else {
 				b.statTicker.Pause()
 			}
