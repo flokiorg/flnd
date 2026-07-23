@@ -2308,7 +2308,8 @@ func (l *channelLink) isOverexposedWithHtlc(htlc *lnwire.UpdateAddHTLC,
 		// The max fee exposure was exceeded.
 		l.log.Debugf("ChannelLink(%v): HTLC %v makes the channel "+
 			"overexposed, total local dust: %v (current commit "+
-			"fee: %v)", l.ShortChanID(), htlc, localDustSum)
+			"fee: %v)", l.ShortChanID(), htlc, localDustSum,
+			commitFeeMSat)
 
 		return true
 	}
@@ -2327,7 +2328,8 @@ func (l *channelLink) isOverexposedWithHtlc(htlc *lnwire.UpdateAddHTLC,
 		// The max fee exposure was exceeded.
 		l.log.Debugf("ChannelLink(%v): HTLC %v makes the channel "+
 			"overexposed, total remote dust: %v (current commit "+
-			"fee: %v)", l.ShortChanID(), htlc, remoteDustSum)
+			"fee: %v)", l.ShortChanID(), htlc, remoteDustSum,
+			commitFeeMSat)
 
 		return true
 	}
