@@ -870,7 +870,7 @@ func (p *paymentLifecycle) handleSwitchErr(attempt *paymentsdb.HTLCAttempt,
 	}
 
 	if errors.Is(sendErr, htlcswitch.ErrUnreadableFailureMessage) {
-		log.Warn("Unreadable failure when sending htlc: id=%v, hash=%v",
+		log.Warnf("Unreadable failure when sending htlc: id=%v, hash=%v",
 			attempt.AttemptID, attempt.Hash)
 
 		// Since this error message cannot be decrypted, we will send a
