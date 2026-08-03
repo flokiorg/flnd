@@ -8,6 +8,7 @@ import (
 	"github.com/flokiorg/go-flokicoin/chaincfg"
 	"github.com/flokiorg/flnd/graph/db/migration1/sqlc"
 	"github.com/flokiorg/flnd/sqldb"
+	"github.com/flokiorg/flnd/sqldb/sqldbtest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,9 +18,9 @@ func NewTestDB(t testing.TB) V1Store {
 	return NewTestDBWithFixture(t, nil)
 }
 
-// NewTestDBFixture creates a new sqldb.TestPgFixture for testing purposes.
-func NewTestDBFixture(t *testing.T) *sqldb.TestPgFixture {
-	pgFixture := sqldb.NewTestPgFixture(
+// NewTestDBFixture creates a new sqldbtest.TestPgFixture for testing purposes.
+func NewTestDBFixture(t *testing.T) *sqldbtest.TestPgFixture {
+	pgFixture := sqldbtest.NewTestPgFixture(
 		t, sqldb.DefaultPostgresFixtureLifetime,
 	)
 	t.Cleanup(func() {
@@ -31,7 +32,7 @@ func NewTestDBFixture(t *testing.T) *sqldb.TestPgFixture {
 // NewTestDBWithFixture is a helper function that creates a SQLStore backed by a
 // SQL database for testing.
 func NewTestDBWithFixture(t testing.TB,
-	pgFixture *sqldb.TestPgFixture) V1Store {
+	pgFixture *sqldbtest.TestPgFixture) V1Store {
 
 	var querier BatchedSQLQueries
 	if pgFixture == nil {
@@ -54,7 +55,7 @@ func NewTestDBWithFixture(t testing.TB,
 // newBatchQuerier creates a new BatchedSQLQueries instance for testing
 // using a PostgreSQL database fixture.
 func newBatchQuerier(t testing.TB) BatchedSQLQueries {
-	pgFixture := sqldb.NewTestPgFixture(
+	pgFixture := sqldbtest.NewTestPgFixture(
 		t, sqldb.DefaultPostgresFixtureLifetime,
 	)
 	t.Cleanup(func() {
@@ -67,9 +68,9 @@ func newBatchQuerier(t testing.TB) BatchedSQLQueries {
 // newBatchQuerierWithFixture creates a new BatchedSQLQueries instance for
 // testing using a PostgreSQL database fixture.
 func newBatchQuerierWithFixture(t testing.TB,
-	pgFixture *sqldb.TestPgFixture) BatchedSQLQueries {
+	pgFixture *sqldbtest.TestPgFixture) BatchedSQLQueries {
 
-	rawDB := sqldb.NewTestPostgresDB(t, pgFixture).BaseDB.DB
+	rawDB := sqldbtest.NewTestPostgresDB(t, pgFixture).BaseDB.DB
 
 	return &testBatchedSQLQueries{
 		db:      rawDB,

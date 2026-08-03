@@ -14,6 +14,7 @@ import (
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/record"
 	"github.com/flokiorg/flnd/sqldb"
+	"github.com/flokiorg/flnd/sqldb/sqldbtest"
 	"github.com/stretchr/testify/require"
 	"pgregory.net/rapid"
 )
@@ -260,7 +261,7 @@ func generateAMPHtlcsRapid(t *rapid.T, invoice *Invoice) {
 // types are modified.
 func TestMigrateSingleInvoiceRapid(t *testing.T) {
 	// Create a shared Postgres instance for efficient testing.
-	pgFixture := sqldb.NewTestPgFixture(
+	pgFixture := sqldbtest.NewTestPgFixture(
 		t, sqldb.DefaultPostgresFixtureLifetime,
 	)
 	t.Cleanup(func() {
@@ -272,7 +273,7 @@ func TestMigrateSingleInvoiceRapid(t *testing.T) {
 		if sqlite {
 			db = sqldb.NewTestSqliteDB(t).BaseDB
 		} else {
-			db = sqldb.NewTestPostgresDB(t, pgFixture).BaseDB
+			db = sqldbtest.NewTestPostgresDB(t, pgFixture).BaseDB
 		}
 
 		executor := sqldb.NewTransactionExecutor(

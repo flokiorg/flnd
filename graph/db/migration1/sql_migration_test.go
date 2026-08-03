@@ -28,6 +28,7 @@ import (
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/routing/route"
 	"github.com/flokiorg/flnd/sqldb"
+	"github.com/flokiorg/flnd/sqldb/sqldbtest"
 	"github.com/flokiorg/flnd/tor"
 	"github.com/flokiorg/go-flokicoin/chaincfg"
 	"github.com/flokiorg/go-flokicoin/chaincfg/chainhash"
@@ -1520,7 +1521,7 @@ func TestMigrateGraphToSQLRapid(t *testing.T) {
 //
 // The migration is run twice in order to test idempotency and retry-safety.
 func testMigrateGraphToSQLRapidOnce(t *testing.T, rt *rapid.T,
-	dbFixture *sqldb.TestPgFixture, maxNumNodes, maxNumChannels int) {
+	dbFixture *sqldbtest.TestPgFixture, maxNumNodes, maxNumChannels int) {
 
 	ctx := t.Context()
 
