@@ -13,6 +13,7 @@ import (
 	"github.com/flokiorg/walletd/walletdb"
 	"github.com/flokiorg/flnd/kvdb"
 	"github.com/flokiorg/flnd/sqldb"
+	"github.com/flokiorg/flnd/sqldb/sqldbtest"
 	"github.com/flokiorg/flnd/sqldb/sqlc"
 	"github.com/stretchr/testify/require"
 )
@@ -526,7 +527,7 @@ func BenchmarkSQLBatching(b *testing.B) {
 func benchmarkSQLBatching(b *testing.B, sqlite bool) {
 	// First create a shared Postgres instance so we don't spawn a new
 	// docker container for each test.
-	pgFixture := sqldb.NewTestPgFixture(
+	pgFixture := sqldbtest.NewTestPgFixture(
 		b, sqldb.DefaultPostgresFixtureLifetime,
 	)
 	b.Cleanup(func() {
@@ -538,7 +539,7 @@ func benchmarkSQLBatching(b *testing.B, sqlite bool) {
 		if sqlite {
 			db = sqldb.NewTestSqliteDB(b).BaseDB
 		} else {
-			db = sqldb.NewTestPostgresDB(b, pgFixture).BaseDB
+			db = sqldbtest.NewTestPostgresDB(b, pgFixture).BaseDB
 		}
 
 		return sqldb.NewTransactionExecutor(

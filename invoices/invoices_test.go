@@ -18,6 +18,7 @@ import (
 	"github.com/flokiorg/flnd/lnwire"
 	"github.com/flokiorg/flnd/record"
 	"github.com/flokiorg/flnd/sqldb"
+	"github.com/flokiorg/flnd/sqldb/sqldbtest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -223,7 +224,7 @@ func TestInvoices(t *testing.T) {
 
 	// First create a shared Postgres instance so we don't spawn a new
 	// docker container for each test.
-	pgFixture := sqldb.NewTestPgFixture(
+	pgFixture := sqldbtest.NewTestPgFixture(
 		t, sqldb.DefaultPostgresFixtureLifetime,
 	)
 	t.Cleanup(func() {
@@ -235,7 +236,7 @@ func TestInvoices(t *testing.T) {
 		if sqlite {
 			db = sqldb.NewTestSqliteDB(t).BaseDB
 		} else {
-			db = sqldb.NewTestPostgresDB(t, pgFixture).BaseDB
+			db = sqldbtest.NewTestPostgresDB(t, pgFixture).BaseDB
 		}
 
 		executor := sqldb.NewTransactionExecutor(

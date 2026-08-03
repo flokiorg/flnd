@@ -15,6 +15,7 @@ import (
 	"github.com/flokiorg/flnd/kvdb/sqlite"
 	"github.com/flokiorg/flnd/lncfg"
 	"github.com/flokiorg/flnd/sqldb"
+	"github.com/flokiorg/flnd/sqldb/sqldbtest"
 	"github.com/flokiorg/flnd/sqldb/sqlc"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +28,7 @@ import (
 func TestMigrationWithChannelDB(t *testing.T) {
 	// First create a shared Postgres instance so we don't spawn a new
 	// docker container for each test.
-	pgFixture := sqldb.NewTestPgFixture(
+	pgFixture := sqldbtest.NewTestPgFixture(
 		t, sqldb.DefaultPostgresFixtureLifetime,
 	)
 	t.Cleanup(func() {
@@ -41,7 +42,7 @@ func TestMigrationWithChannelDB(t *testing.T) {
 		if sqlite {
 			db = sqldb.NewTestSqliteDB(t).BaseDB
 		} else {
-			db = sqldb.NewTestPostgresDB(t, pgFixture).BaseDB
+			db = sqldbtest.NewTestPostgresDB(t, pgFixture).BaseDB
 		}
 
 		invoiceExecutor := sqldb.NewTransactionExecutor(
