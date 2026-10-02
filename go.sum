@@ -121,8 +121,8 @@ github.com/fergusstrange/embedded-postgres v1.33.0 h1:ka8vmRpm4IDsES7NPXQ/NThAp1
 github.com/fergusstrange/embedded-postgres v1.33.0/go.mod h1:w0YvnCgf19o6tskInrOOACtnqfVlOvluz3hlNLY7tRk=
 github.com/flokiorg/flokicoin-neutrino v0.17.2 h1:n97ib86kfOSW8a9h1bgs10LySdmurePFx9efZHwPmbs=
 github.com/flokiorg/flokicoin-neutrino v0.17.2/go.mod h1:ipCqmOt/WDWcU73Sb3iY8VJrKNkQPJ7FOnegREpKi2I=
-github.com/flokiorg/go-flokicoin v0.26.2 h1:80NFZ8RJrA11iiinS1FamNHaPn/FH1yzWahQE0ypWBo=
-github.com/flokiorg/go-flokicoin v0.26.2/go.mod h1:HBUjxuYeKl+yHuYHxLWpzniiHTmh99Im7T6cB/BdL7g=
+github.com/flokiorg/go-flokicoin v0.26.3 h1:tVpG2ujKQs4w6DJmLG0rArqWJ1Qp9inFoHwnL9xX+1k=
+github.com/flokiorg/go-flokicoin v0.26.3/go.mod h1:CCRytgFUI+mK55DZB0cVmiQWPDD93L2WwUjH6HQyR3Q=
 github.com/flokiorg/go-socks v0.0.0-20170105172521-4720035b7bfd h1:+ronJTVUGaH8N/VRXwZLi5Sou7Ty41piC05oKHNehdc=
 github.com/flokiorg/go-socks v0.0.0-20170105172521-4720035b7bfd/go.mod h1:YSmQVJwQclEkeLWZjbFO3MFVAycIO/fTCTvDs1jRzaE=
 github.com/flokiorg/lightning-onion v1.0.4 h1:fan0Qs6sSFy+QoXy04pEVF3QPMYrrwJrmba5rscSlYY=
