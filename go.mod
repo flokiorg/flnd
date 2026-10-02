@@ -9,7 +9,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
 	github.com/fergusstrange/embedded-postgres v1.33.0
 	github.com/flokiorg/flokicoin-neutrino v0.17.2
-	github.com/flokiorg/go-flokicoin v0.26.2
+	github.com/flokiorg/go-flokicoin v0.26.3
 	github.com/flokiorg/walletd v0.2.2
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/golangci/plugin-module-register v0.1.2
