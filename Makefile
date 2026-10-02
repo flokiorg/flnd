@@ -25,6 +25,13 @@ ANDROID_BUILD := $(ANDROID_BUILD_DIR)/Lndmobile.aar
 
 COMMIT := $(shell git describe --tags --dirty)
 
+# APP_VERSION is the most recent release tag with the leading "v" stripped.
+# It is injected so a locally built binary reports a real version rather than
+# a hard-coded constant; the release workflow injects the exact version being
+# released instead. Empty (no tags reachable) falls back to the development
+# placeholder in build/version.go.
+APP_VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
+
 # Determine the minor version of the active Go installation.
 ACTIVE_GO_VERSION := $(shell $(GOCC) version | sed -nre 's/^[^0-9]*(([0-9]+\.)*[0-9]+).*/\1/p')
 ACTIVE_GO_VERSION_MINOR := $(shell echo $(ACTIVE_GO_VERSION) | cut -d. -f2)
@@ -32,7 +39,7 @@ ACTIVE_GO_VERSION_MINOR := $(shell echo $(ACTIVE_GO_VERSION) | cut -d. -f2)
 # GO_VERSION is the Go version used for the release build, docker files, and
 # GitHub Actions. This is the reference version for the project. All other Go
 # versions are checked against this version.
-GO_VERSION = 1.25.3
+GO_VERSION = 1.26.5
 
 GOBUILD := $(GOCC) build -v
 GOINSTALL := $(GOCC) install -v
@@ -54,7 +61,7 @@ DEV_TAGS := $(if ${tags},$(DEV_TAGS) ${tags},$(DEV_TAGS))
 # We only return the part inside the double quote here to avoid escape issues
 # when calling the external release script. The second parameter can be used to
 # add additional ldflags if needed (currently only used for the release).
-make_ldflags = $(1) -X $(PKG)/build.Commit=$(COMMIT)
+make_ldflags = $(1) -X $(PKG)/build.Commit=$(COMMIT) -X $(PKG)/build.AppVersion=$(APP_VERSION)
 
 DEV_GCFLAGS := -gcflags "all=-N -l"
 DEV_LDFLAGS := -ldflags "$(call make_ldflags)"
