@@ -96,6 +96,62 @@ archives:
     files:
       - LICENSE
 
+# Hand-rolled per-arch builds stitched into one manifest, rather than
+# dockers_v2: the v2 pipe has produced intermittent "failed to calculate
+# checksum of ref" COPY failures in CI elsewhere in this org.
+dockers:
+  - id: flnd-amd64
+    ids:
+      - flnd
+      - flncli
+    dockerfile: Dockerfile.release
+    use: buildx
+    goarch: amd64
+    image_templates:
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-amd64"
+    extra_files:
+      - scripts/verify-install.sh
+      - scripts/keys
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.source=https://github.com/flokiorg/flnd"
+
+  - id: flnd-arm64
+    ids:
+      - flnd
+      - flncli
+    dockerfile: Dockerfile.release
+    use: buildx
+    goarch: arm64
+    image_templates:
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-arm64"
+    extra_files:
+      - scripts/verify-install.sh
+      - scripts/keys
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.source=https://github.com/flokiorg/flnd"
+
+docker_manifests:
+  - name_template: "ghcr.io/flokiorg/flnd:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-amd64"
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-arm64"
+
+  # skip_push: auto leaves :latest alone for a pre-release, so pulling
+  # ghcr.io/flokiorg/flnd can never resolve to a pre-release build.
+  - name_template: "ghcr.io/flokiorg/flnd:latest"
+    skip_push: auto
+    image_templates:
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-amd64"
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-arm64"
+
 checksum:
   name_template: checksums.txt
 
