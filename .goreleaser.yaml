@@ -1,0 +1,114 @@
+version: 2
+
+project_name: flnd
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  # build.AppVersion is a plain var precisely so it can be set here; there are
+  # no hand-edited version constants left to drift out of step with the
+  # released tag. build.Commit keeps the short commit, as the previous release
+  # tooling did.
+  #
+  # The build tags are the same set the previous release tooling used, so the
+  # published binaries keep the same optional RPC subservers (including
+  # signrpc, which downstream consumers depend on) and kvdb backends.
+  - id: flnd
+    main: ./cmd/flnd
+    binary: flnd
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    tags: &tags
+      - autopilotrpc
+      - signrpc
+      - walletrpc
+      - chainrpc
+      - invoicesrpc
+      - watchtowerrpc
+      - neutrinorpc
+      - monitoring
+      - peersrpc
+      - kvdb_postgres
+      - kvdb_etcd
+      - kvdb_sqlite
+    ldflags:
+      - -s -w -buildid= -X github.com/flokiorg/flnd/build.AppVersion={{ .Version }} -X github.com/flokiorg/flnd/build.Commit={{ .ShortCommit }}
+    targets: &targets
+      - darwin_amd64
+      - darwin_arm64
+      - freebsd_amd64
+      - linux_386
+      - linux_amd64
+      - linux_arm64
+      - linux_mips
+      - linux_mips64
+      - linux_mipsle
+      - linux_ppc64
+      - linux_ppc64le
+      - windows_386
+      - windows_amd64
+
+  - id: flncli
+    main: ./cmd/flncli
+    binary: flncli
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    tags: *tags
+    ldflags:
+      - -s -w -buildid= -X github.com/flokiorg/flnd/build.AppVersion={{ .Version }} -X github.com/flokiorg/flnd/build.Commit={{ .ShortCommit }}
+    targets: *targets
+
+archives:
+  # One archive per binary per platform -- the daemon and the CLI ship
+  # separately, matching the asset names the previous tooling produced so
+  # existing download URLs keep their shape:
+  # flnd-<os>-<arch>-v<version>.tar.gz and flncli-<os>-<arch>-v<version>.tar.gz
+  # (.zip on Windows).
+  - id: flnd
+    ids:
+      - flnd
+    name_template: "flnd-{{ .Os }}-{{ .Arch }}-v{{ .Version }}"
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - LICENSE
+
+  - id: flncli
+    ids:
+      - flncli
+    name_template: "flncli-{{ .Os }}-{{ .Arch }}-v{{ .Version }}"
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - LICENSE
+
+checksum:
+  name_template: checksums.txt
+
+release:
+  github:
+    owner: flokiorg
+    name: flnd
+  # Re-running a release replaces the assets rather than erroring.
+  mode: replace
+  # A version with a pre-release suffix is published as a GitHub prerelease.
+  prerelease: auto
+
+# Deliberately no `changelog:` block. GoReleaser loads --release-notes through
+# the same pipe it uses for changelog generation, so disabling that pipe
+# silently publishes an empty release body. The notes come from CHANGELOG.md via
+# --release-notes in .github/workflows/release.yml.
