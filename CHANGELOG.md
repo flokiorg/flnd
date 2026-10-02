@@ -12,9 +12,36 @@
 
 ### Changed
 
-- Built with Go 1.26.5. The Makefile's reference Go version, all six
-  Dockerfiles and `.golangci.yml` now agree with `go.mod`; they had been left
-  on 1.25.3 and 1.26.1.
+- Built with Go 1.26.8. The Makefile's reference Go version, all six
+  Dockerfiles and `.golangci.yml` agree with `go.mod`; they had been left on
+  1.25.3 and 1.26.1. 1.26.8 also closes four reachable stdlib vulnerabilities
+  that 1.26.5 carried -- GO-2026-6218 (`net/url`), GO-2026-6090 (`crypto/tls`),
+  GO-2026-5972 (`encoding/asn1`) and GO-2026-5026 (`net/http`).
+- Updated every flokiorg dependency to the current release:
+  `go-flokicoin` v0.25.13-alpha ->
+  [v0.26.2](https://github.com/flokiorg/go-flokicoin/releases/tag/v0.26.2),
+  `walletd` v0.2.0-beta ->
+  [v0.2.2](https://github.com/flokiorg/walletd/releases/tag/v0.2.2),
+  `flokicoin-neutrino` v0.17.0-beta ->
+  [v0.17.2](https://github.com/flokiorg/flokicoin-neutrino/releases/tag/v0.17.2)
+  and `lightning-onion` v1.0.1-alpha ->
+  [v1.0.4](https://github.com/flokiorg/lightning-onion/releases/tag/v1.0.4).
+- Updated `google.golang.org/grpc` to v1.84.0, `golang.org/x/net` to v0.59.0,
+  `golang.org/x/text` to v0.42.0, `github.com/opencontainers/runc` to v1.3.6 and
+  `github.com/go-viper/mapstructure/v2` to v2.5.0. Together with the Go bump
+  this takes govulncheck from ten reachable findings to three.
+
+### Known issues
+
+- Three reachable vulnerabilities remain, none of which has a stable fix
+  available. `GO-2026-6443` in `google.golang.org/grpc` is fixed only in an
+  unreleased v1.85.0 development build. `GO-2026-4887` and `GO-2026-4883` in
+  `github.com/docker/docker` are reported upstream as `Fixed in: N/A`. Both
+  docker findings are reached only through `ory/dockertest`, which is used by
+  test fixtures rather than by anything in a released binary.
+- `runc` is pinned to v1.3.6 rather than the latest release: v1.5.2 removed
+  `libcontainer/user`, which `ory/dockertest` still imports, so a newer runc
+  breaks `go mod tidy`. v1.3.6 is the version that fixes GO-2026-5761.
 
 ## [0.2.2-beta]
 
