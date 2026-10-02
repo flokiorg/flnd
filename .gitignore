@@ -87,5 +87,9 @@ coverage.txt
 */testdata
 
 .agents
+.claude
+
+# GoReleaser build output.
+dist/
 .dev_ignored/
 
