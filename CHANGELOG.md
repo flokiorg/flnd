@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.2.5]
+
+### Fixed
+
+- **GO-2026-4887** and **GO-2026-4883** (`github.com/docker/docker`) are gone.
+  `github.com/docker/cli` moves 27.4.1 -> **29.2.0**, and 29.x switched to
+  `github.com/moby/moby/api` + `github.com/moby/moby/client`, which takes
+  `docker/docker` out of the module graph entirely.
+
+  Both findings were documented here and across the org as unfixable, because
+  upstream reports `Fixed in: N/A`. That was true of the advisories and the
+  wrong conclusion: a finding also disappears when the vulnerable module stops
+  being in the graph, which a *different* dependency's major bump can do.
+
+  `govulncheck ./...` now reports **no reachable vulnerabilities at all** --
+  the first time that has been true for this repo. GO-2026-6443 was closed in
+  0.2.4 by pinning grpc to v1.83.2, and these two were the remainder.
+
+### Changed
+
+- `github.com/opencontainers/runc` stays pinned at v1.3.6. It is still
+  load-bearing: `ory/dockertest/v3/docker/pkg/homedir` imports
+  `runc/libcontainer/user`, which v1.5.2 removed. The pin is not vestigial.
+
 ## [0.2.4]
 
 ### Fixed
