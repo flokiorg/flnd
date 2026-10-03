@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.4]
+
+### Fixed
+
+- **GO-2026-6443**, a remotely triggerable server panic in
+  `google.golang.org/grpc` (missing `:authority`/`Host` header), was reachable
+  from `flnd`'s own gRPC server. grpc is pinned to **v1.83.2**, which the
+  advisory does not cover.
+
+  0.2.3 shipped this, and the 0.2.3 notes described it as unfixable because the
+  only listed fix is an unreleased v1.85.0 development build. That was wrong:
+  the advisory's affected ranges are `[0, 1.82.2)`, `[1.83.0, 1.83.2)` and
+  `[1.84.0-dev, 1.85.0-dev...)`, so **v1.83.2 is not affected** and no
+  development build is needed. `go mod tidy` holds grpc there cleanly.
+
+  `govulncheck` now reports only GO-2026-4887 and GO-2026-4883
+  (`github.com/docker/docker`), which do report `Fixed in: N/A` and are reached
+  only through `ory/dockertest` in test fixtures, never in a released binary.
+
 ## [0.2.3]
 
 ### Fixed
