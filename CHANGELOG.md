@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.6-rc.1]
+
+### Changed
+
+- Updates `go-flokicoin` to v0.26.4-rc.1, `flokicoin-neutrino` to v0.17.3-rc.1,
+  `walletd` to v0.2.4-rc.1 and `lightning-onion` to v1.0.5-rc.1, taking the
+  latest Flokicoin libraries.
+
 ## [0.2.5]
 
 ### Fixed

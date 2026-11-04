@@ -8,9 +8,9 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
 	github.com/fergusstrange/embedded-postgres v1.33.0
-	github.com/flokiorg/flokicoin-neutrino v0.17.2
-	github.com/flokiorg/go-flokicoin v0.26.3
-	github.com/flokiorg/walletd v0.2.2
+	github.com/flokiorg/flokicoin-neutrino v0.17.3-rc.1
+	github.com/flokiorg/go-flokicoin v0.26.4-rc.1
+	github.com/flokiorg/walletd v0.2.4-rc.1
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/golangci/plugin-module-register v0.1.2
 	github.com/google/btree v1.1.3
@@ -96,7 +96,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/flokiorg/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
-	github.com/flokiorg/lightning-onion v1.0.4
+	github.com/flokiorg/lightning-onion v1.0.5-rc.1
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
