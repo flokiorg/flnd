@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  # Matches the DEV_TAGS + RPC_TAGS combination the Makefile's own
+  # `make unit` target builds/tests with, so this exercises the same code
+  # (including the optional RPC subservers) as the project's real build.
+  BUILD_TAGS: dev autopilotrpc chainrpc invoicesrpc neutrinorpc peersrpc routerrpc signrpc verrpc walletrpc watchtowerrpc wtclientrpc
+
+jobs:
+  build-and-test:
+    name: Build, Vet & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        run: go build -tags="${{ env.BUILD_TAGS }}" ./...
+
+      - name: Vet
+        run: go vet -tags="${{ env.BUILD_TAGS }}" ./...
+
+      - name: Test
+        run: |
+          # A handful of packages need real external infrastructure this
+          # runner doesn't have (a bitcoind/btcd binary, a real neutrino
+          # P2P node to sync against, or an embedded Postgres instance) --
+          # they don't respect `go test -short`, so they're excluded by
+          # package path here rather than left to hang/fail. See the CI
+          # PR description for the full rationale per package.
+          EXCLUDE_REGEX='/chainntnfs/bitcoindnotify$|/chainntnfs/test/btcd$|/chainntnfs/test/neutrino$|/lnwallet/test/neutrino$|/invoices$|/sqldb$|/routing/chainview$'
+          PKGS=$(go list -tags="${{ env.BUILD_TAGS }}" ./... | grep -vE "$EXCLUDE_REGEX")
+          go test -tags="${{ env.BUILD_TAGS }}" -timeout 20m $PKGS

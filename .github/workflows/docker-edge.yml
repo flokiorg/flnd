@@ -1,0 +1,65 @@
+name: Publish edge image
+
+# Every push to main gets an image, so there is something to run without
+# waiting for a release. These are explicitly not releases: the binaries report
+# the development version (0.0.0-dev) plus the commit, and :edge always moves.
+# Use a release tag for anything you care about.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  # The same tag set .goreleaser.yaml builds the released binaries with, so an
+  # edge image has the same optional RPC subservers and kvdb backends.
+  RELEASE_TAGS: autopilotrpc signrpc walletrpc chainrpc invoicesrpc watchtowerrpc neutrinorpc monitoring peersrpc kvdb_postgres kvdb_etcd kvdb_sqlite
+
+jobs:
+  docker:
+    name: Build and push edge image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Dockerfile.release copies prebuilt binaries and the verification
+      # script, so assemble the build context here the same way GoReleaser's
+      # ids/extra_files do for a release.
+      - name: Build linux/amd64 binaries
+        env:
+          CGO_ENABLED: 0
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          mkdir -p dist/scripts
+          LD="-s -w -X github.com/flokiorg/flnd/build.Commit=$(git rev-parse --short HEAD)"
+          go build -trimpath -tags="$RELEASE_TAGS" -ldflags "$LD" -o dist/flnd ./cmd/flnd
+          go build -trimpath -tags="$RELEASE_TAGS" -ldflags "$LD" -o dist/flncli ./cmd/flncli
+          cp scripts/verify-install.sh dist/scripts/
+          cp -r scripts/keys dist/scripts/
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: dist
+          file: Dockerfile.release
+          push: true
+          tags: |
+            ghcr.io/flokiorg/flnd:edge
+            ghcr.io/flokiorg/flnd:${{ github.sha }}
