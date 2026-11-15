@@ -1,0 +1,170 @@
+version: 2
+
+project_name: flnd
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  # build.AppVersion is a plain var precisely so it can be set here; there are
+  # no hand-edited version constants left to drift out of step with the
+  # released tag. build.Commit keeps the short commit, as the previous release
+  # tooling did.
+  #
+  # The build tags are the same set the previous release tooling used, so the
+  # published binaries keep the same optional RPC subservers (including
+  # signrpc, which downstream consumers depend on) and kvdb backends.
+  - id: flnd
+    main: ./cmd/flnd
+    binary: flnd
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    tags: &tags
+      - autopilotrpc
+      - signrpc
+      - walletrpc
+      - chainrpc
+      - invoicesrpc
+      - watchtowerrpc
+      - neutrinorpc
+      - monitoring
+      - peersrpc
+      - kvdb_postgres
+      - kvdb_etcd
+      - kvdb_sqlite
+    ldflags:
+      - -s -w -buildid= -X github.com/flokiorg/flnd/build.AppVersion={{ .Version }} -X github.com/flokiorg/flnd/build.Commit={{ .ShortCommit }}
+    targets: &targets
+      - darwin_amd64
+      - darwin_arm64
+      - freebsd_amd64
+      - linux_386
+      - linux_amd64
+      - linux_arm64
+      - linux_mips
+      - linux_mips64
+      - linux_mipsle
+      - linux_ppc64
+      - linux_ppc64le
+      - windows_386
+      - windows_amd64
+
+  - id: flncli
+    main: ./cmd/flncli
+    binary: flncli
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    tags: *tags
+    ldflags:
+      - -s -w -buildid= -X github.com/flokiorg/flnd/build.AppVersion={{ .Version }} -X github.com/flokiorg/flnd/build.Commit={{ .ShortCommit }}
+    targets: *targets
+
+archives:
+  # One archive per binary per platform -- the daemon and the CLI ship
+  # separately, matching the asset names the previous tooling produced so
+  # existing download URLs keep their shape:
+  # flnd-<os>-<arch>-v<version>.tar.gz and flncli-<os>-<arch>-v<version>.tar.gz
+  # (.zip on Windows).
+  - id: flnd
+    ids:
+      - flnd
+    name_template: "flnd-{{ .Os }}-{{ .Arch }}-v{{ .Version }}"
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - LICENSE
+
+  - id: flncli
+    ids:
+      - flncli
+    name_template: "flncli-{{ .Os }}-{{ .Arch }}-v{{ .Version }}"
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - LICENSE
+
+# Hand-rolled per-arch builds stitched into one manifest, rather than
+# dockers_v2: the v2 pipe has produced intermittent "failed to calculate
+# checksum of ref" COPY failures in CI elsewhere in this org.
+dockers:
+  - id: flnd-amd64
+    ids:
+      - flnd
+      - flncli
+    dockerfile: Dockerfile.release
+    use: buildx
+    goarch: amd64
+    image_templates:
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-amd64"
+    extra_files:
+      - scripts/verify-install.sh
+      - scripts/keys
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.source=https://github.com/flokiorg/flnd"
+
+  - id: flnd-arm64
+    ids:
+      - flnd
+      - flncli
+    dockerfile: Dockerfile.release
+    use: buildx
+    goarch: arm64
+    image_templates:
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-arm64"
+    extra_files:
+      - scripts/verify-install.sh
+      - scripts/keys
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.source=https://github.com/flokiorg/flnd"
+
+docker_manifests:
+  - name_template: "ghcr.io/flokiorg/flnd:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-amd64"
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-arm64"
+
+  # skip_push: auto leaves :latest alone for a pre-release, so pulling
+  # ghcr.io/flokiorg/flnd can never resolve to a pre-release build.
+  - name_template: "ghcr.io/flokiorg/flnd:latest"
+    skip_push: auto
+    image_templates:
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-amd64"
+      - "ghcr.io/flokiorg/flnd:{{ .Version }}-arm64"
+
+checksum:
+  name_template: checksums.txt
+
+release:
+  github:
+    owner: flokiorg
+    name: flnd
+  # Re-running a release replaces the assets rather than erroring.
+  mode: replace
+  # A version with a pre-release suffix is published as a GitHub prerelease.
+  prerelease: auto
+
+# Deliberately no `changelog:` block. GoReleaser loads --release-notes through
+# the same pipe it uses for changelog generation, so disabling that pipe
+# silently publishes an empty release body. The notes come from CHANGELOG.md via
+# --release-notes in .github/workflows/release.yml.

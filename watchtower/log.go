@@ -1,0 +1,37 @@
+package watchtower
+
+import (
+	"github.com/flokiorg/flnd/build"
+	"github.com/flokiorg/flnd/watchtower/lookout"
+	"github.com/flokiorg/flnd/watchtower/wtclient"
+	"github.com/flokiorg/flnd/watchtower/wtdb"
+	"github.com/flokiorg/flnd/watchtower/wtserver"
+	flog "github.com/flokiorg/go-flokicoin/log/v2"
+)
+
+// log is a logger that is initialized with no output filters.  This
+// means the package will not perform any logging by default until the caller
+// requests it.
+var log flog.Logger
+
+// The default amount of logging is none.
+func init() {
+	UseLogger(build.NewSubLogger("WTWR", nil))
+}
+
+// DisableLog disables all library log output.  Logging output is disabled
+// by default until UseLogger is called.
+func DisableLog() {
+	UseLogger(flog.Disabled)
+}
+
+// UseLogger uses a specified Logger to output package logging info.
+// This should be used in preference to SetLogWriter if the caller is also
+// using flog.
+func UseLogger(logger flog.Logger) {
+	log = logger
+	lookout.UseLogger(logger)
+	wtserver.UseLogger(logger)
+	wtclient.UseLogger(logger)
+	wtdb.UseLogger(logger)
+}

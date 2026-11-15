@@ -1,0 +1,73 @@
+package types
+
+import (
+	"github.com/flokiorg/go-flokicoin/crypto"
+	"github.com/flokiorg/go-flokicoin/chainutil"
+	"github.com/flokiorg/go-flokicoin/wire"
+	"github.com/flokiorg/flnd/fn"
+	"github.com/flokiorg/flnd/lnwire"
+	"github.com/flokiorg/flnd/tlv"
+)
+
+// CloseOutput represents an output that should be included in the close
+// transaction.
+type CloseOutput struct {
+	// Amt is the amount of the output.
+	Amt chainutil.Amount
+
+	// DustLimit is the dust limit for the local node.
+	DustLimit chainutil.Amount
+
+	// PkScript is the script that should be used to pay to the output.
+	PkScript []byte
+
+	// ShutdownRecords is the set of custom records that may result in
+	// extra close outputs being added.
+	ShutdownRecords lnwire.CustomRecords
+}
+
+// AuxShutdownReq is used to request a set of extra custom records to include
+// in the shutdown message.
+type AuxShutdownReq struct {
+	// ChanPoint is the channel point of the channel that is being shut
+	// down.
+	ChanPoint wire.OutPoint
+
+	// ShortChanID is the short channel ID of the channel that is being
+	// closed.
+	ShortChanID lnwire.ShortChannelID
+
+	// Initiator is true if the local node is the initiator of the channel.
+	Initiator bool
+
+	// InternalKey is the internal key for the shutdown addr. This will
+	// only be set for taproot shutdown addrs.
+	InternalKey fn.Option[crypto.PublicKey]
+
+	// CommitBlob is the blob that was included in the last commitment.
+	CommitBlob fn.Option[tlv.Blob]
+
+	// FundingBlob is the blob that was included in the funding state.
+	FundingBlob fn.Option[tlv.Blob]
+}
+
+// AuxCloseDesc is used to describe the channel close that is being performed.
+type AuxCloseDesc struct {
+	AuxShutdownReq
+
+	// CloseFee is the closing fee to be paid for this state.
+	CloseFee chainutil.Amount
+
+	// CommitFee is the fee that was paid for the last commitment.
+	CommitFee chainutil.Amount
+
+	// LocalCloseOutput is the output that the local node should be paid
+	// to. This is None if the local party will not have an output on the
+	// co-op close transaction.
+	LocalCloseOutput fn.Option[CloseOutput]
+
+	// RemoteCloseOutput is the output that the remote node should be paid
+	// to. This will be None if the remote party will not have an output on
+	// the co-op close transaction.
+	RemoteCloseOutput fn.Option[CloseOutput]
+}

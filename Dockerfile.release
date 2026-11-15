@@ -1,0 +1,39 @@
+# Image used by the release workflow. Unlike Dockerfile, this one does not
+# compile anything -- and in particular it does not clone the repository.
+# GoReleaser has already cross-compiled the binaries with the release build
+# tags and runs `docker build` with dist/ as the context, so the binaries are
+# simply copied in. That keeps the published image and the published archives
+# the same build, and means the image cannot be built from a different commit
+# than the one being released.
+#
+# Dockerfile stays as it is for building an image from an arbitrary git ref.
+FROM alpine:3.21
+
+# Define a root volume for data persistence.
+VOLUME /root/.flnd
+
+# Utilities for quality of life and SSL, plus curl and gpg for the signature
+# verification script.
+RUN apk --no-cache add \
+    bash \
+    jq \
+    ca-certificates \
+    gnupg \
+    curl
+
+COPY flnd /bin/
+COPY flncli /bin/
+
+# Carried into the build context by the `extra_files` entries in
+# .goreleaser.yaml, which keep their paths relative to the repository root.
+COPY scripts/verify-install.sh /
+COPY scripts/keys/ /keys/
+
+# Store the SHA256 hash of the binaries for later verification.
+RUN sha256sum /bin/flnd /bin/flncli > /shasums.txt \
+  && cat /shasums.txt
+
+# Expose flnd ports (Lightning p2p, rpc).
+EXPOSE 5521 10005
+
+ENTRYPOINT ["flnd"]
